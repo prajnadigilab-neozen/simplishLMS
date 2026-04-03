@@ -73,7 +73,12 @@ const PlacementTest = ({ onComplete }) => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="glass-card"
-            style={{ maxWidth: '600px', margin: '4rem auto', textAlign: 'center', padding: '3rem' }}
+            style={{ 
+                maxWidth: '600px', 
+                margin: window.innerWidth < 640 ? '2rem auto' : '4rem auto', 
+                textAlign: 'center', 
+                padding: window.innerWidth < 640 ? '1.5rem' : '3rem' 
+            }}
         >
             <div style={{ display: 'inline-flex', padding: '1rem', background: 'rgba(245, 158, 11, 0.2)', borderRadius: '50%', marginBottom: '1.5rem' }}>
                 <Trophy size={48} color="#f59e0b" />
@@ -144,7 +149,12 @@ const PlacementTest = ({ onComplete }) => {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                     className="glass-card"
-                    style={{ padding: '2.5rem', minHeight: '350px', display: 'flex', flexDirection: 'column' }}
+                    style={{ 
+                        padding: window.innerWidth < 640 ? '1.25rem' : '2.5rem', 
+                        minHeight: window.innerWidth < 640 ? '300px' : '350px', 
+                        display: 'flex', 
+                        flexDirection: 'column' 
+                    }}
                 >
                     <div style={{ marginBottom: '2rem' }}>
                         <span style={{
@@ -154,7 +164,12 @@ const PlacementTest = ({ onComplete }) => {
                         }}>
                             {q.difficulty_level}
                         </span>
-                        <h2 style={{ fontSize: '1.5rem', marginTop: '1rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
+                        <h2 style={{ 
+                            fontSize: window.innerWidth < 640 ? '1.2rem' : '1.5rem', 
+                            marginTop: '1rem', 
+                            color: 'var(--text-main)', 
+                            lineHeight: 1.4 
+                        }}>
                             {q.question_text}
                         </h2>
                     </div>
@@ -192,22 +207,44 @@ const PlacementTest = ({ onComplete }) => {
                     </div>
 
                     {/* Footer Nav */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        marginTop: '2.5rem', 
+                        paddingTop: '1.5rem', 
+                        borderTop: '1px solid var(--border)',
+                        gap: '0.5rem'
+                    }}>
                         <button
                             className="btn"
                             disabled={currentIndex === 0}
                             onClick={prev}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'none', border: '1px solid var(--border)', color: 'var(--text-main)' }}
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.4rem', 
+                                background: 'none', 
+                                border: '1px solid var(--border)', 
+                                color: 'var(--text-main)',
+                                padding: window.innerWidth < 640 ? '0.6rem 0.8rem' : '0.75rem 1.25rem',
+                                fontSize: window.innerWidth < 640 ? '0.85rem' : '1rem'
+                            }}
                         >
-                            <ChevronLeft size={18} /> ಹಿಂದೆ (Back)
+                            <ChevronLeft size={18} /> {window.innerWidth < 400 ? 'ಹಿಂದೆ' : 'ಹಿಂದೆ (Back)'}
                         </button>
                         <button
                             className="btn btn-primary"
                             onClick={next}
                             disabled={submitting}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 2.5rem' }}
+                            style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.4rem', 
+                                padding: window.innerWidth < 640 ? '0.6rem 1rem' : '0.75rem 2.5rem',
+                                fontSize: window.innerWidth < 640 ? '0.85rem' : '1rem'
+                            }}
                         >
-                            {submitting ? <Loader2 className="animate-spin" size={18} /> : (currentIndex === questions.length - 1 ? 'ಅಂತಿಮಗೊಳಿಸಿ (Finish)' : 'ಮುಂದೆ (Next)')}
+                            {submitting ? <Loader2 className="animate-spin" size={18} /> : (currentIndex === questions.length - 1 ? (window.innerWidth < 400 ? 'ಮುಗಿಸಿ' : 'ಅಂತಿಮಗೊಳಿಸಿ (Finish)') : (window.innerWidth < 400 ? 'ಮುಂದೆ' : 'ಮುಂದೆ (Next)'))}
                             {!submitting && <ChevronRight size={18} />}
                         </button>
                     </div>

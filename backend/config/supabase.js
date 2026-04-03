@@ -9,6 +9,20 @@ if (!supabaseUrl || !supabaseKey) {
     console.warn('Supabase credentials missing. Supabase features will be disabled.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false
+    },
+    global: {
+        headers: { 'x-application-name': 'simplish-lms-sre' },
+        fetch: (url, options) => {
+            return fetch(url, {
+                ...options,
+                signal: AbortSignal.timeout(15000) // Rule 20: 15s Hard timeout for database calls during Stress
+            });
+        }
+    }
+});
 
 module.exports = supabase;

@@ -190,7 +190,9 @@ const LandingPage = ({ onAuthSuccess }) => {
                     }}>
                         <img
                             src="/logo.png"
-                            alt="SIMPLISH"
+                            alt="SIMPLISH - Learn English via Kannada"
+                            fetchPriority="high"
+                            loading="eager"
                             style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         />
                     </div>
@@ -201,6 +203,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                     <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '0.2rem', borderRadius: '0.4rem', border: '1px solid var(--border)' }}>
                         <button
                             onClick={() => setLang('en')}
+                            aria-label="Switch interface to English"
                             style={{
                                 padding: '0.4rem 0.6rem',
                                 border: 'none',
@@ -214,6 +217,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                         >EN</button>
                         <button
                             onClick={() => setLang('kn')}
+                            aria-label="ಕನ್ನಡ ಭಾಷೆಗೆ ಬದಲಾಯಿಸಿ (Switch to Kannada)"
                             style={{
                                 padding: '0.4rem 0.6rem',
                                 border: 'none',
@@ -230,6 +234,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                     {/* Theme Toggle */}
                     <button
                         onClick={toggleTheme}
+                        aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
                         style={{
                             padding: '0.4rem',
                             border: '1px solid var(--border)',
@@ -340,6 +345,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                                 <img
                                     src="/logo.png"
                                     alt="SIMPLISH"
+                                    loading="lazy"
                                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 />
                             </div>
@@ -366,6 +372,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                                 <img
                                     src={simplishTalksLogo}
                                     alt="SIMPLISH - Talks"
+                                    loading="lazy"
                                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 />
                             </div>

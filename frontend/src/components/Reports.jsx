@@ -36,8 +36,9 @@ const sevenDaysAgoStr = () => toLocalDateStr(new Date(Date.now() - 7 * 24 * 60 *
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const Reports = ({ user, hideHeader = false }) => {
-    const role = user?.role?.toLowerCase();
+    const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
     const isSuperAdmin = role === 'super_admin';
+    const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
 
     // Date filter state
     const [fromDate, setFromDate] = useState(sevenDaysAgoStr());
@@ -80,7 +81,7 @@ const Reports = ({ user, hideHeader = false }) => {
             'Date', 
             'Registered Users', 
             'Active Users', 
-            ...(isSuperAdmin ? ['Top-Up Revenue', 'Total Revenue'] : []),
+            ...(canSeeRevenue ? ['Top-Up Revenue', 'Total Revenue'] : []),
             'Deleted Users'
         ];
 
@@ -88,7 +89,7 @@ const Reports = ({ user, hideHeader = false }) => {
             row.date,
             row.registrations,
             row.active,
-            ...(isSuperAdmin ? [row.topUpRevenue, row.revenue] : []),
+            ...(canSeeRevenue ? [row.topUpRevenue, row.revenue] : []),
             row.deleted
         ]);
 
@@ -250,7 +251,7 @@ const Reports = ({ user, hideHeader = false }) => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                    {['DATE', 'REG. USERS', 'ACTIVE', ...(isSuperAdmin ? ['TOP-UP REV', 'TOTAL REVENUE'] : []), 'DELETED'].map(h => (
+                                    {['DATE', 'REG. USERS', 'ACTIVE', ...(canSeeRevenue ? ['TOP-UP REV', 'TOTAL REVENUE'] : []), 'DELETED'].map(h => (
                                         <th key={h} style={{ padding: '1.25rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>
                                             {h}
                                         </th>
@@ -291,7 +292,7 @@ const Reports = ({ user, hideHeader = false }) => {
                                                 <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 600, color: '#475569' }}>
                                                     {row.active} users
                                                 </td>
-                                                {isSuperAdmin && (
+                                                {canSeeRevenue && (
                                                     <>
                                                         <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 700, color: '#059669' }}>
                                                             {formatCurrency(row.topUpRevenue)}
@@ -315,14 +316,14 @@ const Reports = ({ user, hideHeader = false }) => {
             </section>
 
             {/* ── Role Gating Notice for Moderators ── */}
-            {!isSuperAdmin && (
+            {!canSeeRevenue && (
                 <div style={{ 
                     marginTop: '2rem', padding: '1.25rem', borderRadius: '1rem', background: '#fffbeb', 
                     border: '1px solid #fef3c7', display: 'flex', alignItems: 'center', gap: '1rem' 
                 }}>
                     <Lock size={20} color="#d97706" />
                     <p style={{ margin: 0, fontSize: '0.85rem', color: '#92400e', fontWeight: 600 }}>
-                        Revenue and financial data are restricted to Super Admins. Please contact a higher-level administrator if you believe this is an error.
+                        Revenue and financial data are restricted to Staff members. Please contact a higher-level administrator if you believe this is an error.
                     </p>
                 </div>
             )}

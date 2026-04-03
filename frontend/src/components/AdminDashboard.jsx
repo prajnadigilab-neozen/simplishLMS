@@ -32,7 +32,9 @@ const AdminDashboard = ({ user }) => {
     const [savingSettings, setSavingSettings] = useState(false);
     const showToast = useToast();
 
-    const isSuperAdmin = user?.role?.toLowerCase() === 'super_admin';
+    const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
+    const isSuperAdmin = role === 'super_admin';
+    const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
 
     useEffect(() => {
         fetchDashboardData();
@@ -257,7 +259,7 @@ const AdminDashboard = ({ user }) => {
             </header>
             {/* KPI GRID */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                {isSuperAdmin && (
+                {canSeeRevenue && (
                     <KPICard 
                         title="TOTAL REVENUE (All-time)" 
                         value={`₹${stats?.totalRevenue?.toLocaleString() || 0}`} 

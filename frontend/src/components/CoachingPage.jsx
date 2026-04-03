@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { lessonApi } from '../utils/api';
 import { useToast } from './Toast';
+import { useNetworkResilience } from '../utils/useNetworkResilience';
 
 const CoachingPage = ({ lesson, onComplete, onBack }) => {
     const [currentMediaIdx, setCurrentMediaIdx] = useState(0);
@@ -25,12 +26,26 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
 
     const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
 
+    const { shouldDegrade, bandwidthMode } = useNetworkResilience();
+
     // Calculate available sequential media
     const availableMedia = [];
     if (lesson?.pdf_url) availableMedia.push({ type: 'pdf', url: lesson.pdf_url, title: 'Study Resource (PDF)' });
-    if (lesson?.audio_url) availableMedia.push({ type: 'audio', url: lesson.audio_url, title: 'Listening Drill (Audio)' });
-    if (lesson?.video_url) availableMedia.push({ type: 'video', url: lesson.video_url, title: 'Video Lecture' });
-    if (lesson?.transcription) availableMedia.push({ type: 'transcription', content: lesson.transcription, title: 'Lesson Transcription' });
+    
+    // Adaptive Media Logic: If bandwidth is critically low (< 250kbps), 
+    // prioritize Audio and Transcription before Video.
+    if (shouldDegrade) {
+        if (lesson?.audio_url) availableMedia.push({ type: 'audio', url: lesson.audio_url, title: 'Listening Drill (Audio)' });
+        if (lesson?.transcription) availableMedia.push({ type: 'transcription', content: lesson.transcription, title: 'Lesson Transcription' });
+        
+        // Show Video last in low-bandwidth mode as a "try if you can" option
+        if (lesson?.video_url) availableMedia.push({ type: 'video', url: lesson.video_url, title: 'Video Lecture (High Bandwidth Required)' });
+    } else {
+        // Standard high-bandwidth ordering
+        if (lesson?.audio_url) availableMedia.push({ type: 'audio', url: lesson.audio_url, title: 'Listening Drill (Audio)' });
+        if (lesson?.video_url) availableMedia.push({ type: 'video', url: lesson.video_url, title: 'Video Lecture' });
+        if (lesson?.transcription) availableMedia.push({ type: 'transcription', content: lesson.transcription, title: 'Lesson Transcription' });
+    }
 
     if (availableMedia.length === 0 && lesson?.media_url) {
         availableMedia.push({ type: lesson.media_type || 'unknown', url: lesson.media_url, title: 'Lesson Content' });
@@ -223,9 +238,27 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
                             </object>
                         </div>
                     ) : activeMedia.type === 'video' ? (
-                        <video controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}>
-                            <source src={getMediaSrc(activeMedia.url)} type="video/mp4" />
-                        </video>
+                        shouldDegrade ? (
+                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#020617', padding: '2rem', textAlign: 'center' }}>
+                                <div style={{ background: 'rgba(245, 158, 11, 0.1)', padding: '2rem', borderRadius: '24px', border: '1px solid rgba(245, 158, 11, 0.2)', maxWidth: '400px' }}>
+                                    <Globe size={48} color="#fbbf24" style={{ marginBottom: '1rem' }} />
+                                    <h3 style={{ color: '#fbbf24', fontSize: '1.2rem', marginBottom: '0.5rem' }}>ಕಡಿಮೆ ನೆಟ್‌ವರ್ಕ್ ವೇಗ (Low Bandwidth)</h3>
+                                    <p style={{ fontSize: '0.9rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                                        Your connection is unstable (~{bandwidthMode}). Video might buffer. Try the <strong>Audio</strong> or <strong>Transcription</strong> phases for a smoother experience.
+                                    </p>
+                                    <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
+                                        <video controls style={{ width: '100%', maxHeight: '150px', background: '#000', borderRadius: '12px' }}>
+                                            <source src={getMediaSrc(activeMedia.url)} type="video/mp4" />
+                                        </video>
+                                        <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>Attempting playback anyway...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <video controls style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}>
+                                <source src={getMediaSrc(activeMedia.url)} type="video/mp4" />
+                            </video>
+                        )
                     ) : activeMedia.type === 'audio' ? (
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#020617', padding: '2rem' }}>
                             <motion.div

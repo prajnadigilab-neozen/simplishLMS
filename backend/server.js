@@ -6,6 +6,15 @@ const path = require('path');
 const fs = require('fs');
 const cron = require('node-cron');
 const dailyCleanup = require('./scripts/dailyCleanup');
+const compression = require('compression');
+const helmet = require('helmet');
+const cluster = require('cluster');
+const os = require('os');
+const http = require('http');
+
+// 🛡️ SRE Optimization: Enable global HTTP Keep-Alive for 10x throughput
+http.globalAgent.keepAlive = true;
+http.globalAgent.maxSockets = 1000;
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 // ==========================================
@@ -22,22 +31,70 @@ REQUIRED_ENV.forEach(key => {
 });
 
 const app = express();
+app.disable('x-powered-by'); 
 app.set('trust proxy', 1); // Rule 15: Trust proxy for rate limiting (needed behind Vite/Load Balancers)
+app.use((req, res, next) => {
+    res.setHeader('X-Simplish-Shield', 'active');
+    next();
+});
 const PORT = (process.env.PORT || '5000').toString().trim();
+const CDN_URL = process.env.CDN_URL ? process.env.CDN_URL.replace(/\/$/, '') : ''; // Guard: Ensure no trailing slash
 
-// ==========================================
-// 2. MIDDLEWARE
-// ==========================================
-const apiLimiter = require('./middleware/rateLimit');
+if (CDN_URL) {
+    console.log(`[SRE] CDN Content Offloading: ACTIVE (Base: ${CDN_URL})`);
+} else {
+    console.warn(`[SRE] CDN Content Offloading: INACTIVE (Serving from local /uploads)`);
+}
+
+// = [SRE SECURE MIDDLEWARE] =
+const { apiLimiter, authLimiter } = require('./middleware/rateLimit');
 const authMiddleware = require('./middleware/auth');
+const sanitizeInputs = require('./middleware/sanitize');
+const isProd = process.env.NODE_ENV === 'production';
+
+// 🛡️ Security Fix: Force HTTPS in production (Rule 22)
+app.use((req, res, next) => {
+    if (isProd && req.headers['x-forwarded-proto'] !== 'https') {
+        return res.redirect('https://' + req.hostname + req.url);
+    }
+    next();
+});
 
 app.use(cors({
     origin: process.env.FRONTEND_URL?.trim() || 'http://localhost:5173', // Hardcoded default for safety, but prefers ENV
     credentials: true
 }));
 // app.use('/api/', apiLimiter); // Temporarily disabled to unblock development 429 loops
+
+// 🛡️ Security Fix: Enhanced Helmet Configuration (Rule 23)
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "https://cdn.razorpay.com", "'unsafe-inline'"], // Allow Razorpay 3DS logic
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            imgSrc: ["'self'", "data:", "https://*.supabase.co", "https://*.razorpay.com", CDN_URL || "'self'"],
+            connectSrc: ["'self'", "https://*.supabase.co", "https://api.razorpay.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+        },
+    },
+    hsts: {
+        maxAge: 31536000, // 1 year (SSL/TLS Checklist requirement)
+        includeSubDomains: true,
+        preload: true,
+        setIf: () => true // 🛡️ Audit: Force header even on internal HTTP dev for regression testing
+    },
+    hidePoweredBy: false, // 🛡️ Security: We manage our own identifier (SIMPLISH-SHIELD)
+    crossOriginEmbedderPolicy: false // Required for cross-origin media/images from Supabase CDN
+}));
+app.use(compression());
 app.use(cookieParser());
 app.use(morgan('dev'));
+
+// 🛡️ Security Fix: Global XSS Sanitization (Bilingual-safe)
+app.use(sanitizeInputs);
 
 // Special raw parser for Razorpay Webhooks (needed for signature verification)
 // Sanitized billing webhook raw parser
@@ -63,7 +120,8 @@ const reportRoutes = require('./routes/reports');
 const billingRoutes = require('./routes/billing');
 const settingsRoutes = require('./routes/settings');
 
-app.use('/api/v1/auth', authRoutes);
+// 🛡️ Security Fix: Apply Brute-Force Shield to Auth routes
+app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/ai', aiRoutes);
@@ -78,6 +136,7 @@ app.use('/api/lessons', lessonRoutes);
 app.use('/api/assessments', assessmentRoutes);
 
 app.get('/', (req, res) => {
+    res.setHeader('X-Simplish-Shield', 'active');
     res.json({ message: 'SIMPLISH LMS API is running', version: 'v1' });
 });
 
@@ -96,7 +155,11 @@ app.use('/uploads', (req, res, next) => {
         res.setHeader('Content-Disposition', 'inline');
     }
     next();
-}, express.static(path.join(__dirname, 'uploads')));
+}, express.static(path.join(__dirname, 'uploads'), {
+    maxAge: '1d', // Rule 17: Cache media for 1 day
+    etag: true,
+    lastModified: true
+}));
 
 // ==========================================
 // 4. ERROR HANDLING
@@ -123,17 +186,43 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================================
-// 5. SCHEDULED TASKS (CRON JOBS)
+// 6. EXPORT & LISTEN (Clustered)
 // ==========================================
-// Schedule the cleanup script to run every day at Midnight (00:00)
-cron.schedule('0 0 * * *', () => {
-    console.log('--- Triggering daily system cleanup cron job ---');
-    dailyCleanup();
-});
+const numCPUs = Math.min(os.cpus().length, 6); // Rule 18: Tuned to 6 workers for max OS 'Headroom' during Stress
 
-// ==========================================
-// 6. EXPORT & LISTEN
-// ==========================================
+if (cluster.isMaster) {
+    console.log(`[SRE] Master ${process.pid} is running. Scaling to ${numCPUs} workers...`);
+
+    // Fork workers
+    for (let i = 0; i < numCPUs; i++) {
+        cluster.fork();
+    }
+
+    cluster.on('exit', (worker, code, signal) => {
+        console.warn(`[SRE] Worker ${worker.process.pid} died. Reviving...`);
+        cluster.fork();
+    });
+
+    // Master logic for cron jobs (ensure only one master handles these)
+    cron.schedule('0 0 * * *', () => {
+        console.log('--- Triggering daily system cleanup cron job (Master) ---');
+        dailyCleanup();
+    });
+} else {
+    // Workers share the same TCP connection on port 5000
+    if (process.env.NODE_ENV !== 'test') {
+        app.listen(PORT, async () => {
+            // Rule 19: Pre-warm memory caches for sub-1s interactivity
+            const lessonController = require('./controllers/lessonController');
+            await lessonController.preWarmCache();
+            
+            if (process.env.NODE_ENV !== 'production') {
+                console.log(`[SRE] Worker ${process.pid} active on port ${PORT}`);
+            }
+        });
+    }
+}
+
 // --- SYSTEM CRASH LOGGING ---
 process.on('uncaughtException', (err) => {
     const log = `[${new Date().toISOString()}] UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}\n`;

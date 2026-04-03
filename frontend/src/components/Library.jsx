@@ -119,22 +119,30 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                 </div>
             )}
 
-            <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
+            <header style={{ 
+                marginBottom: '2rem', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                flexWrap: 'wrap', 
+                gap: '1rem',
+                padding: window.innerWidth < 640 ? '0 0.5rem' : '0'
+            }}>
+                <div style={{ flex: '1 1 300px' }}>
+                    <h1 style={{ fontSize: window.innerWidth < 640 ? '1.75rem' : '2.2rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
                         {language === 'kn' ? 'ನನ್ನ ಲೈಬ್ರರಿ' : 'My Library'}
                     </h1>
-                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem', fontSize: window.innerWidth < 640 ? '0.95rem' : '1.1rem' }}>
                         {language === 'kn' ? 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪಠ್ಯಕ್ರಮವನ್ನು ಇಲ್ಲಿ ನೋಡಿ.' : 'Explore your structured learning curriculum.'}
                     </p>
                 </div>
                 {isMod && (
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button onClick={onAddExam} className="btn" style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid #eab308', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Trophy size={18} /> {language === 'kn' ? 'ಪರೀಕ್ಷೆ ಸೇರಿಸಿ' : 'Add Module Exam'}
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <button onClick={onAddExam} className="btn" style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid #eab308', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <Trophy size={16} /> {language === 'kn' ? 'ಪರೀಕ್ಷೆ ಸೇರಿಸಿ' : 'Add Exam'}
                         </button>
-                        <button onClick={onAddLesson} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 20px rgba(79, 70, 229, 0.2)' }}>
-                            <Plus size={18} /> {language === 'kn' ? 'ಹೊಸ ಪಾಠ ಸೇರಿಸಿ' : 'Add New Lesson'}
+                        <button onClick={onAddLesson} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <Plus size={16} /> {language === 'kn' ? 'ಹೊಸ ಪಾಠ' : 'Add Lesson'}
                         </button>
                     </div>
                 )}
@@ -159,9 +167,9 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                     style={{
                         background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
                         border: '1px solid rgba(59, 130, 246, 0.3)',
-                        borderRadius: '24px',
-                        padding: '1.5rem 2rem',
-                        marginBottom: '3rem',
+                        borderRadius: '20px',
+                        padding: window.innerWidth < 640 ? '1.25rem' : '1.5rem 2rem',
+                        marginBottom: '2.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -246,14 +254,14 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                     className="glass-card"
                                     onClick={toggleLevel}
                                     style={{
-                                        padding: '1.5rem 2rem',
+                                        padding: window.innerWidth < 640 ? '1rem 1.25rem' : '1.5rem 2rem',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
                                         cursor: 'pointer',
                                         background: isLevelExpanded ? 'linear-gradient(90deg, var(--bg-dark) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)',
                                         borderLeft: isLevelExpanded ? '6px solid var(--primary)' : '1px solid var(--border)',
-                                        borderRadius: '1.5rem'
+                                        borderRadius: '1rem'
                                     }}
                                 >
                                     <div>
@@ -330,18 +338,25 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                                                     )}
                                                                 </div>
 
-                                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', background: 'rgba(0,0,0,0.1)', padding: '0.75rem 1rem', borderRadius: '12px' }}>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                                <div style={{ 
+                                                                    display: 'grid', 
+                                                                    gridTemplateColumns: window.innerWidth < 450 ? '1fr' : 'repeat(auto-fit, minmax(80px, 1fr))', 
+                                                                    gap: '0.75rem', 
+                                                                    background: 'rgba(0,0,0,0.1)', 
+                                                                    padding: '0.75rem 1rem', 
+                                                                    borderRadius: '12px' 
+                                                                }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಹಂತ' : 'Level'}</span>
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lesson.level}</span>
                                                                     </div>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Completed'}</span>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Done'}</span>
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 700, color: lesson.progress === 100 ? '#10b981' : 'var(--text-muted)' }}>
-                                                                            {lesson.progress === 100 ? (language === 'kn' ? 'ಹೌದು ✓' : 'Yes ✓') : (language === 'kn' ? 'ಇಲ್ಲ' : 'No')}
+                                                                            {lesson.progress === 100 ? (language === 'kn' ? 'ಹೌದು' : 'Yes') : (language === 'kn' ? 'ಇಲ್ಲ' : 'No')}
                                                                         </span>
                                                                     </div>
-                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Score'}</span>
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 800, color: lesson.score >= 80 ? '#10b981' : (lesson.score ? 'var(--primary)' : 'var(--text-muted)') }}>{lesson.score ? `${lesson.score}%` : '---'}</span>
                                                                     </div>

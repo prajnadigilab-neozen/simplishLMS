@@ -2,8 +2,9 @@ const supabase = require('../config/supabase');
 
 exports.getSummaryMetrics = async (req, res) => {
     try {
-        const role = req.user?.role?.toLowerCase();
+        const role = req.user?.role?.toLowerCase().replace(' ', '_');
         const isSuperAdmin = role === 'super_admin';
+        const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
         
         console.log(`[Reports] Generating summary for role: ${role}`);
 
@@ -91,10 +92,11 @@ exports.getSummaryMetrics = async (req, res) => {
             console.error('[Reports] Avg active calculation failed:', err.message);
         }
 
-        // 4. Revenue (Super Admin)
+        // 4. Revenue (Authorized Staff)
         let totalRevenueAllTime = 0;
         let revenueMoM = 0;
-        if (isSuperAdmin) {
+
+        if (canSeeRevenue) {
             try {
                 const { data: allTime, error: e1 } = await supabase.from('payments').select('amount').eq('status', 'completed');
                 if (e1) throw e1;
@@ -139,8 +141,9 @@ exports.getSummaryMetrics = async (req, res) => {
  */
 exports.getDailyReport = async (req, res) => {
     try {
-        const role = req.user?.role?.toLowerCase();
+        const role = req.user?.role?.toLowerCase().replace(' ', '_');
         const isSuperAdmin = role === 'super_admin';
+        const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
 
         console.log(`[Reports] Generating daily report for role: ${role}`);
 
@@ -162,9 +165,10 @@ exports.getDailyReport = async (req, res) => {
         const { data: dels, error: e2 } = await supabase.from('users').select('deleted_at').eq('status', 'deleted').gte('deleted_at', fromISO).lte('deleted_at', toISO);
         if (e2) console.warn('[Reports] Daily dels fetch error:', e2.message);
 
-        // 3. Fetch Revenue
+        // 3. Fetch Revenue (Authorized Staff)
         let payments = [];
-        if (isSuperAdmin) {
+
+        if (canSeeRevenue) {
             const { data, error: e3 } = await supabase.from('payments').select('created_at, amount').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO);
             if (e3) console.warn('[Reports] Daily revenue fetch error:', e3.message);
             payments = data || [];
@@ -224,7 +228,8 @@ exports.getDailyReport = async (req, res) => {
             from: fromISO.split('T')[0],
             to: toISO.split('T')[0],
             daily_breakdown: sortedBreakdown,
-            isSuperAdmin
+            isSuperAdmin,
+            canSeeRevenue
         });
     } catch (error) {
         console.error('[Reports] Critical daily report failure:', error);

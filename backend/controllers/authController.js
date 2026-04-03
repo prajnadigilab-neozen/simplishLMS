@@ -20,11 +20,12 @@ exports.register = async (req, res) => {
     const fullName = req.body.fullName || req.body.full_name;
     const { email, phone, password } = req.body;
 
-    // Validation: Require Full Name, Password, and at least one of (Email OR Phone)
-    if (!fullName || !password || (!email && !phone)) {
-        console.warn('Registration Validation Failed:', { fullName: !!fullName, password: !!password, email: !!email, phone: !!phone });
+    // Validation: At least one of (Email OR Phone) and password are required
+    // (fullName is now optional to support partial onboarding from external triggers)
+    if (!password || (!email && !phone)) {
+        console.warn('Registration Validation Failed:', { password: !!password, email: !!email, phone: !!phone });
         return res.status(400).json({
-            message: 'Full name, password, and either email or phone are required'
+            message: 'Password and either email or phone are required'
         });
     }
 
@@ -32,33 +33,35 @@ exports.register = async (req, res) => {
         const signUpData = { password };
         const options = {
             data: {
-                full_name: fullName,
-                role: req.body.role || 'user'
+                full_name: fullName || 'New User',
+                role: req.body.role || 'user',
+                onboarding_completed: !!fullName // If name is provided, consider initial onboarding step done
             }
         };
 
         if (phone) {
             signUpData.phone = normalizePhone(phone);
 
-            // Check if phone already exists in public.users to prevent duplicates
+            // Check if phone already exists in public.users to prevent duplicate registrations
             const { data: existingUser, error: checkError } = await supabase
                 .from('users')
-                .select('id')
+                .select('id, email')
                 .eq('phone', signUpData.phone)
                 .limit(1)
                 .maybeSingle();
 
             if (existingUser) {
-                console.warn('Registration Validation Failed: Phone already registered', signUpData.phone);
-                return res.status(400).json({
-                    message: 'User already Registered'
+                console.warn('Registration Blocked: Phone number already in use', signUpData.phone);
+                return res.status(422).json({
+                    message: 'This mobile number is already registered. Please Sign In.',
+                    code: 'DUPLICATE_PHONE'
                 });
             }
         } else {
             signUpData.email = email;
         }
 
-        console.log('Calling supabase.auth.signUp with:', JSON.stringify({ ...signUpData, options }, null, 2));
+        console.log('Attempting Registration for:', phone || email);
 
         const { data, error } = await supabase.auth.signUp({
             ...signUpData,
@@ -66,27 +69,28 @@ exports.register = async (req, res) => {
         });
 
         if (error) {
-            console.error('Supabase Register Error:', error);
+            console.error('Supabase Register Error:', error.message);
             return res.status(error.status || 400).json({
                 message: error.message,
                 details: error
             });
         }
 
-        // Manually sync to public.users (trigger is unreliable)
+        // --- PUBLIC SYNC (Mandatory for feature reliability) ---
         try {
             await supabase
                 .from('users')
                 .upsert({
                     id: data.user.id,
-                    full_name: fullName,
+                    full_name: fullName || 'New User',
                     email: email || null,
                     phone: normalizePhone(phone) || null,
-                    role: req.body.role || 'user'
+                    role: req.body.role || 'user',
+                    onboarding_completed: !!fullName
                 }, { onConflict: 'id' });
             console.log('User synced to public.users:', data.user.id);
         } catch (syncErr) {
-            console.warn('Non-fatal: Failed to sync user to public.users:', syncErr.message);
+            console.warn('Non-fatal sync error:', syncErr.message);
         }
 
         res.status(201).json({
@@ -95,7 +99,8 @@ exports.register = async (req, res) => {
                 id: data.user.id,
                 email: data.user.email,
                 phone: data.user.phone,
-                fullName: fullName
+                fullName: fullName || 'New User',
+                onboardingCompleted: !!fullName
             }
         });
     } catch (error) {
@@ -174,8 +179,8 @@ exports.login = async (req, res) => {
         res.cookie('simplish_session', data.session.access_token, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'strict' : 'lax',
-            maxAge: 3600 * 1000 * 24 * 7
+            sameSite: isProd ? 'strict' : 'lax', // Enforced strict in prod (CSRF mitigation)
+            maxAge: 3600 * 1000 * 24 // 24 hours (Inactivity/Session hardening requirement)
         });
 
         const userData = {
@@ -387,8 +392,20 @@ exports.getAllUsers = async (req, res) => {
             return res.status(error.status || 400).json({ message: error.message });
         }
 
+        // 🛡️ Security Fix: Apply Least Privilege PII Masking (PCI DSS 4.0)
+        const { maskPhone, maskEmail } = require('../utils/pii');
+        const sanitizedUsers = (data || []).map(u => {
+            if (isSuperAdminCaller) return u; // Super Admin sees full PII
+
+            return {
+                ...u,
+                phone: maskPhone(u.phone),
+                email: maskEmail(u.email)
+            };
+        });
+
         res.json({
-            users: data || [],
+            users: sanitizedUsers,
             pagination: {
                 totalUsers: count,
                 page,

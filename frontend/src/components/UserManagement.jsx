@@ -131,7 +131,7 @@ const UserManagement = ({ initialTab = 'users', filterRole = null, currentUser =
                     >
                         <User size={18} /> User Management
                     </button>
-                    {currentUser?.role?.toLowerCase() === 'super_admin' && (
+                    {currentUser?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin' && (
                         <button
                             onClick={() => setActiveTab('logs')}
                             style={{
@@ -186,10 +186,10 @@ const UserManagement = ({ initialTab = 'users', filterRole = null, currentUser =
                         <tbody>
                             {filteredUsers.map(u => {
                                 const sub = getSubscriptionStatus(u.subscription_expires_at);
-                                const isSuperAdminCaller = currentUser?.role?.toLowerCase() === 'super_admin';
+                                const isSuperAdminCaller = currentUser?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin';
                                 
                                 // Secondary safety: If not super_admin caller, don't even render super_admin rows
-                                if (!isSuperAdminCaller && u.role?.toLowerCase() === 'super_admin') return null;
+                                if (!isSuperAdminCaller && u.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin') return null;
 
                                     return (
                                         <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', background: 'transparent' }}>

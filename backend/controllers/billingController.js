@@ -19,10 +19,15 @@ exports.initiate = async (req, res) => {
     try {
         // Fetch values from metadata for dynamic pricing
         const { data: storeMetadata } = await supabase.from('settings').select('*');
-        const config = (storeMetadata || []).reduce((acc, curr) => { acc[curr.key] = curr.value; return acc; }, {});
+        const config = (storeMetadata || []).reduce((acc, curr) => { 
+            if (curr.key && curr.value) acc[curr.key] = curr.value; 
+            return acc; 
+        }, {});
         
         // Use provided amount for TOPUP, otherwise default to subscription_price from settings
-        const price = (type === 'TOPUP') ? Number(amount) : Number(config.subscription_price || 99);
+        let price = (type === 'TOPUP') ? Number(amount) : Number(config.subscription_price || 99);
+        if (isNaN(price) || price <= 0) price = 99; // Final fallback to prevent NaN crashes
+        
         const amountInPaisa = Math.round(price * 100);
 
         // --- MOCK MODE CHECK ---
@@ -213,13 +218,19 @@ exports.processInternal = async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
 
     try {
-        const body = JSON.stringify(req.body);
-        const expectedSignature = crypto.createHmac('sha256', secret).update(body).digest('hex');
+        // 🛡️ Security Hardening: Raw Body Signature Verification (PCI DSS 4.0)
+        // Since server.js uses express.raw() for this endpoint, req.body is a Buffer.
+        const expectedSignature = crypto.createHmac('sha256', secret).update(req.body).digest('hex');
 
-        if (signature !== expectedSignature) return res.status(400).send('Invalid sync signature');
+        if (signature !== expectedSignature) {
+            console.error('[Webhooks] Critical Signature Mismatch (Potential Attack)');
+            return res.status(400).send('Invalid sync signature');
+        }
 
-        const event = req.body.event;
-        const payload = req.body.payload.payment.entity;
+        // Parse buffer back to object for logic processing
+        const eventData = JSON.parse(req.body.toString());
+        const event = eventData.event;
+        const payload = eventData.payload.payment.entity;
 
         if (event === 'payment.captured' || event === 'order.paid') {
             const entryId = payload.order_id;

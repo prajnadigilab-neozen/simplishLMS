@@ -18,29 +18,17 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import UniversalStudyArea from './components/UniversalStudyArea/UniversalStudyArea';
 import ExamUpload from './components/ExamUpload';
+import { safeSetItem, safeGetItem, safeRemoveItem } from './utils/storageUtils';
 
-// ── Auth Helpers ──────────────────────────────────────────────────────────
 function getStoredUser() {
-  try {
-    const saved = localStorage.getItem('simplish_user');
-    return saved ? JSON.parse(saved) : null;
-  } catch {
-    return null;
-  }
+  return safeGetItem('simplish_user', true);
 }
 
 // ── Protected App Shell ──────────────────────────────────────────────────
 function AppShell() {
   const [user, setUser] = useState(() => getStoredUser());
-  const [language, setLanguage] = useState(() => localStorage.getItem('simplish_language') || 'kn');
-  const [selectedLesson, setSelectedLesson] = useState(() => {
-    try {
-      const saved = localStorage.getItem('simplish_active_lesson');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [language, setLanguage] = useState(() => safeGetItem('simplish_language') || 'kn');
+  const [selectedLesson, setSelectedLesson] = useState(() => safeGetItem('simplish_active_lesson', true));
   const [courseCompleted, setCourseCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
@@ -48,13 +36,17 @@ function AppShell() {
   const location = useLocation();
 
   const handleAuthSuccess = (userData, token) => {
-    const normalized = { ...userData, role: userData?.role?.toLowerCase() };
+    const normalized = { ...userData, role: userData?.role?.toLowerCase()?.replace(/\s+|_/g, '_') };
     const userWithAuth = { ...normalized, isLoggedIn: true, token };
-    localStorage.setItem('simplish_user', JSON.stringify(userWithAuth));
-    localStorage.setItem('simplish_token', token);
+    safeSetItem('simplish_user', userWithAuth);
+    safeSetItem('simplish_token', token);
     setUser(userWithAuth);
 
-    if (!userWithAuth.onboarding_completed) {
+    // Scenario 1: Partial Onboarding re-prompt (Name check)
+    if (!userWithAuth.fullName || userWithAuth.fullName === 'New User') {
+      navigate('/profile');
+      showToast('ದಯವಿಟ್ಟು ನಿಮ್ಮ ಹೆಸರನ್ನು ದಾಖಲಿಸಿ (Please enter your name)', 'info');
+    } else if (!userWithAuth.onboarding_completed) {
       navigate('/placement');
     } else {
       navigate('/');
@@ -63,18 +55,18 @@ function AppShell() {
 
   const refreshUserContext = async () => {
     try {
-      const token = localStorage.getItem('simplish_token');
+      const token = safeGetItem('simplish_token');
       if (!token) return;
       
       const res = await authApi.getProfile(token);
       if (res.data && res.data.user) {
         const normalized = {
           ...res.data.user,
-          role: res.data.user.role?.toLowerCase(),
+          role: res.data.user.role?.toLowerCase()?.replace(/\s+|_/g, '_'),
           isLoggedIn: true,
           token
         };
-        localStorage.setItem('simplish_user', JSON.stringify(normalized));
+        safeSetItem('simplish_user', normalized);
         setUser(normalized);
       }
     } catch (err) {
@@ -87,8 +79,8 @@ function AppShell() {
 
   React.useEffect(() => {
     const syncProfile = async () => {
-      const storedToken = localStorage.getItem('simplish_token');
-      const storedUser = localStorage.getItem('simplish_user');
+      const storedToken = safeGetItem('simplish_token');
+      const storedUser = safeGetItem('simplish_user');
 
       if (!storedToken && !storedUser) {
         setLoading(false);
@@ -102,8 +94,13 @@ function AppShell() {
         ]);
 
         if (profileRes.status === 'fulfilled' && profileRes.value.data?.user) {
-          const updatedUser = { ...profileRes.value.data.user, isLoggedIn: true };
-          localStorage.setItem('simplish_user', JSON.stringify(updatedUser));
+          const updatedUser = { 
+            ...profileRes.value.data.user, 
+            role: profileRes.value.data.user.role?.toLowerCase()?.replace(/\s+|_/g, '_'),
+            isLoggedIn: true,
+            token: storedToken
+          };
+          safeSetItem('simplish_user', updatedUser);
           setUser(updatedUser);
         }
 
@@ -112,19 +109,19 @@ function AppShell() {
           if (selectedLesson && lessons.length > 0) {
             const exists = lessons.find(l => l.id === selectedLesson.id);
             if (!exists) {
-              localStorage.removeItem('simplish_active_lesson');
+              safeRemoveItem('simplish_active_lesson');
               setSelectedLesson(null);
             }
           } else if (lessons.length === 0) {
-            localStorage.removeItem('simplish_active_lesson');
+            safeRemoveItem('simplish_active_lesson');
             setSelectedLesson(null);
           }
         }
       } catch (err) {
         console.log('Session synchronization issues:', err);
-        localStorage.removeItem('simplish_user');
-        localStorage.removeItem('simplish_token');
-        localStorage.removeItem('simplish_active_lesson');
+        safeRemoveItem('simplish_user');
+        safeRemoveItem('simplish_token');
+        safeRemoveItem('simplish_active_lesson');
         setUser(null);
         setSelectedLesson(null);
       } finally {
@@ -141,9 +138,9 @@ function AppShell() {
   }, [selectedLesson]);
 
   const handleLogout = () => {
-    localStorage.removeItem('simplish_user');
-    localStorage.removeItem('simplish_token');
-    localStorage.removeItem('simplish_active_lesson');
+    safeRemoveItem('simplish_user');
+    safeRemoveItem('simplish_token');
+    safeRemoveItem('simplish_active_lesson');
     setUser(null);
     setSelectedLesson(null);
     navigate('/');
@@ -167,7 +164,7 @@ function AppShell() {
         let lessons = Array.isArray(res.data) ? res.data : (res.data.lessons || []);
 
         if (lessons.length === 0) {
-          localStorage.removeItem('simplish_active_lesson');
+          safeRemoveItem('simplish_active_lesson');
           setSelectedLesson(null);
           showToast('ಲೈಬ್ರರಿಯಲ್ಲಿ ಮೊದಲು ಪಾಠವನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select a lesson from Library first)', 'info');
           navigate('/library');
@@ -240,7 +237,7 @@ function AppShell() {
 
   const startLesson = (lesson) => {
     setSelectedLesson(lesson);
-    localStorage.setItem('simplish_active_lesson', JSON.stringify(lesson));
+    safeSetItem('simplish_active_lesson', lesson);
     navigate('/study_area');
   };
 
@@ -263,7 +260,7 @@ function AppShell() {
 
   // Onboarding Guard: If logged in but not onboarded, FORCE to placement page
   // (except if already on the placement page, or if the user is a moderator/super_admin)
-  const isPrivilegedRole = ['moderator', 'admin', 'super_admin'].includes(user?.role?.toLowerCase());
+  const isPrivilegedRole = ['moderator', 'admin', 'super_admin'].includes(user?.role?.toLowerCase()?.replace(/\s+|_/g, '_'));
   if (!user.onboarding_completed && !isPrivilegedRole && location.pathname !== '/placement') {
     return <Navigate to="/placement" replace />;
   }
@@ -300,7 +297,7 @@ function AppShell() {
                     current_level: result?.assignedLevel || user.current_level,
                     scorePercentage: result?.scorePercentage // For immediate UI update if needed
                   };
-                  localStorage.setItem('simplish_user', JSON.stringify(updatedUser));
+                  safeSetItem('simplish_user', updatedUser);
                   setUser(updatedUser);
                   showToast('ಕಲಿಕೆಗೆ ಸುಸ್ವಾಗತ! (Welcome to your learning journey!)', 'success');
                   navigate('/');
@@ -388,25 +385,25 @@ function AppShell() {
             } />
 
             <Route path="/admin" element={
-              (user.role?.toLowerCase() === 'moderator' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'super_admin')
+              (user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'moderator' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'admin' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin')
                 ? <AdminDashboard user={user} />
                 : <Navigate to="/" replace />
             } />
 
             <Route path="/exam_upload" element={
-              (user.role?.toLowerCase() === 'moderator' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'super_admin')
+              (user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'moderator' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'admin' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin')
                 ? <ExamUpload onBack={() => navigate('/library')} />
                 : <Navigate to="/" replace />
             } />
 
             <Route path="/edit_lesson" element={
-              (user.role?.toLowerCase() === 'moderator' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'super_admin')
+              (user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'moderator' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'admin' || user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin')
                 ? <LessonCreate lesson={selectedLesson} onBack={() => navigate('/library')} />
                 : <Navigate to="/" replace />
             } />
 
             <Route path="/users" element={
-              user.role?.toLowerCase() === 'super_admin'
+              user?.role?.toLowerCase()?.replace(/\s+|_/g, '_') === 'super_admin'
                 ? <UserManagement />
                 : <Navigate to="/" replace />
             } />
@@ -423,11 +420,11 @@ function AppShell() {
                   const token = localStorage.getItem('simplish_token');
                   const normalized = {
                     ...updatedUser,
-                    role: updatedUser.role?.toLowerCase() || user?.role,
+                    role: (updatedUser.role || user?.role)?.toLowerCase()?.replace(/\s+|_/g, '_'),
                     isLoggedIn: true,
                     token: token
                   };
-                  localStorage.setItem('simplish_user', JSON.stringify(normalized));
+                  safeSetItem('simplish_user', normalized);
                   setUser(normalized);
                   showToast('Profile updated successfully!', 'success');
                 }}

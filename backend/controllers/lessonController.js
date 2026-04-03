@@ -3,6 +3,38 @@ const mediaService = require('../services/mediaService');
 const fs = require('fs');
 const path = require('path');
 
+// 🛡️ SRE Caching Strategy: Global Lesson List Cache (TTL 5 mins)
+let lessonCache = {
+    data: null,
+    expiresAt: 0
+};
+const CACHE_TTL = 5 * 60 * 1000;
+
+// 🛡️ SRE CDN Helper: Prepend CDN_URL to relative paths if configured
+const CDN_URL = process.env.CDN_URL ? process.env.CDN_URL.replace(/\/$/, '') : '';
+const formatUrl = (url) => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return CDN_URL ? (CDN_URL + url) : url;
+};
+
+// 🛡️ SRE Pre-warming: Populate cache manually on startup
+exports.preWarmCache = async () => {
+    try {
+        console.log('[SRE] Pre-warming Lesson Cache...');
+        const { data, error } = await supabase
+            .from('lessons')
+            .select('*')
+            .order('display_order', { ascending: true });
+        if (error) throw error;
+        lessonCache.data = data;
+        lessonCache.expiresAt = Date.now() + CACHE_TTL;
+        console.log(`[SRE] Cache Ready (${data.length} lessons)`);
+    } catch (err) {
+        console.error('[SRE] Pre-warm Failed:', err.message);
+    }
+};
+
 exports.uploadLesson = async (req, res) => {
     const { title, description, level, displayOrder, content } = req.body;
 
@@ -64,8 +96,17 @@ exports.getAllLessons = async (req, res) => {
 
         if (error) throw error;
 
+        // Apply CDN formatting
+        const formattedData = data.map(lesson => ({
+            ...lesson,
+            pdf_url: formatUrl(lesson.pdf_url),
+            audio_url: formatUrl(lesson.audio_url),
+            video_url: formatUrl(lesson.video_url),
+            media_url: formatUrl(lesson.media_url)
+        }));
+
         res.json({
-            lessons: data,
+            lessons: formattedData,
             total: count,
             limit,
             offset
@@ -83,13 +124,25 @@ exports.getMyLessonsProgress = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // 1. Fetch all active lessons ordered by display_order
-        const { data: lessons, error: lessonsError } = await supabase
-            .from('lessons')
-            .select('*')
-            .order('display_order', { ascending: true });
+        // 🛡️ Optimized Dashboard Fetch: Use SRE Lesson Cache if valid
+        let lessons;
+        const now = Date.now();
+        if (lessonCache.data && lessonCache.expiresAt > now) {
+            console.log('[SRE] Serving lessons from Memory Cache (p95 optimization)');
+            lessons = lessonCache.data;
+        } else {
+            const { data, error: lessonsError } = await supabase
+                .from('lessons')
+                .select('*')
+                .order('display_order', { ascending: true });
 
-        if (lessonsError) throw lessonsError;
+            if (lessonsError) throw lessonsError;
+            
+            // Update cache
+            lessonCache.data = data;
+            lessonCache.expiresAt = now + CACHE_TTL;
+            lessons = data;
+        }
 
         // 2. Fetch user progress
         const { data: progressList, error: progressError } = await supabase
@@ -143,7 +196,11 @@ exports.getMyLessonsProgress = async (req, res) => {
                 spent_time_ms: up ? up.spent_time_ms : 0,
                 status: up ? up.status : 'not_started',
                 score: finalScore,
-                passed: ar ? ar.passed : (finalScore >= 70) // Fallback for exams/lessons without assessment records
+                passed: ar ? ar.passed : (finalScore >= 70), // Fallback for exams/lessons without assessment records
+                pdf_url: formatUrl(lesson.pdf_url),
+                audio_url: formatUrl(lesson.audio_url),
+                video_url: formatUrl(lesson.video_url),
+                media_url: formatUrl(lesson.media_url)
             };
         });
 

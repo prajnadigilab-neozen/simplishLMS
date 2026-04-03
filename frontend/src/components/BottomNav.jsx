@@ -15,11 +15,11 @@ const BottomNav = ({ onNavigate, currentView, user, language }) => {
 
     const items = [
         { icon: LayoutDashboard, label: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್', id: 'dashboard', en: 'Dashboard' },
-        { icon: Sparkles, label: 'ಅಭ್ಯಾಸ ವಿಭಾಗ', id: 'study_area', en: 'Study Area' },
-        { icon: Library, label: 'ನನ್ನ ಲೈಬ್ರರಿ', id: 'library', en: 'My Library' },
+        { icon: Sparkles, label: 'ಅಭ್ಯಾಸ', id: 'study_area', en: 'Study' },
+        { icon: Library, label: 'ಲೈಬ್ರರಿ', id: 'library', en: 'Library' },
         ...(isAdmin ? [{ icon: ShieldCheck, label: 'ಅಡ್ಮಿನ್', id: 'admin', en: 'Admin' }] : []),
-        { icon: CreditCard, label: 'ಪ್ರೀಮಿಯಂ ಪಡೆಯಿರಿ', id: 'payment', en: 'Go Premium' },
-        { icon: User, label: 'ನನ್ನ ಖಾತೆ', id: 'profile', en: 'Profile' },
+        { icon: CreditCard, label: 'ಪ್ರೀಮಿಯಂ', id: 'payment', en: 'Premium' },
+        { icon: User, label: 'ಖಾತೆ', id: 'profile', en: 'Profile' },
     ];
 
     return (

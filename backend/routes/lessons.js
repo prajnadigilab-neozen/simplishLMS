@@ -8,8 +8,8 @@ const upload = require('../middleware/upload');
 // Protected: get all lessons with user progress
 router.get('/my-progress', authMiddleware, lessonController.getMyLessonsProgress);
 
-// Public: any logged-in (or even anonymous) user can browse lessons
-router.get('/', lessonController.getAllLessons);
+// Protected: all users must be logged in to browse curriculum
+router.get('/', authMiddleware, lessonController.getAllLessons);
 
 // Protected: only admins may create, update, or delete lessons
 const cpUpload = upload.fields([
