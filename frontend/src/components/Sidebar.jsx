@@ -33,9 +33,7 @@ const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) =
             title: 'ನಿರ್ವಹಣೆ (Management)',
             roles: ['admin', 'moderator', 'super_admin'],
             items: [
-                { icon: Upload, label: 'ಪಾಠ ಅಪ್ಲೋಡ್ (Lessons)', id: 'admin' },
-                { icon: BarChart3, label: 'ವರದಿಗಳು (Reports)', id: 'reports' },
-                { icon: ShieldAlert, label: 'ಬಳಕೆದಾರರು (Users)', id: 'users', roles: ['super_admin'] },
+                { icon: LayoutDashboard, label: 'ಅಡ್ಮಿನ್ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ (Admin Dashboard)', id: 'admin' },
             ]
         },
         {

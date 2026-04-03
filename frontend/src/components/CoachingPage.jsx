@@ -11,7 +11,7 @@ import { useToast } from './Toast';
 const CoachingPage = ({ lesson, onComplete, onBack }) => {
     const [currentMediaIdx, setCurrentMediaIdx] = useState(0);
     const [showInfo, setShowInfo] = useState(false);
-    const startTimeRef = useRef(Date.now());
+    const sessionStartTimeRef = useRef(Date.now());
     const showToast = useToast();
 
     // Motivational Quotes Array
@@ -27,27 +27,65 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
 
     // Calculate available sequential media
     const availableMedia = [];
-    if (lesson?.pdf_url) availableMedia.push({ type: 'pdf', url: lesson.pdf_url });
-    if (lesson?.audio_url) availableMedia.push({ type: 'audio', url: lesson.audio_url });
-    if (lesson?.video_url) availableMedia.push({ type: 'video', url: lesson.video_url });
+    if (lesson?.pdf_url) availableMedia.push({ type: 'pdf', url: lesson.pdf_url, title: 'Study Resource (PDF)' });
+    if (lesson?.audio_url) availableMedia.push({ type: 'audio', url: lesson.audio_url, title: 'Listening Drill (Audio)' });
+    if (lesson?.video_url) availableMedia.push({ type: 'video', url: lesson.video_url, title: 'Video Lecture' });
+    if (lesson?.transcription) availableMedia.push({ type: 'transcription', content: lesson.transcription, title: 'Lesson Transcription' });
 
     if (availableMedia.length === 0 && lesson?.media_url) {
-        availableMedia.push({ type: lesson.media_type || 'unknown', url: lesson.media_url });
+        availableMedia.push({ type: lesson.media_type || 'unknown', url: lesson.media_url, title: 'Lesson Content' });
     }
 
     const activeMedia = availableMedia[currentMediaIdx] || { type: 'none', url: '' };
     const hasNextMedia = currentMediaIdx < availableMedia.length - 1;
 
+    const [maxMediaIdx, setMaxMediaIdx] = useState(0); // Track the furthest reached phase
+    const initialSpentTime = lesson?.spent_time_ms || 0;
+
+    // 1. UPDATE PROGRESS ON PHASE CHANGE (Automated Progress FR-06)
     useEffect(() => {
-        startTimeRef.current = Date.now();
+        if (currentMediaIdx > maxMediaIdx) {
+            setMaxMediaIdx(currentMediaIdx);
+        }
+        
+        saveProgress('started', currentMediaIdx);
+    }, [currentMediaIdx]);
+
+    // 2. PERIODIC SAVE (HEARTBEAT) (Automated Progress FR-06)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            saveProgress('started');
+        }, 30000); // Pulse every 30 seconds
+        return () => clearInterval(interval);
+    }, []);
+
+    // 3. CLEANUP SAVE ON UNMOUNT (Automated Progress FR-06)
+    useEffect(() => {
         return () => {
-            const timeSpent = Date.now() - startTimeRef.current;
-            if (timeSpent > 5000) {
-                lessonApi.updateProgress(lesson.id, { spentTimeMs: timeSpent, status: 'started' })
-                    .catch(err => console.error('Failed to update progress on unmount:', err));
-            }
+            saveProgress('started');
         };
-    }, [lesson.id]);
+    }, []);
+
+    const saveProgress = async (status = 'started', idx = currentMediaIdx) => {
+        const sessionTime = Date.now() - sessionStartTimeRef.current;
+        const totalTime = initialSpentTime + sessionTime;
+        const completion = Math.max(
+            lesson?.progress || 0,
+            Math.round(((idx + 1) / availableMedia.length) * 100)
+        );
+
+        try {
+            await lessonApi.updateProgress(lesson.id, {
+                spentTimeMs: totalTime,
+                status: status,
+                completionPercentage: completion,
+                lastActiveTab: availableMedia[idx]?.type || 'general'
+            });
+            console.log(`[Progress] Saved: ${totalTime}ms, ${completion}%, Tab: ${availableMedia[idx]?.type}`);
+        } catch (err) {
+            console.error('Failed to auto-update progress:', err);
+        }
+    };
 
     if (!lesson) return null;
 
@@ -149,6 +187,14 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
                     </p>
                 </motion.div>
 
+                {/* Phase Title - New */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '-0.5rem' }}>
+                    <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#6366f1', boxShadow: '0 0 10px rgba(99, 102, 241, 0.5)' }} />
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        Phase {currentMediaIdx + 1}: {activeMedia.title}
+                    </h3>
+                </div>
+
                 {/* Media Container */}
                 <div style={{
                     flex: 1,
@@ -197,10 +243,28 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
                                 <audio controls style={{ width: '100%' }} src={getMediaSrc(activeMedia.url)} />
                             </div>
                         </div>
+                    ) : activeMedia.type === 'transcription' ? (
+                        <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', background: 'rgba(15, 23, 42, 0.3)' }}>
+                            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                                <div style={{ 
+                                    fontSize: '1.15rem', 
+                                    lineHeight: '1.8', 
+                                    color: '#f1f5f9', 
+                                    whiteSpace: 'pre-wrap',
+                                    fontFamily: '"Outfit", sans-serif',
+                                    padding: '1rem',
+                                    background: 'rgba(255,255,255,0.02)',
+                                    borderRadius: '16px'
+                                }}>
+                                    {activeMedia.content}
+                                </div>
+                            </div>
+                        </div>
                     ) : (
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>
-                            <AlertCircle size={48} />
-                            <p style={{ marginLeft: '1rem' }}>No media content found for this lesson.</p>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>
+                            <AlertCircle size={48} style={{ marginBottom: '1rem', color: '#f43f5e' }} />
+                            <p style={{ fontSize: '1.1rem', fontWeight: 600 }}>Media unavailable or still loading...</p>
+                            <p style={{ maxWidth: '300px', fontSize: '0.9rem', opacity: 0.7 }}>If this persists, try checking other training phases or your connection.</p>
                         </div>
                     )}
 
@@ -270,14 +334,7 @@ const CoachingPage = ({ lesson, onComplete, onBack }) => {
                                 className="zen-btn"
                                 style={{ background: 'linear-gradient(90deg, #10b981, #3b82f6)', color: '#fff', padding: '0.75rem 2.5rem' }}
                                 onClick={async () => {
-                                    const timeSpent = Date.now() - startTimeRef.current;
-                                    try {
-                                        await lessonApi.updateProgress(lesson.id, {
-                                            spentTimeMs: timeSpent,
-                                            status: 'completed',
-                                            completionPercentage: 100
-                                        });
-                                    } catch (err) { console.error(err); }
+                                    await saveProgress('completed', availableMedia.length - 1);
                                     onComplete();
                                 }}
                             >

@@ -1,0 +1,4 @@
+# AI Agent Instructions
+
+- Do not run automated tests for any minor or major modifications of code.
+- Instead specify the steps to verify or test manually, so as to use the tokens effectively.

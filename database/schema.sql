@@ -26,11 +26,15 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE, -- Nullable for phone-only registrations
+    phone TEXT UNIQUE,
     password_hash TEXT NOT NULL, -- Never store plain text
     role TEXT CHECK (role IN ('student', 'admin', 'moderator', 'super_admin')) DEFAULT 'student',
     streak_count INTEGER DEFAULT 0,
     status TEXT DEFAULT 'active', -- active, inactive, deleted
+    avatar_url TEXT,
+    bio TEXT,
+    location TEXT,
     deleted_at TIMESTAMPTZ,
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),

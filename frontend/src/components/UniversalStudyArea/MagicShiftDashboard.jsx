@@ -31,7 +31,7 @@ const MagicShiftDashboard = ({ logicContent }) => {
                             </div>
                         )}
 
-                        {logic.kannadaStructure && logic.kannadaStructure.length > 0 && (
+                        {Array.isArray(logic.kannadaStructure) && logic.kannadaStructure.length > 0 && (
                             <div style={{ padding: '1.5rem', background: 'var(--bg-dark)', borderRadius: '0.75rem', border: '1px dashed var(--border)' }}>
                                 <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', marginBottom: '1rem', textTransform: 'uppercase' }}>
                                     Kannada Format: SOV
@@ -50,7 +50,7 @@ const MagicShiftDashboard = ({ logicContent }) => {
                             </div>
                         )}
 
-                        {logic.kannadaStructure && logic.englishStructure && (
+                        {Array.isArray(logic.kannadaStructure) && Array.isArray(logic.englishStructure) && (
                             <div style={{ display: 'flex', justifyContent: 'center' }}>
                                 <motion.div
                                     animate={{ y: [0, 5, 0] }}
@@ -62,7 +62,7 @@ const MagicShiftDashboard = ({ logicContent }) => {
                             </div>
                         )}
 
-                        {logic.englishStructure && logic.englishStructure.length > 0 && (
+                        {Array.isArray(logic.englishStructure) && logic.englishStructure.length > 0 && (
                             <div style={{ padding: '1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderRadius: '0.75rem', border: '2px solid var(--primary-light)' }}>
                                 <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--primary)', marginBottom: '1rem', textTransform: 'uppercase' }}>
                                     English Format: SVO

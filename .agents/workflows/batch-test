@@ -1,0 +1,7 @@
+# Batch Verification Protocol
+
+1. Scan the workspace for all files modified in the last 24 hours.
+2. For each modified file, identify new functions or logic paths.
+3. Provide a detailed, step-by-step manual verification guide for these changes to conserve tokens and focus on user experience.
+4. Specify exactly how to test these changes in the UI or via API calls (e.g., using the browser tool or manual command line tests).
+5. Generate a single 'End of Day' Walkthrough Artifact summarizing the manual validation results, incorporating screenshots or recordings where appropriate.

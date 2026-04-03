@@ -18,8 +18,8 @@ const parseOptions = (options) => {
     return [];
 };
 
-const AssessmentInterface = ({ lessonId = 'any', onNextLesson }) => {
-    const [questions, setQuestions] = useState([]);
+const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
+    const isPaid = user?.is_paid || ['super_admin', 'admin', 'moderator'].includes(user?.role?.toLowerCase());
     const [assessment, setAssessment] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState(0);
     const [selectedOption, setSelectedOption] = useState(null);
@@ -35,6 +35,8 @@ const AssessmentInterface = ({ lessonId = 'any', onNextLesson }) => {
     const [nextLesson, setNextLesson] = useState(null);
     const [isCurriculumComplete, setIsCurriculumComplete] = useState(false);
     const [loadingNextLesson, setLoadingNextLesson] = useState(false);
+    const [freeLessonIds, setFreeLessonIds] = useState([]);
+    const [basicLessonsCount, setBasicLessonsCount] = useState(0);
 
     useEffect(() => {
         const fetchAssessment = async () => {
@@ -71,16 +73,21 @@ const AssessmentInterface = ({ lessonId = 'any', onNextLesson }) => {
                         return (a.display_order || 0) - (b.display_order || 0);
                     });
 
-                    // Find where the user currently is
-                    const currentIndex = sortedLessons.findIndex(l => l.id === lessonId);
+                        // Find where the user currently is
+                        const currentIndex = sortedLessons.findIndex(l => l.id === lessonId);
 
-                    if (currentIndex !== -1 && currentIndex + 1 < sortedLessons.length) {
-                        // There is a next lesson
-                        setNextLesson(sortedLessons[currentIndex + 1]);
-                    } else if (currentIndex !== -1 && currentIndex + 1 >= sortedLessons.length) {
-                        // They finished the final lesson in the entire array
-                        setIsCurriculumComplete(true);
-                    }
+                        // Calculate free lesson IDs for paywall
+                        const basicLevelLessons = sortedLessons.filter(l => l.level === 'Basic');
+                        setBasicLessonsCount(sortedLessons.length);
+                        setFreeLessonIds(basicLevelLessons.slice(0, 2).map(l => l.id));
+
+                        if (currentIndex !== -1 && currentIndex + 1 < sortedLessons.length) {
+                            // There is a next lesson
+                            setNextLesson(sortedLessons[currentIndex + 1]);
+                        } else if (currentIndex !== -1 && currentIndex + 1 >= sortedLessons.length) {
+                            // They finished the final lesson in the entire array
+                            setIsCurriculumComplete(true);
+                        }
                 } catch (err) {
                     console.error("Failed to calculate next lesson:", err);
                 } finally {
@@ -224,20 +231,48 @@ const AssessmentInterface = ({ lessonId = 'any', onNextLesson }) => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', maxWidth: '400px' }}>
                     {!loadingNextLesson && nextLesson && resultData?.passed && onNextLesson && (
-                        <button
-                            className="assessment-btn"
-                            onClick={() => onNextLesson(nextLesson)}
-                            style={{
-                                background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                color: '#fff',
-                                padding: '1.25rem',
-                                fontSize: '1.1rem',
-                                fontWeight: 800,
-                                boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)'
-                            }}
-                        >
-                            Next: {nextLesson.title} <ArrowRight size={22} />
-                        </button>
+                        (() => {
+                            const isNextLocked = !isPaid && !freeLessonIds.includes(nextLesson.id);
+                            
+                            if (isNextLocked) {
+                                return (
+                                    <button
+                                        className="assessment-btn"
+                                        onClick={() => window.location.href = '/payment'}
+                                        style={{
+                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                            color: '#fff',
+                                            padding: '1.25rem',
+                                            fontSize: '1.15rem',
+                                            fontWeight: 900,
+                                            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.4)',
+                                            border: 'none',
+                                            borderRadius: '16px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <Zap size={22} fill="currentColor" /> Unlock All {basicLessonsCount}+ Lessons (₹999)
+                                    </button>
+                                );
+                            }
+
+                            return (
+                                <button
+                                    className="assessment-btn"
+                                    onClick={() => onNextLesson(nextLesson)}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                                        color: '#fff',
+                                        padding: '1.25rem',
+                                        fontSize: '1.1rem',
+                                        fontWeight: 800,
+                                        boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)'
+                                    }}
+                                >
+                                    Next: {nextLesson.title} <ArrowRight size={22} />
+                                </button>
+                            );
+                        })()
                     )}
 
                     <div style={{ display: 'flex', gap: '1rem' }}>

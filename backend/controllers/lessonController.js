@@ -29,7 +29,9 @@ exports.uploadLesson = async (req, res) => {
                 video_url: videoUrl,
                 transcription: transcription,
                 content: content ? (typeof content === 'string' ? JSON.parse(content) : content) : {},
-                display_order: parseInt(displayOrder) || 0
+                display_order: parseInt(req.body.displayOrder) || 0,
+                module_title: req.body.moduleTitle || 'General',
+                unit_number: parseInt(req.body.unitNumber) || 1
             }])
             .select()
             .single();
@@ -138,6 +140,7 @@ exports.getMyLessonsProgress = async (req, res) => {
             return {
                 ...lesson,
                 progress: up ? up.completion_percentage : 0,
+                spent_time_ms: up ? up.spent_time_ms : 0,
                 status: up ? up.status : 'not_started',
                 score: finalScore,
                 passed: ar ? ar.passed : (finalScore >= 70) // Fallback for exams/lessons without assessment records
@@ -187,7 +190,9 @@ exports.updateLesson = async (req, res) => {
             title,
             description,
             level,
-            display_order: parseInt(displayOrder) || 0
+            display_order: parseInt(req.body.displayOrder) || 0,
+            module_title: req.body.moduleTitle || 'General',
+            unit_number: parseInt(req.body.unitNumber) || 1
         };
 
         if (content) {
@@ -277,7 +282,8 @@ exports.updateProgress = async (req, res) => {
             lesson_id: lessonId,
             spent_time_ms: spentTimeMs || 0,
             status: status || 'started',
-            completion_percentage: completionPercentage || 0
+            completion_percentage: completionPercentage || 0,
+            last_accessed_at: new Date().toISOString()
         };
 
         if (score !== undefined) {

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "0e894004-c35c-4bb2-9965-a4a3a6af22db",
+    "full_name": "Super Admin",
+    "phone": "9686098582",
+    "role": "super_admin"
+  },
+  {
+    "id": "af748127-cd48-4073-8977-144a78397921",
+    "full_name": "Admin Test",
+    "phone": "9112233445",
+    "role": "super_admin"
+  },
+  {
+    "id": "3a07bd73-5d1d-48bc-9188-46fc007e4f76",
+    "full_name": "New User",
+    "phone": "9876543211",
+    "role": "moderator"
+  }
+]

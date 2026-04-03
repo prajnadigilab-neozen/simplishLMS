@@ -38,6 +38,11 @@ app.use(cors({
 // app.use('/api/', apiLimiter); // Temporarily disabled to unblock development 429 loops
 app.use(cookieParser());
 app.use(morgan('dev'));
+
+// Special raw parser for Razorpay Webhooks (needed for signature verification)
+// Sanitized billing webhook raw parser
+app.post('/api/v1/billing/internal-webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -55,7 +60,8 @@ const assessmentRoutes = require('./routes/assessments');
 const aiRoutes = require('./routes/ai');
 const placementRoutes = require('./routes/placement');
 const reportRoutes = require('./routes/reports');
-const paymentRoutes = require('./routes/payment');
+const billingRoutes = require('./routes/billing');
+const settingsRoutes = require('./routes/settings');
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
@@ -63,7 +69,8 @@ app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/placement', placementRoutes);
 app.use('/api/v1/reports', reportRoutes);
-app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/billing', billingRoutes);
+app.use('/api/v1/settings', settingsRoutes);
 
 // Legacy aliases so old bookmarks/clients still work
 app.use('/api/auth', authRoutes);
@@ -75,8 +82,15 @@ app.get('/', (req, res) => {
 });
 
 // Serve uploaded static files — force PDFs inline so browsers embed them
-// SECURITY: Secured with authMiddleware to prevent public exposure
-app.use('/uploads', authMiddleware, (req, res, next) => {
+// SECURITY: Non-media files (like PDFs) are secured with authMiddleware.
+// Media (audio/images) are allowed for GET to support native browser tags (<audio>, <img>).
+app.use('/uploads', (req, res, next) => {
+    const isMedia = /\.(wav|mp3|ogg|png|jpg|jpeg|gif|webp|svg)$/i.test(req.path);
+    if (isMedia && req.method === 'GET') {
+        return next();
+    }
+    authMiddleware(req, res, next);
+}, (req, res, next) => {
     if (req.path.toLowerCase().endsWith('.pdf')) {
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline');
@@ -88,15 +102,22 @@ app.use('/uploads', authMiddleware, (req, res, next) => {
 // 4. ERROR HANDLING
 // ==========================================
 app.use((err, req, res, next) => {
-    const errorLog = `[${new Date().toISOString()}] ${req.method} ${req.url} - ${err.stack}\n`;
-    fs.appendFileSync('error.log', errorLog);
+    try {
+        const errorLog = `[${new Date().toISOString()}] ${req.method} ${req.url} - ${err.stack}\n`;
+        fs.appendFileSync('error.log', errorLog);
+    } catch (logErr) {
+        // Fallback: Don't let a logging failure crash the entire server process!
+        console.error('CRITICAL: Failed to write to error.log (Permissions? Room?):', logErr.message);
+    }
+
     if (process.env.NODE_ENV !== 'production') {
         console.error('SERVER ERROR:', err.message);
         console.error('PATH:', req.url);
         console.error(err.stack);
     }
-    res.status(500).json({ 
-        message: 'Something went wrong on the server.',
+    
+    res.status(err.status || 500).json({ 
+        message: err.message || 'Something went wrong on the server.',
         error: process.env.NODE_ENV !== 'production' ? err.message : undefined 
     });
 });
@@ -113,6 +134,19 @@ cron.schedule('0 0 * * *', () => {
 // ==========================================
 // 6. EXPORT & LISTEN
 // ==========================================
+// --- SYSTEM CRASH LOGGING ---
+process.on('uncaughtException', (err) => {
+    const log = `[${new Date().toISOString()}] UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}\n`;
+    try { fs.appendFileSync('error.log', log); } catch (e) {}
+    console.error(log);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    const log = `[${new Date().toISOString()}] UNHANDLED REJECTION: ${reason}\n`;
+    try { fs.appendFileSync('error.log', log); } catch (e) {}
+    console.error(log);
+});
+
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
         if (process.env.NODE_ENV !== 'production') {
@@ -121,5 +155,6 @@ if (process.env.NODE_ENV !== 'test') {
         }
     });
 }
+
 
 module.exports = app;

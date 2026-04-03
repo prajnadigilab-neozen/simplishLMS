@@ -91,14 +91,20 @@ export const placementApi = {
 export const reportApi = {
     getSummary: () => api.get('/reports/summary'),
     getActivity: () => api.get('/reports/activity'),
+    getDailyReport: (params = {}) => api.get('/reports/daily', { params }),
 };
 
 
 
-export const paymentApi = {
-    createOrder: (data) => api.post('/payments/create-order', data),
-    verifyPayment: (data) => api.post('/payments/verify-payment', data),
-    getHistory: () => api.get('/payments/history'),
+export const billingApi = {
+    initiate: (data) => api.post('/billing/initiate', data),
+    confirm: (data) => api.post('/billing/confirm', data),
+    getHistory: () => api.get('/billing/history'),
+};
+
+export const settingsApi = {
+    get: () => api.get('/settings'),
+    update: (settings) => api.put('/settings', { settings }),
 };
 
 export const aiApi = {

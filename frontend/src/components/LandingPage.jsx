@@ -153,7 +153,7 @@ const LandingPage = ({ onAuthSuccess }) => {
     if (showAuth) {
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-dark)', padding: '2rem' }}>
-                <AuthForm onLoginSuccess={onAuthSuccess} />
+                <AuthForm onLoginSuccess={onAuthSuccess} language={lang} />
                 <button
                     onClick={() => setShowAuth(false)}
                     style={{ position: 'fixed', top: '2rem', left: '2rem', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}

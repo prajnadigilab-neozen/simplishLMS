@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Loader2, CheckCircle2 } from 'lucide-react';
+import { Play, Loader2, CheckCircle2, Lock } from 'lucide-react';
 import { lessonApi, placementApi, reportApi } from '../utils/api';
 
-const Dashboard = ({ user, onStartLesson }) => {
+const Dashboard = ({ user, onStartLesson, language }) => {
+    const navigate = useNavigate();
     const getGrade = (score) => {
         if (score === null || score === undefined) return '-';
         if (score >= 90) return 'A+';
@@ -65,11 +67,13 @@ const Dashboard = ({ user, onStartLesson }) => {
 
     const levels = ["Basic", "Intermediate", "Advanced", "Expert"];
 
-    // Sort lessons explicitly by curriculum Level, then recursively by display_order
+    // Sort lessons explicitly by curriculum Level, then unit_number, then display_order
     const sortedLessons = [...lessons].sort((a, b) => {
         const levelDiff = levels.indexOf(a.level) - levels.indexOf(b.level);
         if (levelDiff !== 0) return levelDiff;
-        return (a.display_order || 0) - (b.display_order || 0);
+        // Primary Sort: Unit Number (1, 2, 3...)
+        // Secondary Sort: Display Order (within unit)
+        return (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0);
     });
 
     // Find the lesson the user is currently working on or the next logical one
@@ -80,7 +84,7 @@ const Dashboard = ({ user, onStartLesson }) => {
     const isCourseCompleted = lessons.length > 0 && !incompleteLesson;
 
     const currentLesson = incompleteLesson || sortedLessons[sortedLessons.length - 1] || {
-        title: "No lessons available yet",
+        title: language === 'kn' ? "ಯಾವುದೇ ಪಾಠಗಳು ಲಭ್ಯವಿಲ್ಲ" : "No lessons available yet",
         progress: 0,
         level: "N/A"
     };
@@ -94,7 +98,7 @@ const Dashboard = ({ user, onStartLesson }) => {
     }
 
     return (
-        <div className="main-content">
+        <div className="dashboard-container">
             {/* Header omitted for brevity */}
             <header style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -119,7 +123,9 @@ const Dashboard = ({ user, onStartLesson }) => {
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <h1 style={{ fontSize: '2rem', margin: 0 }}>ನಮಸ್ಕಾರ, {user?.fullName?.split(' ')[0]}!</h1>
+                            <h1 style={{ fontSize: '2rem', margin: 0 }}>
+                                {language === 'kn' ? `ನಮಸ್ಕಾರ, ${user?.fullName?.split(' ')[0]}!` : `Hello, ${user?.fullName?.split(' ')[0]}!`}
+                            </h1>
                             <span style={{
                                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                                 color: 'white',
@@ -134,7 +140,9 @@ const Dashboard = ({ user, onStartLesson }) => {
                                 PREMIUM
                             </span>
                         </div>
-                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>ಬನ್ನಿ, ಇಂಗ್ಲಿಷ್ ಕಲಿಯೋಣ. (Come, let's learn English.)</p>
+                        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+                            {language === 'kn' ? 'ಬನ್ನಿ, ಇಂಗ್ಲಿಷ್ ಕಲಿಯೋಣ.' : "Come, let's learn English."}
+                        </p>
                     </div>
                 </div>
             </header>
@@ -150,7 +158,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                     {isAdmin ? (
                         <section>
                             <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>ವ್ಯಾಸಂಗದ ಒಟ್ಟಾರೆ ಮಾಹಿತಿ (Curriculum Overview)</span>
+                                <span>{language === 'kn' ? 'ವ್ಯಾಸಂಗದ ಒಟ್ಟಾರೆ ಮಾಹಿತಿ' : 'Curriculum Overview'}</span>
                             </h3>
                             <div style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', display: 'grid', gap: '1.5rem' }}>
                                 {levels.map((lvl) => {
@@ -166,7 +174,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                             </h4>
 
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--border)' }}>
-                                                <span style={{ color: 'var(--text-muted)' }}>Total Lessons</span>
+                                                <span style={{ color: 'var(--text-muted)' }}>{language === 'kn' ? 'ಒಟ್ಟು ಪಾಠಗಳು' : 'Total Lessons'}</span>
                                                 <span style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--primary)' }}>{lessonsInLevel}</span>
                                             </div>
                                         </motion.div>
@@ -179,7 +187,11 @@ const Dashboard = ({ user, onStartLesson }) => {
                             {/* Pick up where you left off */}
                             <section style={{ marginBottom: '4rem' }}>
                                 <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <span>{isCourseCompleted ? '🎉 ಅಭಿನಂದನೆಗಳು! (Congratulations!)' : 'ಮುಂದುವರಿಸಿ (Continue)'}</span>
+                                    <span>
+                                        {isCourseCompleted 
+                                            ? (language === 'kn' ? '🎉 ಅಭಿನಂದನೆಗಳು!' : '🎉 Congratulations!') 
+                                            : (language === 'kn' ? 'ಮುಂದುವರಿಸಿ' : 'Continue')}
+                                    </span>
                                 </h3>
                                 <motion.div
                                     className="glass-card"
@@ -197,8 +209,12 @@ const Dashboard = ({ user, onStartLesson }) => {
                                     <div style={{ flex: 1 }}>
                                         {isCourseCompleted ? (
                                             <>
-                                                <h2 style={{ margin: 0, color: 'var(--text-main)' }}>ನೀವು ಎಲ್ಲಾ ಪಾಠಗಳನ್ನು ಮುಗಿಸಿದ್ದೀರಿ!</h2>
-                                                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>You've mastered the entire course. Keep practicing to stay sharp!</p>
+                                                <h2 style={{ margin: 0, color: 'var(--text-main)' }}>
+                                                    {language === 'kn' ? 'ನೀವು ಎಲ್ಲಾ ಪಾಠಗಳನ್ನು ಮುಗಿಸಿದ್ದೀರಿ!' : "You've finished all lessons!"}
+                                                </h2>
+                                                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                                    {language === 'kn' ? 'ನೀವು ಇಡೀ ಕೋರ್ಸ್ ಅನ್ನು ಕಲಿತಿದ್ದೀರಿ. ಅಭ್ಯಾಸ ಮುಂದುವರಿಸಿ!' : "You've mastered the entire course. Keep practicing to stay sharp!"}
+                                                </p>
                                             </>
                                         ) : (
                                             <>
@@ -206,7 +222,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                 <h2 style={{ margin: '0.5rem 0', fontSize: '1.75rem' }}>{currentLesson.title}</h2>
                                                 <div style={{ maxWidth: '450px', marginTop: '1.5rem' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 600 }}>
-                                                        <span style={{ color: 'var(--text-main)' }}>ಪ್ರಗತಿ (Progress)</span>
+                                                        <span style={{ color: 'var(--text-main)' }}>{language === 'kn' ? 'ಪ್ರಗತಿ' : 'Progress'}</span>
                                                         <span style={{ color: 'var(--primary)' }}>{currentLesson.progress || 0}%</span>
                                                     </div>
                                                     <div className="progress-bar" style={{ height: '10px', background: 'rgba(var(--primary-rgb), 0.1)' }}>
@@ -235,18 +251,18 @@ const Dashboard = ({ user, onStartLesson }) => {
                                         disabled={!lessons.length && !isCourseCompleted}
                                         onClick={() => {
                                             if (isCourseCompleted) {
-                                                window.location.hash = '#/library'; // Or use onNavigate if available
+                                                navigate('/library');
                                             } else {
                                                 onStartLesson && onStartLesson(currentLesson);
                                             }
                                         }}
                                     >
                                         {isCourseCompleted ? (
-                                            <><span>ಲೈಬ್ರರಿ ನೋಡಿ (View Library)</span></>
+                                            <><span>{language === 'kn' ? 'ಲೈಬ್ರರಿ ನೋಡಿ' : 'View Library'}</span></>
                                         ) : (
                                             <>
                                                 <Play size={20} fill="currentColor" />
-                                                <span>ಪ್ರಾರಂಭಿಸಿ (Start)</span>
+                                                <span>{language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start'}</span>
                                             </>
                                         )}
                                     </button>
@@ -255,7 +271,9 @@ const Dashboard = ({ user, onStartLesson }) => {
 
                             {/* Learning Path */}
                             <section>
-                                <h3 style={{ marginBottom: '1.5rem' }}>ನಿಮ್ಮ ಕಲಿಕೆಯ ಹಾದಿ (Your Learning Path)</h3>
+                                <h3 style={{ marginBottom: '1.5rem' }}>
+                                    {language === 'kn' ? 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಹಾದಿ' : 'Your Learning Path'}
+                                </h3>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                                     {levels.map((lvl, index) => {
                                         const lessonsInLevel = lessons.filter(l => l.level === lvl);
@@ -281,7 +299,9 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                 whileHover={!isLocked ? { scale: 1.01, borderColor: 'var(--primary)' } : {}}
                                             >
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 'bold' }}>MODULE {index + 1}</span>
+                                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                        {language === 'kn' ? `ಹಂತ ${index + 1}` : `MODULE ${index + 1}`}
+                                                    </span>
                                                     {isLocked && <span style={{ fontSize: '1.2rem' }}>🔒</span>}
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
@@ -297,7 +317,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                                         borderRadius: '4px', fontSize: '0.7rem', fontWeight: 800,
                                                                         display: 'flex', alignItems: 'center', gap: '0.25rem'
                                                                     }}>
-                                                                        <CheckCircle2 size={10} /> COMPLETED
+                                                                        <CheckCircle2 size={10} /> {language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'COMPLETED'}
                                                                     </span>
                                                                     <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.85rem' }}>
                                                                         {exam.score}% ({getGrade(exam.score)})
@@ -310,8 +330,12 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                 </div>
                                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', flex: 1 }}>
                                                     {lessonsInLevel.length > 0
-                                                        ? `Explore ${lessonsInLevel.length} active lessons in this module.`
-                                                        : `Master the ${lvl.toLowerCase()} levels of spoken English and grammar.`}
+                                                        ? (language === 'kn' 
+                                                            ? `ಈ ಹಂತದಲ್ಲಿರುವ ${lessonsInLevel.length} ಪಾಠಗಳನ್ನು ಕಲಿಯಿರಿ.` 
+                                                            : `Explore ${lessonsInLevel.length} active lessons in this module.`)
+                                                        : (language === 'kn'
+                                                            ? `${lvl} ಇಂಗ್ಲಿಷ್ ವ್ಯಾಕರಣ ಮತ್ತು ಮಾತನಾಡುವ ಕಲೆಯನ್ನು ಕಲಿಯಿರಿ.`
+                                                            : `Master the ${lvl.toLowerCase()} levels of spoken English and grammar.`)}
                                                 </p>
 
                                                 {/* Module Progress & Score */}
@@ -328,7 +352,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                             return (
                                                                 <div style={{ fontSize: '0.8rem' }}>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                                                        <span>Module Completion:</span>
+                                                                        <span>{language === 'kn' ? 'ಹಂತದ ಪ್ರಗತಿ:' : 'Module Completion:'}</span>
                                                                         <span style={{ fontWeight: 'bold' }}>{avgProg}%</span>
                                                                     </div>
                                                                     <div className="progress-bar" style={{ height: '6px', marginBottom: '8px' }}>
@@ -336,7 +360,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                                     </div>
                                                                     {avgScore !== null && (
                                                                         <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                                                            <span>Assessment Score:</span>
+                                                                            <span>{language === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ ಅಂಕಗಳು:' : 'Assessment Score:'}</span>
                                                                             <span>{avgScore}%</span>
                                                                         </div>
                                                                     )}
@@ -347,7 +371,7 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                 )}
 
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                                                    <span style={{ fontSize: '0.8rem' }}>{lessonsInLevel.length} Lessons</span>
+                                                    <span style={{ fontSize: '0.8rem' }}>{lessonsInLevel.length} {language === 'kn' ? 'ಪಾಠಗಳು' : 'Lessons'}</span>
                                                     <button
                                                         style={{
                                                             background: 'none',
@@ -360,37 +384,79 @@ const Dashboard = ({ user, onStartLesson }) => {
                                                         disabled={isLocked}
                                                         onClick={() => setExpandedLevel(isExpanded ? null : lvl)}
                                                     >
-                                                        {isExpanded ? 'ಮುಚ್ಚಿ (Close) ↑' : 'ನೋಡಿ (View) →'}
+                                                        {isExpanded 
+                                                            ? (language === 'kn' ? 'ಮುಚ್ಚಿ ↑' : 'Close ↑') 
+                                                            : (language === 'kn' ? 'ನೋಡಿ →' : 'View →')}
                                                     </button>
                                                 </div>
 
                                                 {/* Expandable Lesson View */}
                                                 {isExpanded && !isLocked && (
                                                     <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                                                        <h5 style={{ fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--text-muted)' }}>Lessons in this module:</h5>
+                                                        <h5 style={{ fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--text-muted)' }}>
+                                                            {language === 'kn' ? 'ಈ ಹಂತದ ಪಾಠಗಳು:' : 'Lessons in this module:'}
+                                                        </h5>
                                                         {lessonsInLevel.length === 0 ? (
-                                                            <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>No lessons available yet.</p>
+                                                            <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>
+                                                                {language === 'kn' ? 'ಇನ್ನೂ ಯಾವುದೇ ಪಾಠಗಳು ಲಭ್ಯವಿಲ್ಲ.' : 'No lessons available yet.'}
+                                                            </p>
                                                         ) : (
                                                             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                                {lessonsInLevel.map(l => (
-                                                                    <li key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', padding: '0.75rem', background: 'rgba(0,0,0,0.02)', borderRadius: '4px' }}>
-                                                                        <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }} title={l.title}>
-                                                                            <span>{l.title}</span>
-                                                                            {l.score !== null && (
-                                                                                <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                                                                    [{l.score}%]
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <span style={{
-                                                                            fontWeight: 'bold',
-                                                                            color: l.progress === 100 ? '#16a34a' : 'var(--text-main)',
-                                                                            flexShrink: 0
-                                                                        }}>
-                                                                            {l.progress === 100 ? 'Completed' : `${l.progress || 0}%`}
-                                                                        </span>
-                                                                    </li>
-                                                                ))}
+                                                                {lessonsInLevel.sort((a,b) => (a.display_order||0) - (b.display_order||0)).map(l => {
+                                                                    const globalIdx = sortedLessons.findIndex(sl => sl.id === l.id);
+                                                                    const prevLesson = globalIdx > 0 ? sortedLessons[globalIdx - 1] : null;
+                                                                    const isPrereqLocked = !isAdmin && prevLesson && (prevLesson.progress || 0) < 100;
+                                                                    
+                                                                    return (
+                                                                        <li 
+                                                                            key={l.id} 
+                                                                            style={{ 
+                                                                                display: 'flex', 
+                                                                                justifyContent: 'space-between', 
+                                                                                alignItems: 'center', 
+                                                                                fontSize: '0.85rem', 
+                                                                                padding: '0.75rem', 
+                                                                                background: isPrereqLocked ? 'rgba(0,0,0,0.01)' : 'rgba(var(--primary-rgb), 0.03)', 
+                                                                                borderRadius: '12px',
+                                                                                border: isPrereqLocked ? '1px solid transparent' : '1px solid rgba(var(--primary-rgb), 0.1)',
+                                                                                opacity: isPrereqLocked ? 0.6 : 1,
+                                                                                cursor: isPrereqLocked ? 'not-allowed' : 'pointer',
+                                                                                transition: 'all 0.2s ease'
+                                                                            }}
+                                                                            onClick={() => {
+                                                                                if (isPrereqLocked) return;
+                                                                                onStartLesson && onStartLesson(l);
+                                                                            }}
+                                                                        >
+                                                                            <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }} title={l.title}>
+                                                                                {isPrereqLocked ? <Lock size={14} color="var(--text-muted)" /> : (l.progress === 100 ? <CheckCircle2 size={14} color="#16a34a" /> : <Play size={14} color="var(--primary)" />)}
+                                                                                <span>{l.title}</span>
+                                                                                {l.score !== null && (
+                                                                                    <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                                                                                        [{l.score}%]
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                            <span style={{
+                                                                                fontWeight: 'bold',
+                                                                                color: isPrereqLocked ? 'var(--text-muted)' : (l.progress === 100 ? '#10b981' : 'var(--text-main)'),
+                                                                                flexShrink: 0,
+                                                                                fontSize: '0.7rem',
+                                                                                padding: '0.25rem 0.5rem',
+                                                                                background: isPrereqLocked ? 'rgba(0,0,0,0.05)' : (l.progress === 100 ? 'rgba(16, 185, 129, 0.1)' : 'transparent'),
+                                                                                borderRadius: '6px',
+                                                                                textTransform: 'uppercase',
+                                                                                letterSpacing: '0.02em'
+                                                                            }}>
+                                                                                {isPrereqLocked 
+                                                                                    ? (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'Locked') 
+                                                                                    : (l.progress === 100 
+                                                                                        ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
+                                                                                        : `${l.progress || 0}%`)}
+                                                                            </span>
+                                                                        </li>
+                                                                    );
+                                                                })}
                                                             </ul>
                                                         )}
                                                     </div>
@@ -407,14 +473,18 @@ const Dashboard = ({ user, onStartLesson }) => {
                 {/* Right Column: Leaderboard */}
                 <div className="right-column">
                     <section>
-                        <h3 style={{ marginBottom: '1.5rem' }}>ಲೀಡರ್‌ಬೋರ್ಡ್ (Leaderboard)</h3>
+                        <h3 style={{ marginBottom: '1.5rem' }}>
+                            {language === 'kn' ? 'ಲೀಡರ್‌ಬೋರ್ಡ್' : 'Leaderboard'}
+                        </h3>
                         <div className="glass-card" style={{ padding: '1.5rem' }}>
                             {loadingLeaderboard ? (
                                 <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
                                     <Loader2 className="animate-spin" size={24} color="var(--primary)" />
                                 </div>
                             ) : leaderboard.length === 0 ? (
-                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1rem' }}>No scores yet.</p>
+                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1rem' }}>
+                                    {language === 'kn' ? 'ಯಾವುದೇ ಅಂಕಗಳಿಲ್ಲ.' : 'No scores yet.'}
+                                </p>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {leaderboard.map((entry, idx) => (

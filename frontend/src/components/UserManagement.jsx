@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, ShieldCheck, User, ShieldAlert, Trash2, FileText, CheckCircle2, XCircle } from 'lucide-react';
+import { Loader2, ShieldCheck, User, ShieldAlert, Trash2, FileText, CheckCircle2, XCircle, Search } from 'lucide-react';
 import api, { authApi } from '../utils/api';
 import { useToast } from './Toast';
 
-const UserManagement = () => {
-    const [activeTab, setActiveTab] = useState('users'); // 'users' or 'logs'
+const UserManagement = ({ initialTab = 'users', filterRole = null, currentUser = null }) => {
+    const [activeTab, setActiveTab] = useState(initialTab); // 'users' or 'logs'
     const [users, setUsers] = useState([]);
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 0, totalUsers: 0 });
     const showToast = useToast();
+
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         if (activeTab === 'users') {
@@ -35,13 +37,15 @@ const UserManagement = () => {
     const fetchUsers = async (page = 1) => {
         try {
             setLoading(true);
-            console.log(`Fetching users page ${page}...`);
-            const res = await authApi.getAllUsers({ page, limit: pagination.limit });
-            console.log('Users fetched successfully:', res.data);
+            const res = await authApi.getAllUsers({ page, limit: 100 }); 
+            let fetchedUsers = Array.isArray(res.data.users) ? res.data.users : [];
+            
+            if (filterRole) {
+                fetchedUsers = fetchedUsers.filter(u => u.role?.toLowerCase() === filterRole.toLowerCase());
+            }
 
-            const { users: fetchedUsers, pagination: meta } = res.data;
-            setUsers(Array.isArray(fetchedUsers) ? fetchedUsers : []);
-            setPagination(meta || pagination);
+            setUsers(fetchedUsers);
+            setPagination(res.data.pagination || pagination);
         } catch (err) {
             console.error('Failed to load users:', err);
             showToast('Failed to load users', 'error');
@@ -71,141 +75,234 @@ const UserManagement = () => {
         }
     };
 
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const d = new Date(dateString);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const getSubscriptionStatus = (expiry) => {
+        if (!expiry) return { label: 'TOPUP REQ.', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+        const expiryDate = new Date(expiry);
+        const now = new Date();
+        const diffDays = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return { label: 'EXPIRED', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' };
+        if (diffDays <= 3) return { label: `${diffDays} DAYS LEFT`, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' };
+        return { label: `ACTIVE (${diffDays}D)`, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' };
+    };
+
+    const filteredUsers = users.filter(u => {
+        const term = searchTerm.toLowerCase();
+        return (
+            (u.full_name || u.fullName || '').toLowerCase().includes(term) ||
+            (u.phone || '').includes(term) ||
+            (u.email || '').toLowerCase().includes(term)
+        );
+    });
+
     if (loading && users.length === 0 && logs.length === 0) return <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem' }}><Loader2 className="animate-spin" color="var(--primary)" /></div>;
 
+    const hideHeaderNav = filterRole !== null;
+
     return (
-        <div style={{ padding: '1.5rem' }}>
-            <header style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <ShieldCheck color="var(--primary)" /> Super Admin Operations
-                </h1>
-                <p style={{ color: 'var(--text-muted)' }}>Manage user roles and view system cleanup logs.</p>
-            </header>
+        <div style={{ padding: hideHeaderNav ? '0' : '1.5rem' }}>
+            {!hideHeaderNav && (
+                <header style={{ marginBottom: '2rem' }}>
+                    <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <ShieldCheck color="var(--primary)" /> Super Admin Operations
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Manage user roles and view system cleanup logs.</p>
+                </header>
+            )}
 
             {/* TABS */}
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
-                <button
-                    onClick={() => setActiveTab('users')}
-                    style={{
-                        background: 'none', border: 'none', padding: '1rem 2rem', cursor: 'pointer',
-                        fontSize: '1rem', fontWeight: 600,
-                        color: activeTab === 'users' ? 'var(--primary)' : 'var(--text-muted)',
-                        borderBottom: activeTab === 'users' ? '2px solid var(--primary)' : '2px solid transparent',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem'
-                    }}
-                >
-                    <User size={18} /> User Management
-                </button>
-                <button
-                    onClick={() => setActiveTab('logs')}
-                    style={{
-                        background: 'none', border: 'none', padding: '1rem 2rem', cursor: 'pointer',
-                        fontSize: '1rem', fontWeight: 600,
-                        color: activeTab === 'logs' ? 'var(--primary)' : 'var(--text-muted)',
-                        borderBottom: activeTab === 'logs' ? '2px solid var(--primary)' : '2px solid transparent',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem'
-                    }}
-                >
-                    <FileText size={18} /> System Logs
-                </button>
-            </div>
-
-            {activeTab === 'users' && (
-
-                <div className="glass-card responsive-table-wrapper" style={{ padding: 0 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                            <tr style={{ background: 'var(--bg-dark)', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>User / Contact</th>
-                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>Role</th>
-                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>Status</th>
-                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>Onboarding</th>
-                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map(u => (
-                                <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', background: 'transparent' }}>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>{u.full_name || u.fullName || 'Unnamed User'}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                            {u.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📱 {u.phone}</div>}
-                                            {u.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✉️ {u.email}</div>}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <span style={{
-                                            padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600,
-                                            background: (u.role === 'super_admin' || u.role === 'admin') ? 'var(--badge-admin-bg)' : u.role === 'moderator' ? 'var(--badge-mod-bg)' : 'var(--badge-user-bg)',
-                                            color: (u.role === 'super_admin' || u.role === 'admin') ? 'var(--badge-admin-text)' : u.role === 'moderator' ? 'var(--badge-mod-text)' : 'var(--badge-user-text)'
-                                        }}>
-                                            {u.role === 'super_admin' ? 'SUPER ADMIN' : u.role === 'admin' ? 'ADMIN' : u.role === 'moderator' ? 'MODERATOR' : 'USER'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <span style={{
-                                            padding: '4px 10px', borderRadius: '100px', fontSize: '0.7rem', fontWeight: 700,
-                                            background: u.status === 'active' ? 'var(--badge-active-bg)' : u.status === 'inactive' ? 'var(--badge-inactive-bg)' : 'var(--badge-user-bg)',
-                                            color: u.status === 'active' ? 'var(--badge-active-text)' : u.status === 'inactive' ? 'var(--badge-inactive-text)' : 'var(--badge-user-text)',
-                                            textTransform: 'uppercase'
-                                        }}>
-                                            {u.status || 'ACTIVE'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                        {u.onboarding_completed ? '✅ Done' : '⏳ Pending'}
-                                        <div style={{ fontSize: '0.75rem' }}>{u.current_level || 'N/A'}</div>
-                                    </td>
-                                    <td style={{ padding: '1rem 1.5rem' }}>
-                                        <select
-                                            value={u.role}
-                                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                            style={{
-                                                padding: '0.4rem',
-                                                borderRadius: '4px',
-                                                border: '1px solid var(--border)',
-                                                background: 'var(--bg-card)',
-                                                color: 'var(--text-main)',
-                                                fontSize: '0.8rem'
-                                            }}
-                                        >
-                                            <option value="user">USER</option>
-                                            <option value="admin">ADMIN</option>
-                                            <option value="moderator">MODERATOR</option>
-                                            <option value="super_admin">SUPER ADMIN</option>
-                                        </select>
-                                        {u.status !== 'deleted' && (
-                                            <button
-                                                onClick={() => handleStatusToggle(u.id, u.status || 'active')}
-                                                style={{
-                                                    marginLeft: '0.5rem',
-                                                    padding: '0.4rem 0.8rem',
-                                                    borderRadius: '4px',
-                                                    fontSize: '0.75rem',
-                                                    fontWeight: 600,
-                                                    cursor: 'pointer',
-                                                    border: '1px solid var(--border)',
-                                                    background: u.status === 'inactive' ? 'var(--primary)' : 'var(--bg-card)',
-                                                    color: u.status === 'inactive' ? '#fff' : 'var(--text-main)'
-                                                }}
-                                            >
-                                                {u.status === 'inactive' ? 'Activate' : 'Restrict'}
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {users.length === 0 && !loading && (
-                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            No users found in the database.
-                        </div>
+            {!hideHeaderNav && (
+                <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
+                    <button
+                        onClick={() => setActiveTab('users')}
+                        style={{
+                            background: 'none', border: 'none', padding: '1rem 2rem', cursor: 'pointer',
+                            fontSize: '1rem', fontWeight: 600,
+                            color: activeTab === 'users' ? 'var(--primary)' : 'var(--text-muted)',
+                            borderBottom: activeTab === 'users' ? '2px solid var(--primary)' : '2px solid transparent',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem'
+                        }}
+                    >
+                        <User size={18} /> User Management
+                    </button>
+                    {currentUser?.role?.toLowerCase() === 'super_admin' && (
+                        <button
+                            onClick={() => setActiveTab('logs')}
+                            style={{
+                                background: 'none', border: 'none', padding: '1rem 2rem', cursor: 'pointer',
+                                fontSize: '1rem', fontWeight: 600,
+                                color: activeTab === 'logs' ? 'var(--primary)' : 'var(--text-muted)',
+                                borderBottom: activeTab === 'logs' ? '2px solid var(--primary)' : '2px solid transparent',
+                                display: 'flex', alignItems: 'center', gap: '0.5rem'
+                            }}
+                        >
+                            <FileText size={18} /> System Logs
+                        </button>
                     )}
                 </div>
             )}
 
             {activeTab === 'users' && (
+                <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+                   <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input 
+                            type="text"
+                            placeholder="Search by name, phone or email..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem 1rem 0.75rem 2.75rem',
+                                borderRadius: '10px',
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg-dark)',
+                                color: 'var(--text-main)',
+                                fontSize: '0.9rem'
+                            }}
+                        />
+                   </div>
+                </div>
+            )}
+
+            {activeTab === 'users' && (
+                <div className="glass-card responsive-table-wrapper" style={{ padding: 0 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                            <tr style={{ background: 'var(--bg-dark)', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)', fontSize: '0.85rem' }}>User / Contact</th>
+                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)', fontSize: '0.85rem' }}>Joined On</th>
+                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)', fontSize: '0.85rem' }}>Status / Level</th>
+                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)', fontSize: '0.85rem' }}>Subscription</th>
+                                <th style={{ padding: '1rem 1.5rem', color: 'var(--text-main)', fontSize: '0.85rem' }}>Role/Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsers.map(u => {
+                                const sub = getSubscriptionStatus(u.subscription_expires_at);
+                                const isSuperAdminCaller = currentUser?.role?.toLowerCase() === 'super_admin';
+                                
+                                // Secondary safety: If not super_admin caller, don't even render super_admin rows
+                                if (!isSuperAdminCaller && u.role?.toLowerCase() === 'super_admin') return null;
+
+                                    return (
+                                        <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', background: 'transparent' }}>
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.95rem' }}>{u.full_name || u.fullName || 'Unnamed User'}</div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                                    {u.phone && <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--primary)' }}><strong>📱 {u.phone}</strong></div>}
+                                                    {u.email && <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✉️ {u.email}</div>}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                                                {formatDate(u.created_at)}
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                                                    <span style={{
+                                                        padding: '2px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 800,
+                                                        background: u.status === 'active' ? 'var(--badge-active-bg)' : 'var(--badge-inactive-bg)',
+                                                        color: u.status === 'active' ? 'var(--badge-active-text)' : 'var(--badge-inactive-text)',
+                                                        textTransform: 'uppercase'
+                                                    }}>
+                                                        {u.status || 'ACTIVE'}
+                                                    </span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                                    Level: {u.current_level || 'N/A'}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <div style={{
+                                                    display: 'inline-block',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 800,
+                                                    background: sub.bg,
+                                                    color: sub.color
+                                                }}>
+                                                    {sub.label}
+                                                </div>
+                                                {u.subscription_expires_at && (
+                                                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                                                        Ends: {formatDate(u.subscription_expires_at)}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                                                    {isSuperAdminCaller ? (
+                                                        <select
+                                                            value={u.role}
+                                                            onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                                            style={{
+                                                                padding: '0.4rem 0.6rem',
+                                                                borderRadius: '6px',
+                                                                border: '1px solid var(--border)',
+                                                                background: 'var(--bg-card)',
+                                                                color: 'var(--text-main)',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 700
+                                                            }}
+                                                        >
+                                                            <option value="user">USER</option>
+                                                            <option value="moderator">MODERATOR</option>
+                                                            <option value="admin">ADMIN</option>
+                                                            <option value="super_admin">SUPER ADMIN</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span style={{
+                                                            padding: '4px 10px',
+                                                            borderRadius: '6px',
+                                                            fontSize: '0.7rem',
+                                                            fontWeight: 800,
+                                                            background: 'rgba(var(--primary-rgb), 0.1)',
+                                                            color: 'var(--primary)',
+                                                            textTransform: 'uppercase'
+                                                        }}>
+                                                            {u.role || 'USER'}
+                                                        </span>
+                                                    )}
+                                                    {u.status !== 'deleted' && (
+                                                        <button
+                                                            onClick={() => handleStatusToggle(u.id, u.status || 'active')}
+                                                            style={{
+                                                                padding: '0.4rem 0.8rem',
+                                                                borderRadius: '6px',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 700,
+                                                                cursor: 'pointer',
+                                                                border: 'none',
+                                                                background: u.status === 'inactive' ? 'var(--primary)' : 'rgba(239, 68, 68, 0.1)',
+                                                                color: u.status === 'inactive' ? '#fff' : '#ef4444'
+                                                            }}
+                                                        >
+                                                            {u.status === 'inactive' ? 'Unrestrict' : 'Restrict'}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                            })}
+                        </tbody>
+                    </table>
+                    {filteredUsers.length === 0 && !loading && (
+                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            No users matching "{searchTerm}" found.
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {activeTab === 'users' && !filterRole && (
                 <div style={{
                     marginTop: '1.5rem',
                     display: 'flex',

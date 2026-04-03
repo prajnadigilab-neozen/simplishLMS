@@ -11,6 +11,8 @@ const LessonCreate = ({ lesson, onBack }) => {
         description: '',
         transcription: '',
         displayOrder: 1,
+        moduleTitle: 'General',
+        unitNumber: 1,
         content: null
     });
 
@@ -48,6 +50,8 @@ const LessonCreate = ({ lesson, onBack }) => {
                 description: lesson.description || '',
                 transcription: lesson.transcription || '',
                 displayOrder: lesson.display_order || 1,
+                moduleTitle: lesson.module_title || 'General',
+                unitNumber: lesson.unit_number || 1,
                 content: lesson.content || null
             });
             // Populate sub-states
@@ -72,6 +76,8 @@ const LessonCreate = ({ lesson, onBack }) => {
                 description: '',
                 transcription: '',
                 displayOrder: 1,
+                moduleTitle: 'General',
+                unitNumber: 1,
                 content: null
             });
             setGeneratedContentPreview('');
@@ -179,7 +185,9 @@ const LessonCreate = ({ lesson, onBack }) => {
             data.append('title', formData.title);
             data.append('level', formData.level);
             data.append('description', formData.description);
-            data.append('display_order', formData.displayOrder);
+            data.append('displayOrder', formData.displayOrder);
+            data.append('moduleTitle', formData.moduleTitle);
+            data.append('unitNumber', formData.unitNumber);
             data.append('transcription', formData.transcription);
             data.append('content', JSON.stringify(lessonContent));
 
@@ -279,24 +287,38 @@ const LessonCreate = ({ lesson, onBack }) => {
 
     const prefillFormFromJSON = (json) => {
         // Handle hierarchical metadata and content
-        const metadata = json.course_metadata || {};
-        const content = json.lesson_content || json;
+        const metadata = json.lesson_metadata || json.course_metadata || {};
+        const content = json.section_1_lesson_content || json.lesson_content || json;
 
-        const levelMap = { 1: 'Basic', 2: 'Intermediate', 3: 'Advanced', 4: 'Expert' };
+        const levelMap = { 1: 'Basic', 2: 'Intermediate', 3: 'Advanced', 4: 'Expert', 'Basic': 'Basic', 'Intermediate': 'Intermediate', 'Advanced': 'Advanced', 'Expert': 'Expert' };
 
         // 1. Basic Details
+        const rawLevel = metadata.level || json.level || 'Basic';
+        // Normalize level (e.g. "Basic (ಬುನಾಡಿ)" -> "Basic")
+        let normalizedLevel = 'Basic';
+        if (typeof rawLevel === 'string') {
+            const match = rawLevel.match(/(Basic|Intermediate|Advanced|Expert)/i);
+            if (match) {
+                normalizedLevel = match[0].charAt(0).toUpperCase() + match[0].slice(1).toLowerCase();
+            }
+        } else if (levelMap[rawLevel]) {
+            normalizedLevel = levelMap[rawLevel];
+        }
+
         setFormData(prev => ({
             ...prev,
-            title: metadata.topic || json.title || prev.title,
-            level: levelMap[metadata.level] || json.level || prev.level,
-            description: content.explanation?.kannada || json.description || prev.description,
-            transcription: content.listening_lab?.script
+            title: metadata.lesson_topic_english || metadata.topic || json.title || prev.title,
+            level: normalizedLevel,
+            moduleTitle: metadata.module_title || json.module_title || 'General',
+            unitNumber: json.unit_number || 1,
+            description: content.logic_explanation?.content || content.explanation?.kannada || json.description || prev.description,
+            transcription: (content.listening_lab?.script && Array.isArray(content.listening_lab.script))
                 ? content.listening_lab.script.map(s => {
                     const lineEn = s.en || s.line || '';
                     const lineKn = s.kn || '';
-                    return lineKn ? `${s.speaker}: ${lineEn} (${lineKn})` : `${s.speaker}: ${lineEn}`;
+                    return lineKn ? `${s.speaker || ''}: ${lineEn} (${lineKn})` : `${s.speaker || ''}: ${lineEn}`;
                 }).join('\n')
-                : (json.listening?.transcription || prev.transcription)
+                : (content.listening_lab?.script || json.listening?.transcription || prev.transcription)
         }));
 
         const formatAsArrayContent = (val) => {
@@ -305,8 +327,16 @@ const LessonCreate = ({ lesson, onBack }) => {
             return JSON.stringify([val], null, 2);
         };
 
-        // 2. Study Logic / Explanation
-        if (content.explanation) {
+        // 2. Study Logic / Explanation (Magic Shift)
+        if (content.logic_explanation) {
+            const studyLogic = [{
+                explanation: content.logic_explanation.content || '',
+                english_logic: content.logic_explanation.title || '',
+                kannadaStructure: (content.logic_explanation.examples || []).find(e => e.type?.includes('Kannada'))?.structure || [],
+                englishStructure: (content.logic_explanation.examples || []).find(e => e.type?.includes('English'))?.structure || []
+            }];
+            setStudyContentRaw(JSON.stringify(studyLogic, null, 2));
+        } else if (content.explanation) {
             const studyLogic = [{
                 explanation: content.explanation.kannada || '',
                 english_logic: content.explanation.english_logic || '',
@@ -318,15 +348,18 @@ const LessonCreate = ({ lesson, onBack }) => {
             setStudyContentRaw(formatAsArrayContent(json.logicContent));
         }
 
-        // 3. Sentence Evolution (supporting both 'stage' and 'level' keys)
+        // 3. Sentence Evolution
         if (content.sentence_evolution) {
-            const evolution = content.sentence_evolution.map(step => ({
-                level: step.stage || step.level || 'Basic',
-                explanation: step.explanation || '',
-                english: step.english || '',
-                kannada: step.kannada || ''
-            }));
-            setEvolutionContentRaw(JSON.stringify(evolution, null, 2));
+            const evolutionData = content.sentence_evolution.levels || content.sentence_evolution;
+            if (Array.isArray(evolutionData)) {
+                const evolution = evolutionData.map(step => ({
+                    level: step.label || step.stage || step.level || 'Basic',
+                    explanation: step.explanation || step.desc || '',
+                    english: step.english || '',
+                    kannada: step.kannada || ''
+                }));
+                setEvolutionContentRaw(JSON.stringify(evolution, null, 2));
+            }
         } else if (json.evolutionContent) {
             setEvolutionContentRaw(formatAsArrayContent(json.evolutionContent));
         }
@@ -335,7 +368,7 @@ const LessonCreate = ({ lesson, onBack }) => {
         if (content.reading_lab) {
             const readingData = [{
                 text: content.reading_lab.text || '',
-                pronunciation: content.reading_lab.phonetic_kannada || '',
+                pronunciation: content.reading_lab.phonetic_anchoring_kannada || content.reading_lab.phonetic_kannada || '',
                 translation: ''
             }];
             setReadingContentRaw(JSON.stringify(readingData, null, 2));
@@ -344,13 +377,14 @@ const LessonCreate = ({ lesson, onBack }) => {
         }
 
         // 5. Vocabulary / Retention
-        if (content.retention_block?.gold_list) {
-            const bridge = content.retention_block.mnemonic_bridge;
-            const vocabData = content.retention_block.gold_list.map((item, idx) => ({
+        const retention = content.retention_block_m_srs || content.retention_block;
+        if (retention?.gold_list) {
+            const bridge = retention.mnemonic_bridge;
+            const vocabData = retention.gold_list.map((item, idx) => ({
                 word: item.word,
-                translation: item.kn || item.kannada || '',
+                translation: item.meaning || item.kn || item.kannada || '',
                 pronunciation: item.pronunciation || '',
-                mnemonic: (idx === 0 && bridge) ? `${bridge.concept || bridge.word || ''}: ${bridge.logic || bridge.trick || ''}` : '',
+                mnemonic: (idx === 0 && bridge) ? `${bridge.word || bridge.concept || ''}: ${bridge.trick || bridge.logic || ''}` : '',
                 category: 'The Gold List'
             }));
             setVocabularyContentRaw(JSON.stringify(vocabData, null, 2));
@@ -358,17 +392,51 @@ const LessonCreate = ({ lesson, onBack }) => {
             setVocabularyContentRaw(formatAsArrayContent(json.vocabularyContent));
         }
 
-        const rawQuestions = content.milestone_test || json.milestoneTest || content.milestoneTest || [];
+        // 6. Milestone Test Questions
+        const rawQuestions = json.section_2_milestone_test || json.milestoneTest || content.milestone_test || content.milestoneTest || [];
         if (rawQuestions.length > 0) {
-            const normalizedQuestions = rawQuestions.map(q => ({
-                ...q,
-                text: q.question || q.text || '',
-                correct_answer: q.correct_answer || q.answer || '',
-                type: q.type || 'MCQ',
-                points: q.points || 10,
-                options: q.options || [],
-                explanation: q.explanation || ''
-            }));
+            const normalizedQuestions = rawQuestions.map(q => {
+                let type = q.type || 'MCQ';
+                if (type === 'Rearrange') type = 'Text';
+                if (type === 'Multiple Choice') type = 'MCQ';
+                if (type === 'Fill in the blank') type = 'Text';
+                if (type === 'Matching') type = 'Text'; // Matching is complex, falling back to text
+                if (type === 'Translation') type = 'Text';
+
+                // Synthesize text if missing (common in Matching questions)
+                let text = q.question || q.prompt || q.text || '';
+                if (!text && q.pairs && Array.isArray(q.pairs)) {
+                    text = `Match the following: ${q.pairs.map(p => p.english).join(', ')}`;
+                } else if (!text) {
+                    text = 'Please complete this activity.';
+                }
+
+                // Synthesize correct_answer if missing (common in Matching questions)
+                let answer = q.correct_answer || q.answer || q.answer_placeholder || '';
+                if (!answer && q.pairs && Array.isArray(q.pairs)) {
+                    answer = q.pairs.map(p => `${p.english}-${p.kannada}`).join(', ');
+                }
+
+                // Normalization: If it's MCQ and "answer" is just a letter (e.g. "B"), 
+                // resolve it to the full option text (e.g. "B) I grow ragi.")
+                if (type === 'MCQ' && answer.length === 1 && Array.isArray(q.options)) {
+                    const letterMatch = q.options.find(opt => 
+                        opt.trim().startsWith(`${answer})`) || 
+                        opt.trim().startsWith(`${answer}.`) || 
+                        opt.trim().startsWith(`${answer} `)
+                    );
+                    if (letterMatch) answer = letterMatch;
+                }
+
+                return {
+                    text: text,
+                    correct_answer: answer || '',
+                    type: type,
+                    points: q.points || 10,
+                    options: q.options || [],
+                    explanation: q.explanation || q.hint || ''
+                };
+            });
             setQuestions(normalizedQuestions);
         }
 
@@ -493,13 +561,36 @@ const LessonCreate = ({ lesson, onBack }) => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Display Order</label>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Display Order (Within Module)</label>
                                     <input
                                         type="number"
                                         className="glass-card"
                                         style={{ width: '100%', padding: '1rem', background: 'var(--bg-dark)', border: '1px solid var(--border)' }}
                                         value={formData.displayOrder}
                                         onChange={(e) => setFormData({ ...formData, displayOrder: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Module Title</label>
+                                    <input
+                                        className="glass-card"
+                                        style={{ width: '100%', padding: '1rem', background: 'var(--bg-dark)', border: '1px solid var(--border)' }}
+                                        type="text"
+                                        placeholder="e.g. Greetings & Basic Phrases"
+                                        value={formData.moduleTitle}
+                                        onChange={(e) => setFormData({ ...formData, moduleTitle: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Unit / Module Number</label>
+                                    <input
+                                        type="number"
+                                        className="glass-card"
+                                        style={{ width: '100%', padding: '1rem', background: 'var(--bg-dark)', border: '1px solid var(--border)' }}
+                                        value={formData.unitNumber}
+                                        onChange={(e) => setFormData({ ...formData, unitNumber: e.target.value })}
                                     />
                                 </div>
                             </div>

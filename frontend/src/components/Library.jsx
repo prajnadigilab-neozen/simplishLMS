@@ -1,18 +1,38 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Music, Video, ArrowRight, Loader2, Search, Edit, Trash2, Plus, Image, Trophy } from 'lucide-react';
-import { lessonApi } from '../utils/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    FileText, 
+    Music, 
+    Video, 
+    ArrowRight, 
+    Loader2, 
+    Search, 
+    Edit, 
+    Trash2, 
+    Plus, 
+    Image, 
+    Trophy, 
+    RefreshCw, 
+    Lock,
+    Zap,
+    Clock,
+    CheckCircle2
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import api, { lessonApi } from '../utils/api';
 import { useToast } from './Toast';
 
-const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
+const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, language }) => {
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [expandedModules, setExpandedModules] = useState(['Basic']);
     const showToast = useToast();
+    const navigate = useNavigate();
 
     const isMod = ['super_admin', 'admin', 'moderator'].includes(user?.role?.toLowerCase());
+    const isPaid = user?.is_paid || isMod;
     const levels = ["Basic", "Intermediate", "Advanced", "Expert"];
 
     const fetchLessons = async () => {
@@ -22,7 +42,7 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam })
             setLessons(data);
         } catch (err) {
             console.error("Error fetching library:", err);
-
+            showToast('ಲೈಬ್ರರಿ ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ (Failed to load library)', 'error');
         } finally {
             setLoading(false);
         }
@@ -45,7 +65,7 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam })
             setLessons(lessons.filter(l => l.id !== id));
             showToast('Lesson deleted successfully.', 'success');
         } catch (err) {
-            showToast('Failed to delete lesson. Please try again.', 'error');
+            showToast('Failed to delete lesson.', 'error');
         }
     };
 
@@ -63,6 +83,13 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam })
         }
     };
 
+    // ── Paywall Logic ──
+    const basicLessonsSorted = [...lessons]
+        .filter(l => l.level === 'Basic')
+        .sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0));
+
+    const freeLessonIds = basicLessonsSorted.slice(0, 2).map(l => l.id);
+
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem' }}>
@@ -72,221 +99,292 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam })
     }
 
     return (
-        <div className="library-container">
+        <div className="library-container" style={{ padding: '0 0.5rem' }}>
             {/* Confirm Delete Dialog */}
             {confirmDeleteId && (
                 <div style={{
                     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
                 }}>
-                    <div className="glass-card" style={{ padding: '2rem', maxWidth: '400px', width: '90%', textAlign: 'center' }}>
-                        <h3 style={{ marginBottom: '0.75rem' }}>Delete Lesson?</h3>
-                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-                            This will permanently remove the lesson and its media file. This cannot be undone.
+                    <div className="glass-card" style={{ padding: '2.5rem', maxWidth: '400px', width: '90%', textAlign: 'center' }}>
+                        <h3 style={{ marginBottom: '1rem' }}>{language === 'kn' ? 'ಪಾಠವನ್ನು ಅಳಿಸುವುದೇ?' : 'Delete Lesson?'}</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1rem' }}>
+                            {language === 'kn' ? 'ಈ ಪಾಠವನ್ನು ಶಾಶ್ವತವಾಗಿ ತೆಗೆದುಹಾಕುವುದೇ? ಇದನ್ನು ರದ್ದುಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.' : 'Permanently remove this lesson? This cannot be undone.'}
                         </p>
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                            <button className="btn" onClick={() => setConfirmDeleteId(null)} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)' }}>Cancel</button>
-                            <button className="btn" onClick={confirmDelete} style={{ background: '#ef4444', color: '#fff' }}>Delete</button>
+                            <button className="btn" onClick={() => setConfirmDeleteId(null)} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-main)', flex: 1 }}>{language === 'kn' ? 'ರದ್ದುಮಾಡಿ' : 'Cancel'}</button>
+                            <button className="btn" onClick={confirmDelete} style={{ background: '#ef4444', color: '#fff', flex: 1 }}>{language === 'kn' ? 'ಅಳಿಸಿ' : 'Delete'}</button>
                         </div>
                     </div>
                 </div>
             )}
-            <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+
+            <header style={{ marginBottom: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '1.8rem', color: 'var(--text-main)' }}>ನನ್ನ ಲೈಬ್ರರಿ (My Library)</h1>
-                    <p style={{ color: 'var(--text-muted)' }}>Explore all your uploaded curriculum modules.</p>
+                    <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-main)', letterSpacing: '-0.02em', margin: 0 }}>
+                        {language === 'kn' ? 'ನನ್ನ ಲೈಬ್ರರಿ' : 'My Library'}
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem', fontSize: '1.1rem' }}>
+                        {language === 'kn' ? 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪಠ್ಯಕ್ರಮವನ್ನು ಇಲ್ಲಿ ನೋಡಿ.' : 'Explore your structured learning curriculum.'}
+                    </p>
                 </div>
                 {isMod && (
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={onAddExam}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
-                        >
-                            <Trophy size={18} /> Add Module Exam
+                        <button onClick={onAddExam} className="btn" style={{ background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid #eab308', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <Trophy size={18} /> {language === 'kn' ? 'ಪರೀಕ್ಷೆ ಸೇರಿಸಿ' : 'Add Module Exam'}
                         </button>
-                        <button
-                            className="btn btn-primary"
-                            onClick={onAddLesson}
-                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}
-                        >
-                            <Plus size={18} /> Add New Lesson
+                        <button onClick={onAddLesson} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 10px 20px rgba(79, 70, 229, 0.2)' }}>
+                            <Plus size={18} /> {language === 'kn' ? 'ಹೊಸ ಪಾಠ ಸೇರಿಸಿ' : 'Add New Lesson'}
                         </button>
                     </div>
                 )}
             </header>
 
-            <div className="glass-card" style={{ padding: '0.75rem 1.5rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <Search size={20} color="var(--text-muted)" />
+            <div className="glass-card" style={{ padding: '0.75rem 1.5rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '1rem', border: '1px solid var(--border)' }}>
+                <Search size={22} color="var(--text-muted)" />
                 <input
                     type="text"
-                    placeholder="Search lessons..."
-                    style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '1rem' }}
+                    placeholder={language === 'kn' ? 'ಪಾಠಗಳನ್ನು ಹುಡುಕಿ...' : "Search lessons..."}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-main)', outline: 'none', width: '100%', fontSize: '1.1rem' }}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                 />
             </div>
 
+            {/* 👑 Free Trial Banner */}
+            {!isPaid && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        borderRadius: '24px',
+                        padding: '1.5rem 2rem',
+                        marginBottom: '3rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '1.5rem',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+                        position: 'relative',
+                        overflow: 'hidden'
+                    }}
+                >
+                    <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)', zIndex: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', zIndex: 1 }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(59, 130, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+                            <Zap size={28} fill="currentColor" />
+                        </div>
+                        <div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'white', margin: 0 }}>
+                                {language === 'kn' ? 'ನೋಂದಾಯಿತ ಬಳಕೆದಾರರಿಗೆ ಸೀಮಿತ ಪ್ರವೇಶ' : 'Limited Access'}
+                            </h3>
+                            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.2rem' }}>
+                                {language === 'kn' 
+                                    ? `ನೀವು 2-ಪಾಠಗಳ ಉಚಿತ ಪ್ರಯೋಗದಲ್ಲಿದ್ದೀರಿ. ಎಲ್ಲಾ ${lessons.length} ಪಾಠಗಳನ್ನು ಪಡೆಯಲು ಪ್ರೀಮಿಯಂಗೆ ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿ.` 
+                                    : `You're on a 2-lesson trial. Upgrade to unlock all ${lessons.length} lessons.`}
+                            </p>
+                        </div>
+                    </div>
+                        <button
+                        onClick={() => navigate('/payment')}
+                        className="btn"
+                        style={{ background: '#3b82f6', color: 'white', padding: '0.8rem 2rem', fontWeight: 800, borderRadius: '12px', border: 'none', zIndex: 1, boxShadow: '0 8px 16px rgba(59, 130, 246, 0.3)', pointerEvents: 'auto' }}
+                    >
+                        {language === 'kn' ? 'ಪ್ರೀಮಿಯಂ ಪಡೆಯಿರಿ' : 'Activate Premium Now'}
+                    </button>
+                </motion.div>
+            )}
+
             {filteredLessons.length === 0 ? (
                 <div className="glass-card" style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    <p>No lessons found. {isMod ? 'Click "Add New Lesson" to get started!' : ''}</p>
+                    <p>{language === 'kn' ? 'ಯಾವುದೇ ಪಾಠಗಳು ಕಂಡುಬಂದಿಲ್ಲ.' : 'No lessons found.'}</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                     {levels.map((lvl, levelIndex) => {
                         const lessonsInLevel = filteredLessons.filter(l => l.level === lvl);
-
                         if (lessonsInLevel.length === 0 && searchQuery) return null;
 
-                        // Robust locking: Module is locked if any lesson in any previous level is incomplete
-                        const prevLevels = levels.slice(0, levelIndex);
-                        const lessonsInPrevLevels = lessons.filter(l => prevLevels.includes(l.level));
-                        const isLocked = !isMod && levelIndex > 0 && lessonsInPrevLevels.some(l => (l.progress || 0) < 100);
-
-                        const isExpanded = expandedModules.includes(lvl);
-                        const toggleModule = () => {
-                            if (isLocked) return;
+                        const isLevelExpanded = expandedModules.includes(lvl);
+                        const toggleLevel = () => {
                             setExpandedModules(prev =>
                                 prev.includes(lvl) ? prev.filter(m => m !== lvl) : [...prev, lvl]
                             );
                         };
 
+                        // Group into Modules
+                        const modules = {};
+                        lessonsInLevel.forEach(l => {
+                            const modTitle = l.module_title || 'General';
+                            if (!modules[modTitle]) {
+                                modules[modTitle] = { title: modTitle, unit: l.unit_number || 1, lessons: [] };
+                            }
+                            modules[modTitle].lessons.push(l);
+                        });
+
+                        // We need a flat list of all lessons across all modules in this level to check prerequisites correctly
+                        const sortedLevelLessons = [...lessonsInLevel].sort((a, b) => 
+                            (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0)
+                        );
+
+                        // Find the index of each lesson in the global sorted list to check the overall curriculum prerequisite
+                        const allSortedLessons = [...lessons].sort((a, b) => {
+                            const levelDiff = levels.indexOf(a.level) - levels.indexOf(b.level);
+                            if (levelDiff !== 0) return levelDiff;
+                            return (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0);
+                        });
+
+                        const sortedModules = Object.values(modules).sort((a, b) => a.unit - b.unit);
+
                         return (
-                            <div key={lvl} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                {/* Module Header */}
+                            <div key={lvl} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {/* Level Header */}
                                 <div
                                     className="glass-card"
-                                    onClick={toggleModule}
+                                    onClick={toggleLevel}
                                     style={{
-                                        padding: '1.5rem',
+                                        padding: '1.5rem 2rem',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        cursor: isLocked ? 'not-allowed' : 'pointer',
-                                        opacity: isLocked ? 0.6 : 1,
-                                        filter: isLocked ? 'grayscale(80%)' : 'none',
-                                        background: isExpanded ? 'var(--bg-dark)' : 'rgba(255,255,255,0.02)',
-                                        borderLeft: isExpanded && !isLocked ? '4px solid var(--primary)' : '1px solid var(--border)'
+                                        cursor: 'pointer',
+                                        background: isLevelExpanded ? 'linear-gradient(90deg, var(--bg-dark) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)',
+                                        borderLeft: isLevelExpanded ? '6px solid var(--primary)' : '1px solid var(--border)',
+                                        borderRadius: '1.5rem'
                                     }}
                                 >
                                     <div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--text-muted)' }}>MODULE {levelIndex + 1}</span>
-                                            {isLocked && <span>🔒</span>}
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
+                                            {language === 'kn' ? `ಹಂತ ${levelIndex + 1}` : `LEVEL ${levelIndex + 1}`}
                                         </div>
-                                        <h3 style={{ margin: 0, fontSize: '1.25rem' }}>{lvl} English</h3>
+                                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: isLevelExpanded ? 'var(--primary)' : 'var(--text-main)' }}>{lvl} English</h2>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>{lessonsInLevel.length} Lessons</span>
-                                        <button
-                                            style={{ background: 'none', border: 'none', color: isLocked ? 'var(--text-muted)' : 'var(--primary)', fontWeight: 'bold', cursor: isLocked ? 'not-allowed' : 'pointer' }}
-                                        >
-                                            {isExpanded ? 'Collapse ↑' : 'Expand ↓'}
-                                        </button>
-                                    </div>
+                                    <ArrowRight size={24} style={{ transform: isLevelExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.3s', color: 'var(--text-muted)' }} />
                                 </div>
 
-                                {/* Module Content */}
-                                {isExpanded && !isLocked && (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem', padding: '0.5rem' }}>
-                                        {lessonsInLevel.length === 0 ? (
-                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', padding: '1rem' }}>No lessons available in this module.</p>
-                                        ) : (
-                                            lessonsInLevel.map((lesson, index) => (
-                                                <motion.div
-                                                    key={lesson.id}
-                                                    className="glass-card"
-                                                    style={{
-                                                        padding: '1.5rem',
-                                                        cursor: 'pointer',
-                                                        border: '1px solid var(--border)',
-                                                        position: 'relative'
-                                                    }}
-                                                    whileHover={{ scale: 1.01, borderColor: 'var(--primary)', backgroundColor: 'var(--bg-dark)' }}
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    transition={{ delay: index * 0.05 }}
-                                                >
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                                                        <div style={{
-                                                            padding: '0.75rem',
-                                                            borderRadius: '0.75rem',
-                                                            background: lesson.content?.isExam ? 'rgba(234, 179, 8, 0.15)' : 'var(--primary-light)',
-                                                            color: lesson.content?.isExam ? '#eab308' : 'var(--primary)',
-                                                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                        }}>
-                                                            {lesson.content?.isExam ? <Trophy size={20} /> : getIcon(lesson.media_type)}
-                                                        </div>
-                                                        {isMod && (
-                                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                <button
-                                                                    onClick={(e) => { e.stopPropagation(); onEditLesson(lesson); }}
-                                                                    style={{
-                                                                        background: 'var(--bg-dark)',
-                                                                        border: '1px solid var(--border)',
-                                                                        color: 'var(--text-main)',
-                                                                        padding: '0.4rem',
-                                                                        borderRadius: '6px',
-                                                                        cursor: 'pointer',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center'
-                                                                    }}
-                                                                    title="Edit Lesson"
-                                                                >
-                                                                    <Edit size={16} />
-                                                                </button>
-                                                                <button
-                                                                    onClick={(e) => handleDelete(e, lesson.id)}
-                                                                    style={{
-                                                                        background: 'rgba(239, 68, 68, 0.1)',
-                                                                        border: '1px solid rgba(239, 68, 68, 0.2)',
-                                                                        color: '#ef4444',
-                                                                        padding: '0.4rem',
-                                                                        borderRadius: '6px',
-                                                                        cursor: 'pointer',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center'
-                                                                    }}
-                                                                    title="Delete Lesson"
-                                                                >
-                                                                    <Trash2 size={16} />
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                {isLevelExpanded && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', padding: '0 1rem' }}>
+                                        {sortedModules.map(module => (
+                                            <div key={module.title} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 0.5rem' }}>
+                                                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900 }}>{module.unit}</div>
+                                                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)', opacity: 0.9 }}>{module.title}</h3>
+                                                    <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--border) 0%, transparent 100%)' }} />
+                                                </div>
 
-                                                    <div onClick={() => onSelectLesson(lesson)}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                            <h3 style={{ fontSize: '1.1rem', margin: 0 }}>{lesson.title}</h3>
-                                                            {lesson.content?.isExam && (
-                                                                <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', padding: '0.1rem 0.5rem', borderRadius: '1rem', fontSize: '0.7rem', fontWeight: 'bold' }}>EXAM</span>
-                                                            )}
-                                                        </div>
-                                                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineBreak: 'anywhere' }}>
-                                                            {lesson.description?.substring(0, 100)}{lesson.description?.length > 100 ? '...' : ''}
-                                                        </p>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                                    {module.lessons.sort((a,b) => (a.display_order||0) - (b.display_order||0)).map((lesson, idx) => {
+                                                        const globalIdx = allSortedLessons.findIndex(l => l.id === lesson.id);
+                                                        const prevLesson = globalIdx > 0 ? allSortedLessons[globalIdx - 1] : null;
+                                                        const isPrereqLocked = !isMod && prevLesson && (prevLesson.progress || 0) < 100;
+                                                        const isPaywallLocked = !isPaid && !freeLessonIds.includes(lesson.id);
+                                                        const isLocked = isPaywallLocked || isPrereqLocked;
 
-                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>LEVEL: {lesson.level}</span>
-                                                            {lesson.progress === 100 ? (
-                                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                                                                    <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '0.75rem' }}>Completed ✓</span>
-                                                                    {lesson.score !== null && lesson.score !== undefined && (
-                                                                        <span style={{ color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 600 }}>Score: {lesson.score}%</span>
+                                                        return (
+                                                            <motion.div
+                                                                key={lesson.id}
+                                                                className="glass-card"
+                                                                style={{
+                                                                    padding: '1.25rem',
+                                                                    cursor: isLocked ? 'not-allowed' : 'pointer',
+                                                                    position: 'relative',
+                                                                    display: 'flex',
+                                                                    flexDirection: 'column',
+                                                                    gap: '1rem',
+                                                                    opacity: isLocked ? 0.7 : 1,
+                                                                    filter: isLocked ? 'grayscale(0.6)' : 'none',
+                                                                    border: isLocked ? '1px solid var(--border)' : '1px solid var(--primary-light)',
+                                                                    transform: isLocked ? 'none' : 'translateY(0)',
+                                                                    transition: 'all 0.3s ease'
+                                                                }}
+                                                                whileHover={!isLocked ? { translateY: -4, borderColor: 'var(--primary)', boxShadow: '0 12px 24px rgba(var(--primary-rgb), 0.15)' } : {}}
+                                                                onClick={() => {
+                                                                    if (isPaywallLocked) { navigate('/payment'); return; }
+                                                                    if (isPrereqLocked) { 
+                                                                        showToast(`ದಯವಿಟ್ಟು ಮೊದಲು ಹಿಂದಿನ ಪಾಠವನ್ನು ಮುಗಿಸಿ: "${prevLesson.title}" (Please finish the previous lesson first)`, 'info');
+                                                                        return; 
+                                                                    }
+                                                                    onSelectLesson(lesson);
+                                                                }}
+                                                            >
+                                                                {isLocked && (
+                                                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: isPaywallLocked ? 'rgba(59, 130, 246, 0.2)' : 'rgba(100, 116, 139, 0.2)', color: isPaywallLocked ? '#3b82f6' : 'var(--text-muted)', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem', zIndex: 10 }}>
+                                                                        <Lock size={14} /> {isPaywallLocked ? 'PREMIUM' : (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'LOCKED')}
+                                                                    </div>
+                                                                )}
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                        <div style={{ padding: '0.6rem', borderRadius: '0.75rem', background: lesson.content?.isExam ? 'rgba(234, 179, 8, 0.1)' : 'var(--primary-light)', color: lesson.content?.isExam ? '#eab308' : 'var(--primary)' }}>
+                                                                            {lesson.content?.isExam ? <Trophy size={18} /> : getIcon(lesson.media_type)}
+                                                                        </div>
+                                                                        <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{lesson.title}</h3>
+                                                                    </div>
+                                                                    {isMod && (
+                                                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                            <button onClick={(e) => { e.stopPropagation(); onEditLesson(lesson); }} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.4rem', borderRadius: '8px' }}><Edit size={14} /></button>
+                                                                            <button onClick={(e) => handleDelete(e, lesson.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '0.4rem', borderRadius: '8px' }}><Trash2 size={14} /></button>
+                                                                        </div>
                                                                     )}
                                                                 </div>
-                                                            ) : (
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 600, fontSize: '0.85rem' }}>
-                                                                    Learn <ArrowRight size={14} />
+
+                                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', background: 'rgba(0,0,0,0.1)', padding: '0.75rem 1rem', borderRadius: '12px' }}>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಹಂತ' : 'Level'}</span>
+                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lesson.level}</span>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Completed'}</span>
+                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: lesson.progress === 100 ? '#10b981' : 'var(--text-muted)' }}>
+                                                                            {lesson.progress === 100 ? (language === 'kn' ? 'ಹೌದು ✓' : 'Yes ✓') : (language === 'kn' ? 'ಇಲ್ಲ' : 'No')}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Score'}</span>
+                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: lesson.score >= 80 ? '#10b981' : (lesson.score ? 'var(--primary)' : 'var(--text-muted)') }}>{lesson.score ? `${lesson.score}%` : '---'}</span>
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </motion.div>
-                                            ))
-                                        )}
+
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Clock size={14} /> {lesson.estimated_time || '15'}m</span>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                                        {lesson.progress === 100 && (
+                                                                            <button onClick={(e)=>{e.stopPropagation(); onSelectLesson(lesson);}} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                                                                <RefreshCw size={12} style={{marginRight:'0.3rem'}}/> {language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'}
+                                                                            </button>
+                                                                        )}
+                                                                        <button 
+                                                                            style={{ 
+                                                                                background: isLocked ? 'var(--bg-dark)' : 'var(--primary)', 
+                                                                                color: isLocked ? 'var(--text-muted)' : 'white', 
+                                                                                border: 'none', 
+                                                                                padding: '0.4rem 1.25rem', 
+                                                                                borderRadius: '8px', 
+                                                                                fontSize: '0.75rem', 
+                                                                                fontWeight: 800, 
+                                                                                display: 'flex', 
+                                                                                alignItems: 'center', 
+                                                                                gap: '0.3rem',
+                                                                                cursor: isLocked ? 'not-allowed' : 'pointer'
+                                                                            }}
+                                                                            disabled={isLocked}
+                                                                        >
+                                                                            {lesson.progress === 100 
+                                                                                ? (language === 'kn' ? 'ನೋಡಿ' : 'Review') 
+                                                                                : (language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start')} <ArrowRight size={14} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>

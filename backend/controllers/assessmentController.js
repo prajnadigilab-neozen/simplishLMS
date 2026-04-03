@@ -199,12 +199,12 @@ exports.upsertAssessment = async (req, res) => {
 
                 return {
                     assessment_id: assessmentId,
-                    question_text: q.text || q.question || 'New Question',
-                    question_type: q.type,
-                    correct_answer: q.correct_answer || q.answer,
+                    question_text: q.text || q.question || q.prompt || 'New Question',
+                    question_type: q.type || 'Text',
+                    correct_answer: (q.correct_answer || q.answer || q.answer_placeholder || '').toString(),
                     options: jsonOptions,
                     points: q.points || 10,
-                    explanation: q.explanation || null
+                    explanation: q.explanation || q.hint || null
                 };
             });
 
@@ -213,7 +213,7 @@ exports.upsertAssessment = async (req, res) => {
                 .insert(questionsToInsert);
 
             if (questionsInsertError) {
-                console.error('Questions Insert Error:', questionsInsertError);
+                console.error('Questions Insert Error Details:', questionsInsertError);
                 throw questionsInsertError;
             }
         }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
-import api from './utils/api';
+import api, { authApi } from './utils/api';
 import { ToastProvider, useToast } from './components/Toast';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -12,8 +12,8 @@ import LandingPage from './components/LandingPage';
 import ProfileSettings from './components/ProfileSettings';
 import PlacementTest from './components/PlacementTest';
 import UserManagement from './components/UserManagement';
-import Reports from './components/Reports';
-import PaymentGateway from './components/PaymentGateway';
+import CheckoutSync from './components/CheckoutSync';
+import AdminDashboard from './components/AdminDashboard';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import UniversalStudyArea from './components/UniversalStudyArea/UniversalStudyArea';
@@ -32,6 +32,7 @@ function getStoredUser() {
 // ── Protected App Shell ──────────────────────────────────────────────────
 function AppShell() {
   const [user, setUser] = useState(() => getStoredUser());
+  const [language, setLanguage] = useState(() => localStorage.getItem('simplish_language') || 'kn');
   const [selectedLesson, setSelectedLesson] = useState(() => {
     try {
       const saved = localStorage.getItem('simplish_active_lesson');
@@ -41,7 +42,6 @@ function AppShell() {
     }
   });
   const [courseCompleted, setCourseCompleted] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const showToast = useToast();
   const navigate = useNavigate();
@@ -61,11 +61,32 @@ function AppShell() {
     }
   };
 
+  const refreshUserContext = async () => {
+    try {
+      const token = localStorage.getItem('simplish_token');
+      if (!token) return;
+      
+      const res = await authApi.getProfile(token);
+      if (res.data && res.data.user) {
+        const normalized = {
+          ...res.data.user,
+          role: res.data.user.role?.toLowerCase(),
+          isLoggedIn: true,
+          token
+        };
+        localStorage.setItem('simplish_user', JSON.stringify(normalized));
+        setUser(normalized);
+      }
+    } catch (err) {
+      console.error('Failed to refresh user context:', err);
+    }
+  };
+
   // ── Sync Profile on Load ────────────────────────────────────────────────
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+
   React.useEffect(() => {
     const syncProfile = async () => {
-      // Check if we have any reason to believe a session exists 
-      // (Stored token or user flag). This avoids 401 console noise for guest visitors.
       const storedToken = localStorage.getItem('simplish_token');
       const storedUser = localStorage.getItem('simplish_user');
 
@@ -75,15 +96,32 @@ function AppShell() {
       }
 
       try {
-        const res = await api.get('/auth/profile');
-        if (res.data?.user) {
-          const updatedUser = { ...res.data.user, isLoggedIn: true };
+        const [profileRes, progressRes] = await Promise.allSettled([
+          api.get('/auth/profile'),
+          api.get('/lessons/my-progress')
+        ]);
+
+        if (profileRes.status === 'fulfilled' && profileRes.value.data?.user) {
+          const updatedUser = { ...profileRes.value.data.user, isLoggedIn: true };
           localStorage.setItem('simplish_user', JSON.stringify(updatedUser));
           setUser(updatedUser);
         }
+
+        if (progressRes.status === 'fulfilled') {
+          const lessons = Array.isArray(progressRes.value.data) ? progressRes.value.data : (progressRes.value.data?.lessons || []);
+          if (selectedLesson && lessons.length > 0) {
+            const exists = lessons.find(l => l.id === selectedLesson.id);
+            if (!exists) {
+              localStorage.removeItem('simplish_active_lesson');
+              setSelectedLesson(null);
+            }
+          } else if (lessons.length === 0) {
+            localStorage.removeItem('simplish_active_lesson');
+            setSelectedLesson(null);
+          }
+        }
       } catch (err) {
-        console.log('No active session found or session expired.');
-        // If we had a session but it expired, clear it
+        console.log('Session synchronization issues:', err);
         localStorage.removeItem('simplish_user');
         localStorage.removeItem('simplish_token');
         localStorage.removeItem('simplish_active_lesson');
@@ -94,7 +132,13 @@ function AppShell() {
       }
     };
     syncProfile();
-  }, []);
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [selectedLesson]);
 
   const handleLogout = () => {
     localStorage.removeItem('simplish_user');
@@ -106,7 +150,6 @@ function AppShell() {
   };
 
   const handleNavigate = async (view) => {
-    setIsMobileMenuOpen(false); // Close menu on navigation
     const role = user?.role?.toLowerCase();
     if ((view === 'admin' || view === 'edit_lesson') && role !== 'moderator' && role !== 'admin' && role !== 'super_admin') {
       showToast('Access Denied: Admin access required', 'error');
@@ -119,50 +162,48 @@ function AppShell() {
 
     if (view === 'study_area') {
       setCourseCompleted(false);
+      try {
+        const res = await api.get('/lessons/my-progress');
+        let lessons = Array.isArray(res.data) ? res.data : (res.data.lessons || []);
 
-      // logic to decide which lesson to show
-      let targetLesson = selectedLesson;
-
-      // If no lesson selected OR current lesson is already completed, find the next best one
-      if (!targetLesson || targetLesson.status === 'completed') {
-        try {
-          const res = await api.get('/lessons/my-progress');
-          let lessons = Array.isArray(res.data) ? res.data : (res.data.lessons || []);
-
-          // Fail-safe: Ensure lessons are sorted by level and then display_order
-          const levelOrder = { 'Basic': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 };
-          lessons.sort((a, b) => {
-            const orderA = levelOrder[a.level] || 99;
-            const orderB = levelOrder[b.level] || 99;
-            if (orderA !== orderB) return orderA - orderB;
-            return (a.display_order || 0) - (b.display_order || 0);
-          });
-
-          // Find first incomplete
-          const nextIncomplete = lessons.find(l => l.status !== 'completed');
-
-          if (nextIncomplete) {
-            startLesson(nextIncomplete);
-            return;
-          } else if (lessons.length > 0) {
-            // All lessons completed
-            setCourseCompleted(true);
-            setSelectedLesson(lessons[lessons.length - 1]);
-            navigate('/study_area');
-            return;
-          } else {
-            showToast('ಲೈಬ್ರರಿಯಲ್ಲಿ ಮೊದಲು ಪಾಠವನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select a lesson from Library first)', 'info');
-            navigate('/library');
-            return;
-          }
-        } catch (err) {
-          console.error("Study area discovery failed", err);
+        if (lessons.length === 0) {
+          localStorage.removeItem('simplish_active_lesson');
+          setSelectedLesson(null);
+          showToast('ಲೈಬ್ರರಿಯಲ್ಲಿ ಮೊದಲು ಪಾಠವನ್ನು ಆಯ್ಕೆಮಾಡಿ (Please select a lesson from Library first)', 'info');
           navigate('/library');
           return;
         }
+
+        let currentValid = lessons.find(l => l.id === selectedLesson?.id);
+        if (currentValid && currentValid.status !== 'completed') {
+          startLesson(currentValid);
+          return;
+        }
+
+        const levelOrder = { 'Basic': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 };
+        lessons.sort((a, b) => {
+          const orderA = levelOrder[a.level] || 99;
+          const orderB = levelOrder[b.level] || 99;
+          if (orderA !== orderB) return orderA - orderB;
+          return (a.display_order || 0) - (b.display_order || 0);
+        });
+
+        const nextIncomplete = lessons.find(l => l.status !== 'completed');
+        if (nextIncomplete) {
+          startLesson(nextIncomplete);
+          return;
+        } else {
+          setCourseCompleted(true);
+          setSelectedLesson(lessons[lessons.length - 1]);
+          navigate('/study_area');
+          return;
+        }
+      } catch (err) {
+        console.error("Study area discovery failed", err);
+        navigate('/library');
+        return;
       }
     }
-
     navigate(`/${view}`);
   };
 
@@ -170,8 +211,6 @@ function AppShell() {
     try {
       const res = await api.get('/lessons/my-progress');
       let lessons = Array.isArray(res.data) ? res.data : (res.data.lessons || []);
-
-      // Fail-safe: Ensure lessons are sorted by level and then display_order
       const levelOrder = { 'Basic': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 };
       lessons.sort((a, b) => {
         const orderA = levelOrder[a.level] || 99;
@@ -181,12 +220,10 @@ function AppShell() {
       });
 
       const currentIndex = lessons.findIndex(l => l.id === selectedLesson?.id);
-
       if (currentIndex !== -1 && currentIndex < lessons.length - 1) {
         const nextLesson = lessons[currentIndex + 1];
         startLesson(nextLesson);
       } else {
-        // Course completion check
         const allDone = lessons.every(l => l.status === 'completed' || l.id === selectedLesson?.id);
         if (allDone) {
           setCourseCompleted(true);
@@ -234,22 +271,24 @@ function AppShell() {
   const currentView = location.pathname.replace('/', '') || 'dashboard';
 
   return (
-    <div className="app-container">
-      <div
-        className={`mobile-overlay ${isMobileMenuOpen ? 'open' : ''}`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
-      <Sidebar
+    <div className="app-container" style={{ paddingBottom: isMobile ? 'calc(var(--bottom-nav-height) + 1.5rem)' : 0 }}>
+      {/* ── Unified Top Navigation ── */}
+      <Navbar 
+        user={user} 
+        onLogout={handleLogout} 
+        language={language}
+        setLanguage={setLanguage}
         onNavigate={handleNavigate}
-        currentView={currentView}
-        user={user}
-        onLogout={handleLogout}
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
       />
-      <div className="main-content" style={{ padding: 0 }}>
-        <Navbar toggleMobileMenu={() => setIsMobileMenuOpen(true)} />
-        <div style={{ padding: '0 1.5rem 2rem 1.5rem', maxWidth: '1200px', margin: '0 auto' }}>
+
+
+      <div className="main-content" style={{ paddingLeft: 0 }}>
+        <div style={{ 
+          padding: isMobile ? '0 1rem 2rem 1rem' : '0 2rem 2rem 2rem', 
+          maxWidth: '1600px', 
+          margin: '0 auto',
+          minHeight: 'calc(100vh - 70px)'
+        }}>
           <Routes>
             <Route path="/placement" element={
               (isPrivilegedRole || user.onboarding_completed)
@@ -269,13 +308,14 @@ function AppShell() {
             } />
 
             <Route path="/" element={
-              <Dashboard user={user} onStartLesson={startLesson} />
+              <Dashboard user={user} onStartLesson={startLesson} language={language} />
             } />
 
             <Route path="/library" element={
               <Library
                 user={user}
                 onSelectLesson={startLesson}
+                language={language}
                 onEditLesson={(lesson) => {
                   const role = user.role?.toLowerCase();
                   if (role !== 'moderator' && role !== 'admin' && role !== 'super_admin') {
@@ -292,7 +332,7 @@ function AppShell() {
                     return;
                   }
                   setSelectedLesson(null);
-                  navigate('/admin');
+                  navigate('/edit_lesson');
                 }}
                 onAddExam={() => {
                   const role = user.role?.toLowerCase();
@@ -316,6 +356,7 @@ function AppShell() {
                 ? <UniversalStudyArea
                   user={user}
                   lesson={selectedLesson}
+                  language={language}
                   isCourseCompleted={courseCompleted}
                   onNextLesson={handleNextLesson}
                   onBack={() => navigate('/library')}
@@ -336,6 +377,7 @@ function AppShell() {
                     </button>
                   </div>
                   <AssessmentInterface
+                    user={user}
                     lessonId={selectedLesson.id}
                     onNextLesson={startLesson}
                   />
@@ -347,7 +389,7 @@ function AppShell() {
 
             <Route path="/admin" element={
               (user.role?.toLowerCase() === 'moderator' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'super_admin')
-                ? <LessonCreate lesson={null} onBack={() => navigate('/library')} />
+                ? <AdminDashboard user={user} />
                 : <Navigate to="/" replace />
             } />
 
@@ -369,18 +411,14 @@ function AppShell() {
                 : <Navigate to="/" replace />
             } />
 
-            <Route path="/reports" element={
-              (user.role?.toLowerCase() === 'moderator' || user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'super_admin')
-                ? <Reports />
-                : <Navigate to="/" replace />
-            } />
 
-            <Route path="/payment" element={<PaymentGateway user={user} />} />
+            <Route path="/payment" element={<CheckoutSync user={user} onUpdateUser={refreshUserContext} />} />
 
             <Route path="/profile" element={
               <ProfileSettings
                 user={user}
                 onBack={() => navigate('/')}
+                language={language}
                 onUpdate={(updatedUser) => {
                   const token = localStorage.getItem('simplish_token');
                   const normalized = {
@@ -396,11 +434,18 @@ function AppShell() {
               />
             } />
 
+            <Route path="/home" element={<LandingPage onAuthSuccess={handleAuthSuccess} />} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </div>
-      <BottomNav onNavigate={handleNavigate} currentView={currentView} user={user} />
+      <BottomNav 
+        onNavigate={handleNavigate} 
+        currentView={currentView} 
+        user={user} 
+        language={language}
+      />
     </div>
   );
 }

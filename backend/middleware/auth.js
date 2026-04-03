@@ -26,13 +26,21 @@ module.exports = async (req, res, next) => {
         }
 
         // Attach user info to request
-        // role is stored in app_metadata or user_metadata in Supabase
-        const role = user.app_metadata?.role || user.user_metadata?.role || 'user';
+        // role is stored in public.users table for application-level management
+        const { data: userRecord } = await supabase
+            .from('users')
+            .select('role, full_name, phone')
+            .eq('id', user.id)
+            .single();
+
+        const role = userRecord?.role || user.app_metadata?.role || user.user_metadata?.role || 'user';
 
         req.user = {
             id: user.id,
             role: role,
-            email: user.email
+            email: user.email,
+            phone: userRecord?.phone || user.phone || user.user_metadata?.phone,
+            fullName: userRecord?.full_name || user.user_metadata?.full_name
         };
         next();
     } catch (err) {

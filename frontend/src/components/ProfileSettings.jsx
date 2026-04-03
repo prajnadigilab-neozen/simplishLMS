@@ -4,7 +4,7 @@ import { User, Mail, Lock, Camera, MapPin, AlignLeft, Save, X, Loader2, Phone } 
 import { authApi } from '../utils/api';
 import { useToast } from './Toast';
 
-const ProfileSettings = ({ user, onUpdate, onBack }) => {
+const ProfileSettings = ({ user, onUpdate, onBack, language }) => {
     const [form, setForm] = useState({
         fullName: user.fullName || '',
         email: user.email || '',
@@ -59,7 +59,11 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
     };
 
     const handleDeleteAccount = async () => {
-        if (window.confirm('Are you absolutely sure you want to delete your account? This will wipe all your progress and cannot be undone.')) {
+        const confirmMsg = language === 'kn' 
+            ? 'ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ? ಇದು ನಿಮ್ಮ ಎಲ್ಲಾ ಪ್ರಗತಿಯನ್ನು ಅಳಿಸುತ್ತದೆ ಮತ್ತು ಇದನ್ನು ರದ್ದುಗೊಳಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.'
+            : 'Are you absolutely sure you want to delete your account? This will wipe all your progress and cannot be undone.';
+        
+        if (window.confirm(confirmMsg)) {
             try {
                 setLoading(true);
                 await authApi.deleteMe();
@@ -114,8 +118,12 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
             <div className="glass-card" style={{ padding: '2.5rem', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                     <div>
-                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>ಖಾತೆ ವಿವರಗಳು (Profile Settings)</h2>
-                        <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>Update your personal information and profile picture.</p>
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
+                            {language === 'kn' ? 'ಖಾತೆ ವಿವರಗಳು' : 'Profile Settings'}
+                        </h2>
+                        <p style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                            {language === 'kn' ? 'ನಿಮ್ಮ ವೈಯಕ್ತಿಕ ಮಾಹಿತಿ ಮತ್ತು ಪ್ರೊಫೈಲ್ ಚಿತ್ರವನ್ನು ನವೀಕರಿಸಿ.' : 'Update your personal information and profile picture.'}
+                        </p>
                     </div>
                     <button onClick={onBack} className="icon-btn" style={{ padding: '0.5rem', borderRadius: '50%', background: '#f1f5f9' }}>
                         <X size={20} />
@@ -194,13 +202,13 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                         {/* Right: Info Column */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>ಹೆಸರು (Full Name)</label>
+                                <label style={labelStyle}>{language === 'kn' ? 'ಪೂರ್ಣ ಹೆಸರು' : 'Full Name'}</label>
                                 <User size={18} style={iconStyle} />
                                 <input
                                     style={inputStyle}
                                     value={form.fullName}
                                     onChange={e => setForm({ ...form, fullName: e.target.value })}
-                                    placeholder="Enter your full name"
+                                    placeholder={language === 'kn' ? 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ನಮೂದಿಸಿ' : "Enter your full name"}
                                     required
                                     autoComplete="name"
                                 />
@@ -208,7 +216,7 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ position: 'relative' }}>
-                                    <label style={labelStyle}>ಇಮೇಲ್ (Email)</label>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ಇಮೇಲ್ (ಐಚ್ಛಿಕ)' : 'Email (Optional)'}</label>
                                     <Mail size={18} style={iconStyle} />
                                     <input
                                         type="email"
@@ -216,12 +224,11 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                                         value={form.email}
                                         onChange={e => setForm({ ...form, email: e.target.value })}
                                         placeholder="email@example.com"
-                                        required
                                         autoComplete="email"
                                     />
                                 </div>
                                 <div style={{ position: 'relative' }}>
-                                    <label style={labelStyle}>ದೂರವಾಣಿ ಸಂಖ್ಯೆ (Phone)</label>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ದೂರವಾಣಿ ಸಂಖ್ಯೆ' : 'Phone'}</label>
                                     <Phone size={18} style={iconStyle} />
                                     <input
                                         type="tel"
@@ -237,42 +244,42 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                             </div>
 
                             <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>ಸ್ಥಳ (Location)</label>
+                                <label style={labelStyle}>{language === 'kn' ? 'ಸ್ಥಳ' : 'Location'}</label>
                                 <MapPin size={18} style={iconStyle} />
                                 <input
                                     style={inputStyle}
                                     value={form.location}
                                     onChange={e => setForm({ ...form, location: e.target.value })}
-                                    placeholder="e.g. Bengaluru, India"
+                                    placeholder={language === 'kn' ? 'ಉದಾ: ಬೆಂಗಳೂರು, ಭಾರತ' : "e.g. Bengaluru, India"}
                                 />
                             </div>
 
                             <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>ನನ್ನ ಬಗ್ಗೆ (Bio)</label>
+                                <label style={labelStyle}>{language === 'kn' ? 'ನನ್ನ ಬಗ್ಗೆ' : 'Bio'}</label>
                                 <AlignLeft size={18} style={{ ...iconStyle, top: '2.5rem' }} />
                                 <textarea
                                     style={{ ...inputStyle, height: '100px', resize: 'none', paddingTop: '0.75rem', paddingLeft: '2.8rem' }}
                                     value={form.bio}
                                     onChange={e => setForm({ ...form, bio: e.target.value })}
-                                    placeholder="Tell us a little about your learning goals..."
+                                    placeholder={language === 'kn' ? 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಗುರಿಗಳ ಬಗ್ಗೆ ನಮಗೆ ತಿಳಿಸಿ...' : "Tell us a little about your learning goals..."}
                                 />
                             </div>
 
                             <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>ಹೊಸ ಪಾಸ್ವರ್ಡ್ (Optional Password Update)</label>
+                                <label style={labelStyle}>{language === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್ (ಅಗತ್ಯವಿದ್ದರೆ ಮಾತ್ರ)' : 'New Password (Optional)'}</label>
                                 <Lock size={18} style={iconStyle} />
                                 <input
                                     type="password"
                                     style={inputStyle}
                                     value={form.password}
                                     onChange={e => setForm({ ...form, password: e.target.value })}
-                                    placeholder="Leave blank to keep current password"
+                                    placeholder={language === 'kn' ? 'ಖಾಲಿ ಬಿಟ್ಟರೆ ಹಳೆಯ ಪಾಸ್ವರ್ಡ್ ಇರುತ್ತದೆ' : "Leave blank to keep current password"}
                                     autoComplete="new-password"
                                 />
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button
+                                    <button
                                     className="btn btn-primary"
                                     type="submit"
                                     disabled={loading}
@@ -288,9 +295,11 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                                     }}
                                 >
                                     {loading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                                    {loading ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ (Saving...)' : 'ಮಾಹಿತಿ ಉಳಿಸಿ (Save Changes)'}
+                                    {loading 
+                                        ? (language === 'kn' ? 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...' : 'Saving...') 
+                                        : (language === 'kn' ? 'ಮಾಹಿತಿ ಉಳಿಸಿ' : 'Save Changes')}
                                 </button>
-                                <button
+                                    <button
                                     className="btn"
                                     type="button"
                                     onClick={onBack}
@@ -302,7 +311,7 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                                         borderRadius: '12px'
                                     }}
                                 >
-                                    ರದ್ದುಮಾಡಿ (Cancel)
+                                    {language === 'kn' ? 'ರದ್ದುಮಾಡಿ' : 'Cancel'}
                                 </button>
                             </div>
                         </div>
@@ -317,9 +326,13 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                     flexDirection: 'column',
                     gap: '1rem'
                 }}>
-                    <h4 style={{ color: '#dc2626', margin: 0, fontSize: '1rem' }}>Danger Zone</h4>
+                    <h4 style={{ color: '#dc2626', margin: 0, fontSize: '1rem' }}>
+                        {language === 'kn' ? 'ಖಾತೆ ಅಳಿಸಿ (Danger Zone)' : 'Danger Zone'}
+                    </h4>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
-                        Once you delete your account, there is no going back. All your progress will be cleared.
+                        {language === 'kn' 
+                            ? 'ಒಮ್ಮೆ ನಿಮ್ಮ ಖಾತೆಯನ್ನು ಅಳಿಸಿದರೆ, ಅದನ್ನು ಮರಳಿ ಪಡೆಯಲು ಸಾಧ್ಯವಿಲ್ಲ. ನಿಮ್ಮ ಎಲ್ಲಾ ಪ್ರಗತಿಯನ್ನು ಅಳಿಸಲಾಗುತ್ತದೆ.'
+                            : 'Once you delete your account, there is no going back. All your progress will be cleared.'}
                     </p>
                     <button
                         type="button"
@@ -343,7 +356,7 @@ const ProfileSettings = ({ user, onUpdate, onBack }) => {
                             e.currentTarget.style.background = '#fff';
                         }}
                     >
-                        Delete Account
+                        {language === 'kn' ? 'ಖಾತೆ ಕಿತ್ತುಹಾಕಿ' : 'Delete Account'}
                     </button>
                 </div>
             </div>
