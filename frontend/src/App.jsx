@@ -106,15 +106,13 @@ function AppShell() {
 
         if (progressRes.status === 'fulfilled') {
           const lessons = Array.isArray(progressRes.value.data) ? progressRes.value.data : (progressRes.value.data?.lessons || []);
-          if (selectedLesson && lessons.length > 0) {
-            const exists = lessons.find(l => l.id === selectedLesson.id);
-            if (!exists) {
-              safeRemoveItem('simplish_active_lesson');
-              setSelectedLesson(null);
+          if (lessons.length > 0) {
+            // Check if active lesson still exists in current profile
+            const activeId = safeGetItem('simplish_active_lesson');
+            if (activeId && !lessons.find(l => l.id === activeId)) {
+                safeRemoveItem('simplish_active_lesson');
+                setSelectedLesson(null);
             }
-          } else if (lessons.length === 0) {
-            safeRemoveItem('simplish_active_lesson');
-            setSelectedLesson(null);
           }
         }
       } catch (err) {
@@ -128,14 +126,17 @@ function AppShell() {
         setLoading(false);
       }
     };
-    syncProfile();
 
+    syncProfile();
+  }, []); // Run on mount only
+
+  React.useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 1024);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [selectedLesson]);
+  }, []);
 
   const handleLogout = () => {
     safeRemoveItem('simplish_user');

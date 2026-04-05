@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
             if (existingUser) {
                 console.warn('Registration Blocked: Phone number already in use', signUpData.phone);
                 return res.status(422).json({
-                    message: 'This mobile number is already registered. Please Sign In.',
+                    message: 'Register Failed: This mobile number is already registered. Please Sign In instead or use a different number.',
                     code: 'DUPLICATE_PHONE'
                 });
             }
@@ -100,7 +100,12 @@ exports.register = async (req, res) => {
                 email: data.user.email,
                 phone: data.user.phone,
                 fullName: fullName || 'New User',
-                onboardingCompleted: !!fullName
+                role: 'user',
+                onboarding_completed: false,
+                current_level: 1,
+                wallet_balance: 0,
+                is_paid: false,
+                subscription_expires_at: null
             }
         });
     } catch (error) {
@@ -196,7 +201,8 @@ exports.login = async (req, res) => {
             bio: profile?.bio || null,
             location: profile?.location || null,
             onboarding_completed: profile?.onboarding_completed || false,
-            current_level: profile?.current_level
+            current_level: profile?.current_level || 1,
+            wallet_balance: profile?.wallet_balance || 0
         };
 
         console.log('Login successful, returning user data');
@@ -333,7 +339,11 @@ exports.updateProfile = async (req, res) => {
                     bio: updatedProfile?.bio || null,
                     location: updatedProfile?.location || null,
                     onboarding_completed: updatedProfile?.onboarding_completed || false,
-                    current_level: updatedProfile?.current_level
+                    current_level: updatedProfile?.current_level,
+                    wallet_balance: updatedProfile?.wallet_balance || 0,
+                    is_paid: updatedProfile?.is_paid || false,
+                    subscription_expires_at: updatedProfile?.subscription_expires_at || null,
+                    isSubscriptionActive: updatedProfile?.subscription_expires_at ? new Date(updatedProfile.subscription_expires_at) > new Date() : false
                 }
             });
         }
@@ -535,7 +545,9 @@ exports.getProfile = async (req, res) => {
                 email: req.user.email,
                 phone: req.user.phone,
                 role: req.user.role || 'user',
-                onboarding_completed: false // Default if no DB profile
+                onboarding_completed: req.user.user_metadata?.onboarding_completed || false,
+                is_paid: false,
+                subscription_expires_at: null
             }
         });
     } catch (err) {

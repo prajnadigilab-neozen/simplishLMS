@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, ArrowRight, Trophy, Loader2 } from 'lucide-react';
+import { CheckCircle2, XCircle, ArrowRight, Trophy, Loader2, Zap, RefreshCw } from 'lucide-react';
 import { assessmentApi, lessonApi } from '../utils/api';
 import VoiceRecorder from './VoiceRecorder';
 import ImageUpload from './ImageUpload';
@@ -30,6 +30,11 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
     const [isFinished, setIsFinished] = useState(false);
     const [resultData, setResultData] = useState(null);
     const [answers, setAnswers] = useState({});
+    
+    // Matching State
+    const [shuffledOptions, setShuffledOptions] = useState({});
+    const [activeMatchLeft, setActiveMatchLeft] = useState(null); // { item }
+    const [matchingAnswers, setMatchingAnswers] = useState({}); // { english: kannada }
 
     // Auto-Navigation States
     const [nextLesson, setNextLesson] = useState(null);
@@ -54,6 +59,22 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
         };
         fetchAssessment();
     }, [lessonId]);
+
+    // Shuffle Matching Options
+    useEffect(() => {
+        if (!questions || !questions[currentQuestion]) return;
+        const q = questions[currentQuestion];
+        if (q.type === 'Matching' && q.pairs) {
+            const items = [...q.pairs.map(p => p.kannada)];
+            for (let i = items.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [items[i], items[j]] = [items[j], items[i]];
+            }
+            setShuffledOptions(prev => ({ ...prev, [currentQuestion]: items }));
+            setMatchingAnswers({});
+            setActiveMatchLeft(null);
+        }
+    }, [currentQuestion, questions]);
 
     // Calculate Next Lesson once Assessment is Finished
     useEffect(() => {
@@ -103,29 +124,19 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
         setChecking(true);
 
         try {
-            let userResultText = "";
+            let isCorrect = false;
 
-            if (q.type === 'MCQ' || q.type === 'Text') {
-                userResultText = selectedOption;
-            } else if (q.type === 'Voice' || q.type === 'Image') {
-                if (!currentMedia) return;
-
-                const formData = new FormData();
-                formData.append('media', currentMedia);
-                formData.append('type', q.type);
-
-                const response = await assessmentApi.processMedia(formData);
-                userResultText = response.data.text;
-                console.log(`Extracted text: ${userResultText}`);
+            if (q.type === 'Matching') {
+                const pairs = q.pairs || [];
+                isCorrect = pairs.every(p => matchingAnswers[p.english] === p.kannada) && 
+                            Object.keys(matchingAnswers).length === pairs.length;
+                userResultText = Object.entries(matchingAnswers).map(([k, v]) => `${k}-${v}`).join(', ');
+            } else {
+                const cleanText = (text) => (text || "").toString().trim().toLowerCase().replace(/[^a-z0-9\u0C80-\u0CFF\s]/gi, "");
+                const userClean = cleanText(userResultText);
+                const correctClean = cleanText(q.correct_answer);
+                isCorrect = userClean === correctClean && userClean !== "";
             }
-
-            const cleanText = (text) => (text || "").toString().trim().toLowerCase().replace(/[^a-z0-9\u0C80-\u0CFF\s]/gi, "");
-
-            const userClean = cleanText(userResultText);
-            const correctClean = cleanText(q.correct_answer);
-
-            // Resilient check: compare cleaned versions, or exact match for index/strings
-            const isCorrect = userClean === correctClean && userClean !== "";
 
             setAnswers({ ...answers, [q.id]: userResultText });
             setFeedback(isCorrect ? 'correct' : 'incorrect');
@@ -176,15 +187,12 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
 
     if (isFinished) {
         return (
-            <div className="flex flex-col items-center justify-center p-6 text-center" style={{
+            <div className="flex flex-col items-center justify-center p-4 text-center" style={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)',
-                color: '#fff',
+                background: 'var(--bg-dark)',
+                color: 'var(--text-main)',
                 position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
+                inset: 0,
                 zIndex: 1000,
                 overflowY: 'auto'
             }}>
@@ -200,11 +208,11 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
                 <motion.h2
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '1rem', background: 'linear-gradient(90deg, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+                    style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.5rem', color: 'var(--primary)' }}
                 >
                     {resultData?.passed ? 'Mastery Achieved! 🏆' : 'Keep Pushing! 💪'}
                 </motion.h2>
-                <p style={{ fontSize: '1.2rem', color: '#94a3b8', marginBottom: '2.5rem' }}>
+                <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
                     {resultData?.passed ? 'ಅಭಿನಂದನೆಗಳು! ನೀವು ಯಶಸ್ವಿಯಾಗಿದ್ದೀರಿ.' : 'ಉತ್ತಮ ಪ್ರಯತ್ನ! ಮುಂದಿನ ಬಾರಿ ಇನ್ನಷ್ಟು ಉತ್ತಮವಾಗಿ ಮಾಡಿ.'}
                 </p>
 
@@ -223,70 +231,66 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
                     </svg>
                     <div style={{
                         position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                        fontSize: '3rem', fontWeight: 900, color: '#fff'
+                        fontSize: '2.5rem', fontWeight: 900, color: 'var(--text-main)'
                     }}>
-                        {resultData?.score}<span style={{ fontSize: '1.2rem', opacity: 0.6 }}>%</span>
+                        {resultData?.score}<span style={{ fontSize: '1rem', opacity: 0.6 }}>%</span>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', width: '100%', maxWidth: '400px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', maxWidth: '400px' }}>
                     {!loadingNextLesson && nextLesson && resultData?.passed && onNextLesson && (
                         (() => {
                             const isNextLocked = !isPaid && !freeLessonIds.includes(nextLesson.id);
-                            
                             if (isNextLocked) {
                                 return (
                                     <button
-                                        className="assessment-btn"
+                                        className="btn"
                                         onClick={() => window.location.href = '/payment'}
-                                        style={{
-                                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                            color: '#fff',
-                                            padding: '1.25rem',
-                                            fontSize: '1.15rem',
-                                            fontWeight: 900,
-                                            boxShadow: '0 10px 30px rgba(245, 158, 11, 0.4)',
-                                            border: 'none',
-                                            borderRadius: '16px',
-                                            cursor: 'pointer'
-                                        }}
+                                        style={{ background: 'var(--accent)', color: '#000', width: '100%', padding: '1rem', fontWeight: 900 }}
                                     >
-                                        <Zap size={22} fill="currentColor" /> Unlock All {basicLessonsCount}+ Lessons (₹999)
+                                        <Zap size={18} /> Unlock {basicLessonsCount}+ Lessons
                                     </button>
                                 );
                             }
-
                             return (
                                 <button
-                                    className="assessment-btn"
+                                    className="btn btn-primary"
                                     onClick={() => onNextLesson(nextLesson)}
-                                    style={{
-                                        background: 'linear-gradient(135deg, #6366f1, #a855f7)',
-                                        color: '#fff',
-                                        padding: '1.25rem',
-                                        fontSize: '1.1rem',
-                                        fontWeight: 800,
-                                        boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)'
-                                    }}
+                                    style={{ width: '100%', padding: '1rem' }}
                                 >
-                                    Next: {nextLesson.title} <ArrowRight size={22} />
+                                    Next: {nextLesson.title} <ArrowRight size={18} />
                                 </button>
                             );
                         })()
                     )}
 
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    {!resultData?.passed && (
                         <button
-                            className="assessment-btn"
+                            className="btn retry-btn"
+                            onClick={() => {
+                                setIsFinished(false);
+                                setCurrentQuestion(0);
+                                setSelectedOption(null);
+                                setFeedback(null);
+                            }}
+                            style={{ width: '100%', padding: '1rem' }}
+                        >
+                            <RefreshCw size={18} /> {language === 'kn' ? 'ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ' : 'Retry Test'}
+                        </button>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                        <button
+                            className="btn"
                             onClick={() => window.location.href = '/'}
-                            style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}
+                            style={{ background: 'var(--primary-light)', color: 'var(--primary)', flex: 1, padding: '0.75rem' }}
                         >
                             Home
                         </button>
                         <button
-                            className="assessment-btn"
+                            className="btn"
                             onClick={() => window.location.href = '/library'}
-                            style={{ background: 'rgba(255,255,255,0.05)', flex: 1 }}
+                            style={{ background: 'var(--primary-light)', color: 'var(--primary)', flex: 1, padding: '0.75rem' }}
                         >
                             Library
                         </button>
@@ -363,12 +367,11 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        backdropFilter: 'blur(20px)',
-                        padding: '2.5rem',
-                        borderRadius: '32px',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        background: 'var(--bg-card)',
+                        padding: '1.5rem',
+                        borderRadius: '24px',
+                        border: '1px solid var(--border)',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
                     }}
                 >
                     <div style={{ marginBottom: '2rem' }}>
@@ -447,6 +450,57 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
                             </div>
                         )}
 
+                        {q.type === 'Matching' && !feedback && (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {(q.pairs || []).map((p, pIdx) => {
+                                        const isSelected = activeMatchLeft?.item === p.english;
+                                        const isMatched = matchingAnswers[p.english];
+                                        return (
+                                            <div 
+                                                key={pIdx}
+                                                onClick={() => !feedback && setActiveMatchLeft({ item: p.english })}
+                                                style={{
+                                                    padding: '1rem', borderRadius: '1rem',
+                                                    border: isSelected ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)',
+                                                    background: isSelected ? 'rgba(99, 102, 241, 0.1)' : (isMatched ? 'rgba(99, 102, 241, 0.05)' : 'rgba(255, 255, 255, 0.02)'),
+                                                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                                                }}
+                                            >
+                                                <span style={{ fontWeight: 600 }}>{p.english}</span>
+                                                {isMatched && <span style={{ fontSize: '0.7rem', color: '#10b981' }}>Linked</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {(shuffledOptions[currentQuestion] || []).map((kan, kIdx) => {
+                                        const isMatchedWith = Object.keys(matchingAnswers).find(key => matchingAnswers[key] === kan);
+                                        return (
+                                            <div 
+                                                key={kIdx}
+                                                onClick={() => {
+                                                    if (!feedback && activeMatchLeft) {
+                                                        setMatchingAnswers(prev => ({ ...prev, [activeMatchLeft.item]: kan }));
+                                                        setActiveMatchLeft(null);
+                                                    }
+                                                }}
+                                                style={{
+                                                    padding: '1rem', borderRadius: '1rem',
+                                                    border: isMatchedWith ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.1)',
+                                                    background: isMatchedWith ? 'rgba(16, 185, 129, 0.05)' : 'rgba(255, 255, 255, 0.02)',
+                                                    cursor: activeMatchLeft ? 'pointer' : 'default',
+                                                    color: isMatchedWith ? '#fff' : '#94a3b8'
+                                                }}
+                                            >
+                                                {kan}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
                         {feedback && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
@@ -481,7 +535,7 @@ const AssessmentInterface = ({ user, lessonId = 'any', onNextLesson }) => {
                             <button
                                 className="assessment-btn"
                                 onClick={handleCheck}
-                                disabled={checking || (!selectedOption && !currentMedia)}
+                                disabled={checking || (!selectedOption && !currentMedia && Object.keys(matchingAnswers).length < (q.pairs?.length || 0))}
                                 style={{
                                     padding: '1rem 3rem',
                                     background: (selectedOption || currentMedia) ? '#6366f1' : 'rgba(255,255,255,0.05)',

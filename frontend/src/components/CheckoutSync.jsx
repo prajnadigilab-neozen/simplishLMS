@@ -272,9 +272,44 @@ const CheckoutSync = ({ user, onUpdateUser }) => {
 
                     {/* OPTION 2: TOP UP */}
                     <motion.div 
-                        whileHover={{ y: -5 }}
-                        style={{ background: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}
+                        whileHover={isSubscribed ? { y: -5 } : {}}
+                        style={{ 
+                            background: 'white', 
+                            borderRadius: '24px', 
+                            border: '1px solid #e2e8f0', 
+                            overflow: 'hidden', 
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+                            position: 'relative',
+                            opacity: isSubscribed ? 1 : 0.7,
+                            cursor: isSubscribed ? 'default' : 'not-allowed'
+                        }}
                     >
+                        {!isSubscribed && (
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(255,255,255,0.4)',
+                                backdropFilter: 'blur(1px)',
+                                zIndex: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                gap: '0.5rem',
+                                padding: '1rem'
+                            }}>
+                                <div style={{ background: '#fef3c7', padding: '0.75rem', borderRadius: '50%', color: '#d97706' }}>
+                                    <ShieldCheck size={24} />
+                                </div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#92400e', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Membership Required
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: '#b45309', margin: 0, textAlign: 'center', fontWeight: 600 }}>
+                                    Renew access to unlock wallet top-up
+                                </p>
+                            </div>
+                        )}
+
                         <div style={{ padding: '1.5rem', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Zap size={18} color="#f59e0b" fill="#f59e0b" /> WALLET TOP-UP
@@ -293,13 +328,13 @@ const CheckoutSync = ({ user, onUpdateUser }) => {
                             </div>
                             <button
                                 onClick={() => handleSyncInitiate('TOPUP', Number(settings.topup_price || 100))}
-                                disabled={loading}
+                                disabled={loading || !isSubscribed}
                                 style={{ 
-                                    width: '100%', padding: '1rem', borderRadius: '12px', background: '#f59e0b', 
-                                    color: 'white', fontWeight: 800, border: 'none', cursor: loading ? 'not-allowed' : 'pointer'
+                                    width: '100%', padding: '1rem', borderRadius: '12px', background: isSubscribed ? '#f59e0b' : '#d1d5db', 
+                                    color: 'white', fontWeight: 800, border: 'none', cursor: (loading || !isSubscribed) ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : 'TOP UP NOW'}
+                                {loading ? <Loader2 className="animate-spin" /> : isSubscribed ? 'TOP UP NOW' : 'LOCKED'}
                             </button>
                         </div>
                     </motion.div>

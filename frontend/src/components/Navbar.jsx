@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import logoImg from '../assets/logo_final.jpg';
 
 const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
     const location = useLocation();
@@ -50,15 +51,13 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0.75rem 2rem',
+            padding: '0.5rem 1rem', // Reduced padding for mobile
             background: 'var(--nav-bg)',
-            backdropFilter: 'blur(16px) saturate(180%)',
             borderBottom: '1px solid var(--border)',
             position: 'sticky',
             top: 0,
-            zIndex: 1001, // Above everything
-            marginBottom: '1rem',
-            height: '70px',
+            zIndex: 1001,
+            height: 'var(--nav-height)',
         }}>
             {/* ── Left Section: Logo & Branding ── */}
         <div 
@@ -66,19 +65,18 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
         >
             <div 
                 onClick={() => onNavigate('dashboard')}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
             >
-                <img src="/logo.png" alt="Logo" style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'contain' }} />
-                <h1 style={{
-                    fontSize: '1.4rem',
-                    fontWeight: 900,
-                    margin: 0,
-                    letterSpacing: '-0.02em',
-                    color: 'var(--primary)',
-                    textTransform: 'uppercase'
+                <div style={{ 
+                    background: 'white', // High contrast background for the logo
+                    padding: '2px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
-                    SIMPLISH
-                </h1>
+                    <img src={logoImg} alt="Simplish" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+                </div>
             </div>
         </div>
 
@@ -106,7 +104,7 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
                         >
                             {item.id === 'study_area' ? (
                                 <img 
-                                    src="/logo.png" 
+                                    src={logoImg} 
                                     alt="Icon" 
                                     style={{ 
                                         width: '18px', 
@@ -274,15 +272,14 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                     style={{
                                         position: 'absolute',
-                                        top: 'calc(100% + 0.75rem)',
+                                        top: 'calc(100% + 0.5rem)',
                                         right: 0,
-                                        width: '260px',
-                                        background: 'var(--bg-main)',
-                                        backdropFilter: 'blur(20px)',
+                                        width: '240px',
+                                        background: 'var(--bg-dropdown)',
                                         border: '1px solid var(--border)',
-                                        borderRadius: '20px',
-                                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
-                                        padding: '1.25rem',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                                        padding: '1rem',
                                         zIndex: 1002
                                     }}
                                 >

@@ -1,38 +1,37 @@
 const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config({ path: './.env' });
+require('dotenv').config({ path: './backend/.env' });
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-async function checkSchema() {
-    console.log('--- Verifying Database State ---');
-    
-    // Check settings table
-    const { data: settings, error: settingsError } = await supabase.from('settings').select('*');
-    if (settingsError) {
-        console.error('Error fetching settings:', settingsError);
-    } else {
-        console.log('Settings found:', JSON.stringify(settings, null, 2));
-    }
-
-    // Check payments table structure by fetching one record
-    const { data: payment, error: paymentError } = await supabase.from('payments').select('*').limit(1).maybeSingle();
-    if (paymentError) {
-        console.error('Error fetching payment row:', paymentError);
-        // If it fails with "column does not exist", it might be because of a previous bad query
-        // Let's try to just get IDs
-        const { data: ids, error: idError } = await supabase.from('payments').select('id').limit(1);
-        if (idError) console.error('Error selecting id from payments:', idError);
-        else console.log('Payments table exists (id found)');
-    } else if (payment) {
-        console.log('Columns in payments table:', Object.keys(payment));
-    } else {
-        console.log('Payments table is empty, but exists.');
-        // Try to insert a dummy row to see what columns are expected? 
-        // No, let's try a different RPC or query information_schema if possible
-        const { data: info, error: infoError } = await supabase.rpc('inspect_table', { tablename: 'payments' });
-        if (infoError) console.log('inspect_table RPC not available');
-        else console.log('Table info:', info);
-    }
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Missing Supabase credentials');
+  process.exit(1);
 }
 
-checkSchema();
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkDatabase() {
+  console.log('--- Checking Database Tables ---');
+
+  // Check Users
+  const { data: users, error: usersError } = await supabase.from('users').select('id, email, phone').limit(5);
+  if (usersError) console.error('Users Table Error:', usersError.message);
+  else console.log('Users Table: OK', users.length, 'records found');
+
+  // Check Settings
+  const { data: settings, error: settingsError } = await supabase.from('settings').select('*');
+  if (settingsError) console.error('Settings Table Error:', settingsError.message);
+  else console.log('Settings Table: OK', settings.length, 'records found');
+
+  // Check Payments
+  const { data: payments, error: paymentsError } = await supabase.from('payments').select('*').limit(5);
+  if (paymentsError) console.error('Payments Table Error:', paymentsError.message);
+  else console.log('Payments Table: OK', payments.length, 'records found');
+
+  // Check if Razorpay keys are set
+  console.log('Razorpay Key ID:', process.env.RAZORPAY_KEY_ID ? 'SET' : 'NOT SET');
+  console.log('Razorpay Key Secret:', process.env.RAZORPAY_KEY_SECRET ? 'SET' : 'NOT SET');
+}
+
+checkDatabase();

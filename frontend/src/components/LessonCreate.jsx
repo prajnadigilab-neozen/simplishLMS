@@ -11,9 +11,11 @@ const LessonCreate = ({ lesson, onBack }) => {
         description: '',
         transcription: '',
         displayOrder: 1,
-        moduleTitle: 'General',
+        moduleTitle: '',
         unitNumber: 1,
-        content: null
+        content: null,
+        isExam: false,
+        isFinal: false
     });
 
     // Sub-states for various sections
@@ -50,9 +52,11 @@ const LessonCreate = ({ lesson, onBack }) => {
                 description: lesson.description || '',
                 transcription: lesson.transcription || '',
                 displayOrder: lesson.display_order || 1,
-                moduleTitle: lesson.module_title || 'General',
+                moduleTitle: lesson.module_title || '',
                 unitNumber: lesson.unit_number || 1,
-                content: lesson.content || null
+                content: lesson.content || null,
+                isExam: lesson.content?.isExam || false,
+                isFinal: lesson.content?.isFinal || false
             });
             // Populate sub-states
             const content = lesson.content || {};
@@ -76,9 +80,11 @@ const LessonCreate = ({ lesson, onBack }) => {
                 description: '',
                 transcription: '',
                 displayOrder: 1,
-                moduleTitle: 'General',
+                moduleTitle: '',
                 unitNumber: 1,
-                content: null
+                content: null,
+                isExam: false,
+                isFinal: false
             });
             setGeneratedContentPreview('');
             setAiPrompt('');
@@ -177,7 +183,9 @@ const LessonCreate = ({ lesson, onBack }) => {
                 evolutionContent: finalEvolution,
                 readingContent: finalReading,
                 vocabularyContent: finalVocabulary,
-                milestoneTest: questions
+                milestoneTest: questions,
+                isExam: formData.isExam,
+                isFinal: formData.isFinal
             };
 
             // 1. Save/Update Lesson
@@ -573,12 +581,12 @@ const LessonCreate = ({ lesson, onBack }) => {
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Module Title</label>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Module Title (Optional)</label>
                                     <input
                                         className="glass-card"
                                         style={{ width: '100%', padding: '1rem', background: 'var(--bg-dark)', border: '1px solid var(--border)' }}
                                         type="text"
-                                        placeholder="e.g. Greetings & Basic Phrases"
+                                        placeholder="Leave empty for 'General'"
                                         value={formData.moduleTitle}
                                         onChange={(e) => setFormData({ ...formData, moduleTitle: e.target.value })}
                                     />
@@ -592,6 +600,28 @@ const LessonCreate = ({ lesson, onBack }) => {
                                         value={formData.unitNumber}
                                         onChange={(e) => setFormData({ ...formData, unitNumber: e.target.value })}
                                     />
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="isExam" 
+                                        checked={formData.isExam} 
+                                        onChange={(e) => setFormData({...formData, isExam: e.target.checked})}
+                                        style={{ width: '20px', height: '20px' }}
+                                    />
+                                    <label htmlFor="isExam" style={{ fontWeight: 600, cursor: 'pointer' }}>Mark as Module Exam</label>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                                    <input 
+                                        type="checkbox" 
+                                        id="isFinal" 
+                                        checked={formData.isFinal} 
+                                        onChange={(e) => setFormData({...formData, isFinal: e.target.checked})}
+                                        style={{ width: '20px', height: '20px' }}
+                                    />
+                                    <label htmlFor="isFinal" style={{ fontWeight: 600, cursor: 'pointer' }}>Is Final Graduation Exam?</label>
                                 </div>
                             </div>
                             <div>

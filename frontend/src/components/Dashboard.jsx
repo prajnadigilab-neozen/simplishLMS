@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Loader2, CheckCircle2, Lock } from 'lucide-react';
+import { Play, Loader2, CheckCircle2, Lock, Trophy } from 'lucide-react';
 import { lessonApi, placementApi, reportApi } from '../utils/api';
 
 const Dashboard = ({ user, onStartLesson, language }) => {
@@ -71,9 +71,28 @@ const Dashboard = ({ user, onStartLesson, language }) => {
     const sortedLessons = [...lessons].sort((a, b) => {
         const levelDiff = levels.indexOf(a.level) - levels.indexOf(b.level);
         if (levelDiff !== 0) return levelDiff;
-        // Primary Sort: Unit Number (1, 2, 3...)
-        // Secondary Sort: Display Order (within unit)
-        return (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0);
+
+        // 1. Final Graduation Exam always absolute last in the level
+        const aIsFinal = !!a.content?.isFinal;
+        const bIsFinal = !!b.content?.isFinal;
+        if (aIsFinal && !bIsFinal) return 1;
+        if (!aIsFinal && bIsFinal) return -1;
+
+        // 2. Base on Unit Number first
+        const unitA = Number(a.unit_number) || 0;
+        const unitB = Number(b.unit_number) || 0;
+        if (unitA !== unitB) return unitA - unitB;
+
+        // 3. Within same unit, Module Exams always last
+        const aIsExam = !!a.content?.isExam;
+        const bIsExam = !!b.content?.isExam;
+        if (aIsExam && !bIsExam) return 1;
+        if (!aIsExam && bIsExam) return -1;
+
+        // 4. Finally by display order
+        const dispA = Number(a.display_order) || 0;
+        const dispB = Number(b.display_order) || 0;
+        return dispA - dispB;
     });
 
     // Find the lesson the user is currently working on or the next logical one
@@ -103,8 +122,8 @@ const Dashboard = ({ user, onStartLesson, language }) => {
             <header style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{
-                        width: '64px',
-                        height: '64px',
+                        width: '48px',
+                        height: '48px',
                         borderRadius: '50%',
                         background: 'var(--primary)',
                         display: 'flex',
@@ -122,8 +141,8 @@ const Dashboard = ({ user, onStartLesson, language }) => {
                         )}
                     </div>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <h1 style={{ fontSize: '2rem', margin: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <h1 style={{ fontSize: '1.4rem', margin: 0 }}>
                                 {language === 'kn' ? `ನಮಸ್ಕಾರ, ${user?.fullName?.split(' ')[0]}!` : `Hello, ${user?.fullName?.split(' ')[0]}!`}
                             </h1>
                             <span style={{
@@ -185,8 +204,8 @@ const Dashboard = ({ user, onStartLesson, language }) => {
                     ) : (
                         <>
                             {/* Pick up where you left off */}
-                            <section style={{ marginBottom: '4rem' }}>
-                                <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <section style={{ marginBottom: '2.5rem' }}>
+                                <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                     <span>
                                         {isCourseCompleted 
                                             ? (language === 'kn' ? '🎉 ಅಭಿನಂದನೆಗಳು!' : '🎉 Congratulations!') 
@@ -196,7 +215,7 @@ const Dashboard = ({ user, onStartLesson, language }) => {
                                 <motion.div
                                     className="glass-card"
                                     style={{
-                                        padding: '2.5rem',
+                                        padding: '1.5rem',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
@@ -218,8 +237,10 @@ const Dashboard = ({ user, onStartLesson, language }) => {
                                             </>
                                         ) : (
                                             <>
-                                                <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{currentLesson.level} English</span>
-                                                <h2 style={{ margin: '0.5rem 0', fontSize: '1.75rem' }}>{currentLesson.title}</h2>
+                                                {!currentLesson.content?.isFinal && (
+                                                    <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{currentLesson.level} English</span>
+                                                )}
+                                                <h2 style={{ margin: '0.5rem 0', fontSize: '1.25rem' }}>{currentLesson.title}</h2>
                                                 <div style={{ maxWidth: '450px', marginTop: '1.5rem' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.9rem', fontWeight: 600 }}>
                                                         <span style={{ color: 'var(--text-main)' }}>{language === 'kn' ? 'ಪ್ರಗತಿ' : 'Progress'}</span>
@@ -279,11 +300,28 @@ const Dashboard = ({ user, onStartLesson, language }) => {
                                         const lessonsInLevel = lessons.filter(l => l.level === lvl);
 
                                         // Robust locking: Module is locked if any lesson in any previous level is incomplete
+                                        // Robust locking: Module is locked if any lesson in any previous level is incomplete
                                         const prevLevels = levels.slice(0, index);
                                         const lessonsInPrevLevels = lessons.filter(l => prevLevels.includes(l.level));
                                         const isLocked = !isAdmin && index > 0 && (lessonsInPrevLevels.length === 0 || lessonsInPrevLevels.some(l => (l.progress || 0) < 100));
 
                                         const isExpanded = expandedLevel === lvl;
+
+                                        // --- MODULE GROUPING LOGIC ---
+                                        const modules = [];
+                                        const moduleMap = new Map();
+
+                                        lessonsInLevel.sort((a,b) => (a.unit_number||0) - (b.unit_number||0) || (a.display_order||0) - (b.display_order||0)).forEach(l => {
+                                            const mTitle = l.module_title || 'General';
+                                            if (!moduleMap.has(mTitle)) {
+                                                const mObj = { title: mTitle, lessons: [], unit: l.unit_number || 0 };
+                                                moduleMap.set(mTitle, mObj);
+                                                modules.push(mObj);
+                                            }
+                                            moduleMap.get(mTitle).lessons.push(l);
+                                        });
+                                        // Sort modules by unit number
+                                        modules.sort((a,b) => a.unit - b.unit);
 
                                         return (
                                             <motion.div
@@ -392,78 +430,160 @@ const Dashboard = ({ user, onStartLesson, language }) => {
 
                                                 {/* Expandable Lesson View */}
                                                 {isExpanded && !isLocked && (
-                                                    <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                                                        <h5 style={{ fontSize: '0.85rem', marginBottom: '1rem', color: 'var(--text-muted)' }}>
-                                                            {language === 'kn' ? 'ಈ ಹಂತದ ಪಾಠಗಳು:' : 'Lessons in this module:'}
-                                                        </h5>
-                                                        {lessonsInLevel.length === 0 ? (
+                                                    <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                                        {modules.length === 0 ? (
                                                             <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>
                                                                 {language === 'kn' ? 'ಇನ್ನೂ ಯಾವುದೇ ಪಾಠಗಳು ಲಭ್ಯವಿಲ್ಲ.' : 'No lessons available yet.'}
                                                             </p>
                                                         ) : (
-                                                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                                                {lessonsInLevel.sort((a,b) => (a.display_order||0) - (b.display_order||0)).map(l => {
-                                                                    const globalIdx = sortedLessons.findIndex(sl => sl.id === l.id);
-                                                                    const prevLesson = globalIdx > 0 ? sortedLessons[globalIdx - 1] : null;
-                                                                    const isPrereqLocked = !isAdmin && prevLesson && (prevLesson.progress || 0) < 100;
-                                                                    
-                                                                    return (
-                                                                        <li 
-                                                                            key={l.id} 
-                                                                            style={{ 
-                                                                                display: 'flex', 
-                                                                                justifyContent: 'space-between', 
-                                                                                alignItems: 'center', 
-                                                                                fontSize: '0.85rem', 
-                                                                                padding: '0.75rem', 
-                                                                                background: isPrereqLocked ? 'rgba(0,0,0,0.01)' : 'rgba(var(--primary-rgb), 0.03)', 
-                                                                                borderRadius: '12px',
-                                                                                border: isPrereqLocked ? '1px solid transparent' : '1px solid rgba(var(--primary-rgb), 0.1)',
-                                                                                opacity: isPrereqLocked ? 0.6 : 1,
-                                                                                cursor: isPrereqLocked ? 'not-allowed' : 'pointer',
-                                                                                transition: 'all 0.2s ease'
-                                                                            }}
-                                                                            onClick={() => {
-                                                                                if (isPrereqLocked) return;
-                                                                                onStartLesson && onStartLesson(l);
-                                                                            }}
-                                                                        >
-                                                                            <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }} title={l.title}>
-                                                                                {isPrereqLocked ? <Lock size={14} color="var(--text-muted)" /> : (l.progress === 100 ? <CheckCircle2 size={14} color="#16a34a" /> : <Play size={14} color="var(--primary)" />)}
-                                                                                <span>{l.title}</span>
-                                                                                {l.score !== null && (
-                                                                                    <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>
-                                                                                        [{l.score}%]
+                                                            modules.map((m, mIdx) => (
+                                                                <div key={mIdx}>
+                                                                    {m.title.toLowerCase() !== 'general' && (
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)' }}></div>
+                                                                            <h5 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-main)', opacity: 0.8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                                                                {m.title}
+                                                                            </h5>
+                                                                        </div>
+                                                                    )}
+                                                                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                                        {m.lessons.map(l => {
+                                                                            const globalIdx = sortedLessons.findIndex(sl => sl.id === l.id);
+                                                                            const prevLesson = globalIdx > 0 ? sortedLessons[globalIdx - 1] : null;
+                                                                            const isPrereqLocked = !isAdmin && prevLesson && (prevLesson.progress || 0) < 100;
+                                                                            const isExam = l.content?.isExam;
+                                                                            
+                                                                            return (
+                                                                                <li 
+                                                                                    key={l.id} 
+                                                                                    style={{ 
+                                                                                        display: 'flex', 
+                                                                                        justifyContent: 'space-between', 
+                                                                                        alignItems: 'center', 
+                                                                                        fontSize: '0.85rem', 
+                                                                                        padding: '0.75rem', 
+                                                                                        background: isPrereqLocked ? 'rgba(0,0,0,0.01)' : (isExam ? 'rgba(245, 158, 11, 0.05)' : 'rgba(var(--primary-rgb), 0.03)'), 
+                                                                                        borderRadius: '12px',
+                                                                                        border: isPrereqLocked ? '1px solid transparent' : (isExam ? '1px solid rgba(245, 158, 11, 0.2)' : '1px solid rgba(var(--primary-rgb), 0.1)'),
+                                                                                        opacity: isPrereqLocked ? 0.6 : 1,
+                                                                                        cursor: isPrereqLocked ? 'not-allowed' : 'pointer',
+                                                                                        transition: 'all 0.2s ease',
+                                                                                        minHeight: '56px'
+                                                                                    }}
+                                                                                    onClick={() => {
+                                                                                        if (isPrereqLocked) return;
+                                                                                        onStartLesson && onStartLesson(l);
+                                                                                    }}
+                                                                                >
+                                                                                    <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }} title={l.title}>
+                                                                                        {isPrereqLocked ? <Lock size={14} color="var(--text-muted)" /> : (l.progress === 100 ? <CheckCircle2 size={14} color="#16a34a" /> : (isExam ? <Trophy size={14} color="#f59e0b" /> : <Play size={14} color="var(--primary)" />))}
+                                                                                        <span style={{ fontWeight: isExam ? 800 : 500 }}>{l.title}</span>
+                                                                                        {l.score !== null && (
+                                                                                            <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 'bold' }}>
+                                                                                                [{l.score}%]
+                                                                                            </span>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <span style={{
+                                                                                        fontWeight: 'bold',
+                                                                                        color: isPrereqLocked ? 'var(--text-muted)' : (l.progress === 100 ? '#10b981' : (isExam ? '#f59e0b' : 'var(--text-main)')),
+                                                                                        flexShrink: 0,
+                                                                                        fontSize: '0.7rem',
+                                                                                        padding: '0.25rem 0.5rem',
+                                                                                        background: isPrereqLocked ? 'rgba(0,0,0,0.05)' : (l.progress === 100 ? 'rgba(16, 185, 129, 0.1)' : 'transparent'),
+                                                                                        borderRadius: '6px',
+                                                                                        textTransform: 'uppercase',
+                                                                                        letterSpacing: '0.02em'
+                                                                                    }}>
+                                                                                        {isPrereqLocked 
+                                                                                            ? (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'Locked') 
+                                                                                            : (l.progress === 100 
+                                                                                                ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
+                                                                                                : (isExam ? (language === 'kn' ? 'ಪರೀಕ್ಷೆ' : 'MODULE EXAM') : `${l.progress || 0}%`))}
                                                                                     </span>
-                                                                                )}
-                                                                            </div>
-                                                                            <span style={{
-                                                                                fontWeight: 'bold',
-                                                                                color: isPrereqLocked ? 'var(--text-muted)' : (l.progress === 100 ? '#10b981' : 'var(--text-main)'),
-                                                                                flexShrink: 0,
-                                                                                fontSize: '0.7rem',
-                                                                                padding: '0.25rem 0.5rem',
-                                                                                background: isPrereqLocked ? 'rgba(0,0,0,0.05)' : (l.progress === 100 ? 'rgba(16, 185, 129, 0.1)' : 'transparent'),
-                                                                                borderRadius: '6px',
-                                                                                textTransform: 'uppercase',
-                                                                                letterSpacing: '0.02em'
-                                                                            }}>
-                                                                                {isPrereqLocked 
-                                                                                    ? (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'Locked') 
-                                                                                    : (l.progress === 100 
-                                                                                        ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
-                                                                                        : `${l.progress || 0}%`)}
-                                                                            </span>
-                                                                        </li>
-                                                                    );
-                                                                })}
-                                                            </ul>
+                                                                                </li>
+                                                                            );
+                                                                        })}
+                                                                    </ul>
+                                                                </div>
+                                                            ))
                                                         )}
                                                     </div>
                                                 )}
                                             </motion.div>
                                         );
                                     })}
+                                </div>
+                            </section>
+                            
+                            {/* --- FINAL GRADUATION EXAM SECTION --- */}
+                            <section style={{ marginTop: '2.5rem', paddingBottom: '2.5rem' }}>
+                                <div className="glass-card" style={{ 
+                                    padding: '2rem', 
+                                    background: 'linear-gradient(135deg, var(--bg-card) 0%, rgba(var(--primary-rgb), 0.05) 100%)',
+                                    border: '2px solid var(--primary)',
+                                    borderRadius: '24px',
+                                    textAlign: 'center',
+                                    position: 'relative',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{ position: 'absolute', top: -20, right: -20, opacity: 0.05 }}>
+                                        <Trophy size={200} />
+                                    </div>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.5rem', color: 'var(--text-main)' }}>
+                                        {language === 'kn' ? 'ಪಠ್ಯಕ್ರಮದ ಪದವಿ' : 'Curriculum Graduation'}
+                                    </h3>
+                                    <p style={{ color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto 2.5rem auto', fontSize: '1.1rem' }}>
+                                        {language === 'kn' 
+                                            ? 'ನೀವು ಎಲ್ಲಾ ಹಂತಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಪೂರ್ಣಗೊಳಿಸಿದ ನಂತರ ಅಂತಿಮ ಪರೀಕ್ಷೆಯನ್ನು ಇಲ್ಲಿ ತೆಗೆದುಕೊಳ್ಳಬಹುದು.' 
+                                            : 'Once you successfully complete all levels, you can challenge the Final Graduation Exam here.'}
+                                    </p>
+
+                                    {(() => {
+                                        const finalExam = lessons.find(l => l.content?.isFinal);
+                                        const allOtherComplete = lessons.filter(l => !l.content?.isFinal).every(l => l.progress === 100);
+                                        const finalLocked = !isAdmin && (!allOtherComplete || !finalExam);
+
+                                        if (isAdmin && !finalExam) {
+                                            return (
+                                                <button 
+                                                    className="btn btn-primary" 
+                                                    onClick={() => navigate('/library')}
+                                                    style={{ padding: '1rem 3rem', fontSize: '1.1rem', background: '#f59e0b', border: 'none' }}
+                                                >
+                                                    {language === 'kn' ? 'ಅಂತಿಮ ಪರೀಕ್ಷೆಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ' : 'Upload Final Graduation Exam'}
+                                                </button>
+                                            );
+                                        }
+
+                                        return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                                <button 
+                                                    disabled={finalLocked}
+                                                    onClick={() => finalExam && onStartLesson(finalExam)}
+                                                    className="btn btn-primary" 
+                                                    style={{ 
+                                                        padding: '1.25rem 4rem', 
+                                                        fontSize: '1.2rem', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        gap: '1rem',
+                                                        opacity: finalLocked ? 0.5 : 1,
+                                                        background: finalLocked ? 'var(--bg-card)' : 'var(--primary)',
+                                                        color: finalLocked ? 'var(--text-muted)' : 'white'
+                                                    }}
+                                                >
+                                                    {finalLocked ? <Lock size={24} /> : <Trophy size={24} />}
+                                                    {language === 'kn' ? 'ಅಂತಿಮ ಪರೀಕ್ಷೆ ಪ್ರಾರಂಭಿಸಿ' : 'Take Final Exam'}
+                                                </button>
+                                                {finalLocked && !allOtherComplete && (
+                                                    <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>
+                                                        {language === 'kn' ? 'ಈ ಹಂತ ತಲುಪಲು ಮೊದಲಿನ ಎಲ್ಲಾ ಹಂತ ಮುಕ್ತಾಯಗೊಳಿಸಿ' : 'Complete all previous lessons to unlock graduation'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </section>
                         </>

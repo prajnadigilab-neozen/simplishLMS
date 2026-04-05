@@ -17,6 +17,22 @@ exports.initiate = async (req, res) => {
     }
     
     try {
+        if (type === 'TOPUP') {
+            const { data: profile } = await supabase
+                .from('users')
+                .select('subscription_expires_at, is_paid')
+                .eq('id', userId)
+                .single();
+
+            const isPremium = profile?.is_paid && profile?.subscription_expires_at && new Date(profile.subscription_expires_at) > new Date();
+            
+            if (!isPremium) {
+                return res.status(403).json({ 
+                    message: 'Membership required to top up your wallet. Please renew your access first.' 
+                });
+            }
+        }
+
         // Fetch values from metadata for dynamic pricing
         const { data: storeMetadata } = await supabase.from('settings').select('*');
         const config = (storeMetadata || []).reduce((acc, curr) => { 
@@ -34,23 +50,84 @@ exports.initiate = async (req, res) => {
         const isMockMode = process.env.RAZORPAY_KEY_ID === 'rzp_test_your_key_id' || !process.env.RAZORPAY_KEY_ID;
         
         if (isMockMode) {
-            console.log('MOCK MODE: Simulating transaction record creation');
-            const mockToken = `token_sync_${Math.random().toString(36).substring(7)}`;
+            console.log('[Billing] Mock Mode: Performing robust consistency checks for user:', userId);
             
-            // Store mock record in DB
-            const { error: mockInsertError } = await supabase.from('payments').insert([{
+            // Create an ISOLATED client with the service role to GUARANTEE RLS bypass
+            const { createClient: isolatedCreateClient } = require('@supabase/supabase-js');
+            const isolatedSupabase = isolatedCreateClient(
+                process.env.SUPABASE_URL,
+                process.env.SUPABASE_SERVICE_ROLE_KEY
+            );
+
+            // 1. Ensure user exists in public.users (Foreign Key safety)
+            const { data: userExists, error: userCheckError } = await isolatedSupabase
+                .from('users')
+                .select('id')
+                .eq('id', userId)
+                .single();
+
+            if (!userExists || userCheckError) {
+                console.log('[Billing] User not in public.users, performing emergency sync...');
+                const fullName = req.user.full_name || req.user.fullName || 'Sync User';
+                const phone = req.user.phone || '0000000000';
+                
+                const { error: syncError } = await isolatedSupabase
+                    .from('users')
+                    .upsert({
+                        id: userId,
+                        phone: phone,
+                        full_name: fullName,
+                        status: 'active',
+                        role: 'student'
+                    });
+                
+                if (syncError) {
+                    console.error('[Billing] Emergency sync failed:', syncError);
+                    // Continue anyway, it might be a temporary select error
+                }
+            }
+
+            const mockToken = `token_sync_${Math.random().toString(36).substring(7)}`;
+
+            // 2. Store mock record via direct PostgREST API call
+            // Using fetch directly guarantees service-role RLS bypass regardless of JS client session state
+            const payload = {
                 user_id: userId,
                 amount: price,
                 currency: 'INR',
                 status: 'pending',
                 transaction_id: mockToken,
                 provider: 'mock',
-                payment_type: type 
-            }]);
+                payment_type: type,
+                credits_awarded: 0
+            };
 
-            if (mockInsertError) {
-                console.error('MOCK INSERT ERROR:', mockInsertError);
-                return res.status(500).json({ message: 'Metadata sync error', error: mockInsertError.message });
+            const insertResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/payments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!insertResponse.ok) {
+                const errBody = await insertResponse.text();
+                console.error('[Billing] MOCK INSERT FAILED (PostgREST):', {
+                    status: insertResponse.status,
+                    body: errBody,
+                    dataSent: payload
+                });
+                return res.status(500).json({ 
+                    message: 'Record sync error', 
+                    details: errBody,
+                    debug: {
+                        urlLen: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.length : 0,
+                        keyLen: process.env.SUPABASE_SERVICE_ROLE_KEY ? process.env.SUPABASE_SERVICE_ROLE_KEY.length : 0
+                    }
+                });
             }
 
             return res.status(201).json({
@@ -136,36 +213,75 @@ exports.confirm = async (req, res) => {
             }
         }
 
-        // 2. Identify Record
-        const { data: record, error: fetchError } = await supabase
-            .from('payments')
-            .select('amount, payment_type, status')
-            .eq('transaction_id', razorpay_order_id)
-            .single();
+        // 2. Identify Record via Direct PostgREST API call
+        const recordResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/payments?transaction_id=eq.${encodeURIComponent(razorpay_order_id)}&select=amount,payment_type,status`, {
+            method: 'GET',
+            headers: {
+                'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+            }
+        });
 
-        if (fetchError || !record) throw new Error('Record not found');
+        if (!recordResponse.ok) {
+            const errBody = await recordResponse.text();
+            throw new Error(`Record fetch failed: ${errBody}`);
+        }
+
+        const records = await recordResponse.json();
+        const record = records[0];
+
+        if (!record) throw new Error('Record not found');
 
         if (record.status === 'pending') {
-            // 3. Fetch Settings for potential hybrid logic
-            const { data: metadata } = await supabase.from('settings').select('*');
-            const config = (metadata || []).reduce((acc, curr) => { acc[curr.key] = curr.value; return acc; }, {});
+            // 3. Fetch Settings for dynamic pricing/config via Direct PostgREST
+            const settingsResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/settings?select=*`, {
+                method: 'GET',
+                headers: {
+                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+                }
+            });
 
-            // Update Sync Status
-            await supabase
-                .from('payments')
-                .update({ 
+            const metadata = settingsResponse.ok ? await settingsResponse.json() : [];
+            const config = metadata.reduce((acc, curr) => { acc[curr.key] = curr.value; return acc; }, {});
+
+            // Update Payment Status via Direct PostgREST API
+            const updatePaymentResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/payments?transaction_id=eq.${encodeURIComponent(razorpay_order_id)}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Prefer': 'return=minimal'
+                },
+                body: JSON.stringify({ 
                     status: 'completed', 
                     transaction_id: razorpay_payment_id,
                     updated_at: new Date().toISOString() 
                 })
-                .eq('transaction_id', razorpay_order_id);
+            });
 
-            // Fetch User for update
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('wallet_balance, subscription_expires_at')
-                .eq('id', userId)
-                .single();
+            if (!updatePaymentResponse.ok) {
+                const errBody = await updatePaymentResponse.text();
+                throw new Error(`Payment update failed: ${errBody}`);
+            }
+
+            // Fetch User profile via Direct PostgREST
+            const userResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?id=eq.${userId}&select=wallet_balance,subscription_expires_at`, {
+                method: 'GET',
+                headers: {
+                    'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+                }
+            });
+
+            if (!userResponse.ok) {
+                const errBody = await userResponse.text();
+                throw new Error(`Profile fetch failed: ${errBody}`);
+            }
+
+            const users = await userResponse.json();
+            const userProfile = users[0];
 
             const updates = {};
 
@@ -194,12 +310,23 @@ exports.confirm = async (req, res) => {
                 updates.is_paid = true;
             }
 
-            // Commit all profile updates in one call
+            // Commit all profile updates via Direct PostgREST
             if (Object.keys(updates).length > 0) {
-                await supabase
-                    .from('users')
-                    .update(updates)
-                    .eq('id', userId);
+                const updateProfileResponse = await fetch(`${process.env.SUPABASE_URL}/rest/v1/users?id=eq.${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
+                        'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(updates)
+                });
+
+                if (!updateProfileResponse.ok) {
+                    const errBody = await updateProfileResponse.text();
+                    throw new Error(`Profile update failed: ${errBody}`);
+                }
             }
         }
 

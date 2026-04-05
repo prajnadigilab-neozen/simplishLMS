@@ -14,6 +14,7 @@ import {
     X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import simplishTalksLogo from '../assets/logo_final.jpg';
 
 const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) => {
     const role = user?.role?.toLowerCase();
@@ -62,7 +63,20 @@ const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) =
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src="/logo.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'contain' }} />
+                    <div style={{
+                        height: '32px',
+                        width: '32px',
+                        borderRadius: '6px',
+                        background: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '2px',
+                        overflow: 'hidden',
+                        border: '1px solid var(--border)'
+                    }}>
+                        <img src={simplishTalksLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    </div>
                     <h2 style={{ color: 'var(--primary)', fontWeight: 800, margin: 0 }}>SIMPLISH</h2>
                 </div>
                 <button
@@ -118,7 +132,7 @@ const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) =
                                     }}
                                 >
                                     {item.id === 'study_area' ? (
-                                        <img src="/logo.png" alt="Study" style={{ width: '18px', height: '18px', borderRadius: '4px', filter: currentView === 'study_area' ? 'none' : 'grayscale(100%) opacity(0.6)' }} />
+                                        <img src={simplishTalksLogo} alt="Study" style={{ width: '18px', height: '18px', borderRadius: '4px', filter: currentView === 'study_area' ? 'none' : 'grayscale(100%) opacity(0.6)' }} />
                                     ) : (
                                         <item.icon size={18} color={currentView === item.id ? "var(--primary)" : "var(--text-muted)"} />
                                     )}

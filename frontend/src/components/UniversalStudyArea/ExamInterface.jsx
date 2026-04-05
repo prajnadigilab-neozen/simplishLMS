@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Target, CheckCircle2, ChevronRight, RefreshCcw, Sparkles } from 'lucide-react';
 import api from '../../utils/api';
+import simplishTalksLogo from '../../assets/logo_final.jpg';
 
 const ExamInterface = ({ examData, lessonId, onComplete }) => {
     const [currentStep, setCurrentStep] = useState('intro'); // intro, test, result
@@ -126,7 +127,7 @@ const ExamInterface = ({ examData, lessonId, onComplete }) => {
                     style={{ padding: '4rem', background: passed ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(var(--bg-main-rgb), 1) 100%)' : 'var(--bg-card)' }}
                 >
                     {passed ? (
-                        <img src="/logo.png" alt="Passed" style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem auto', objectFit: 'contain' }} />
+                        <img src={simplishTalksLogo} alt="Passed" style={{ width: '80px', height: '80px', margin: '0 auto 1.5rem auto', objectFit: 'contain' }} />
                     ) : (
                         <RefreshCcw size={80} color="var(--text-muted)" style={{ margin: '0 auto 1.5rem auto' }} />
                     )}

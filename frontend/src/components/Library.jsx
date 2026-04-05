@@ -16,7 +16,8 @@ import {
     Lock,
     Zap,
     Clock,
-    CheckCircle2
+    CheckCircle2,
+    Play
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api, { lessonApi } from '../utils/api';
@@ -83,10 +84,56 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
         }
     };
 
-    // ── Paywall Logic ──
+    // ── Sorting & Paywall Logic ──
+    const extractLessonNumber = (title) => {
+        const match = title.match(/(?:Lesson|ಪಾಠ)\s+(\d+)/i);
+        return match ? parseInt(match[1], 10) : 0;
+    };
+
+    const lessonSortFn = (a, b) => {
+        // 1. Level priority first (Basic → Intermediate → etc.)
+        const levelCodeA = levels.indexOf(a.level);
+        const levelCodeB = levels.indexOf(b.level);
+        if (levelCodeA !== levelCodeB) return levelCodeA - levelCodeB;
+
+        // 2. Global Final Graduation Exam absolute last
+        const aIsFinal = !!a.content?.isFinal;
+        const bIsFinal = !!b.content?.isFinal;
+        if (aIsFinal && !bIsFinal) return 1;
+        if (!aIsFinal && bIsFinal) return -1;
+
+        // 3. Lesson Number Priority
+        const numA = extractLessonNumber(a.title);
+        const numB = extractLessonNumber(b.title);
+
+        // Within a level, numbered lessons MUST come before non-numbered assessments
+        // Numbered lessons have num > 0, Graduation tests/exams have num = 0
+        if (numA > 0 && numB === 0) return -1; // numA first
+        if (numA === 0 && numB > 0) return 1;  // numB first
+
+        // If both have numbers, sort numerically
+        if (numA > 0 && numB > 0) {
+            if (numA !== numB) return numA - numB;
+        }
+
+        // 4. Units (Secondary)
+        const unitA = Number(a.unit_number) || 0;
+        const unitB = Number(b.unit_number) || 0;
+        if (unitA !== unitB) return unitA - unitB;
+
+        // 5. Exam status within Level/Module
+        const aIsExam = !!a.content?.isExam;
+        const bIsExam = !!b.content?.isExam;
+        if (aIsExam && !bIsExam) return 1;
+        if (!aIsExam && bIsExam) return -1;
+
+        // 6. Manual display order
+        return (Number(a.display_order) || 0) - (Number(b.display_order) || 0);
+    };
+
     const basicLessonsSorted = [...lessons]
         .filter(l => l.level === 'Basic')
-        .sort((a, b) => (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0));
+        .sort(lessonSortFn);
 
     const freeLessonIds = basicLessonsSorted.slice(0, 2).map(l => l.id);
 
@@ -213,7 +260,7 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3rem' }}>
                     {levels.map((lvl, levelIndex) => {
-                        const lessonsInLevel = filteredLessons.filter(l => l.level === lvl);
+                        const lessonsInLevel = filteredLessons.filter(l => l.level === lvl && !l.content?.isFinal);
                         if (lessonsInLevel.length === 0 && searchQuery) return null;
 
                         const isLevelExpanded = expandedModules.includes(lvl);
@@ -223,29 +270,26 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                             );
                         };
 
-                        // Group into Modules
-                        const modules = {};
-                        lessonsInLevel.forEach(l => {
-                            const modTitle = l.module_title || 'General';
-                            if (!modules[modTitle]) {
-                                modules[modTitle] = { title: modTitle, unit: l.unit_number || 1, lessons: [] };
-                            }
-                            modules[modTitle].lessons.push(l);
-                        });
+                        // Sort all lessons in this level to establish correct pruning/hierarchy
+                        const sortedLevelLessons = [...lessonsInLevel].sort(lessonSortFn);
 
-                        // We need a flat list of all lessons across all modules in this level to check prerequisites correctly
-                        const sortedLevelLessons = [...lessonsInLevel].sort((a, b) => 
-                            (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0)
-                        );
+                        // Group into Modules based on the sorted sequence
+                        const modules = [];
+                        const moduleMap = new Map();
+                        
+                        sortedLevelLessons.forEach(l => {
+                            const modTitle = l.module_title || 'General';
+                            if (!moduleMap.has(modTitle)) {
+                                const mObj = { title: modTitle, unit: l.unit_number || 1, lessons: [] };
+                                moduleMap.set(modTitle, mObj);
+                                modules.push(mObj);
+                            }
+                            moduleMap.get(modTitle).lessons.push(l);
+                        });
+                        const sortedModules = modules; // Already ordered by inclusion sequence from sortedLevelLessons
 
                         // Find the index of each lesson in the global sorted list to check the overall curriculum prerequisite
-                        const allSortedLessons = [...lessons].sort((a, b) => {
-                            const levelDiff = levels.indexOf(a.level) - levels.indexOf(b.level);
-                            if (levelDiff !== 0) return levelDiff;
-                            return (a.unit_number || 0) - (b.unit_number || 0) || (a.display_order || 0) - (b.display_order || 0);
-                        });
-
-                        const sortedModules = Object.values(modules).sort((a, b) => a.unit - b.unit);
+                        const allSortedLessons = [...lessons].sort(lessonSortFn);
 
                         return (
                             <div key={lvl} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -274,17 +318,19 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                 </div>
 
                                 {isLevelExpanded && (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', padding: '0 1rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0 0.5rem' }}>
                                         {sortedModules.map(module => (
                                             <div key={module.title} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 0.5rem' }}>
-                                                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900 }}>{module.unit}</div>
-                                                    <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)', opacity: 0.9 }}>{module.title}</h3>
-                                                    <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--border) 0%, transparent 100%)' }} />
-                                                </div>
+                                                {module.title.toLowerCase() !== 'general' && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 0.5rem' }}>
+                                                        <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 900 }}>{module.unit}</div>
+                                                        <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)', opacity: 0.9 }}>{module.title}</h3>
+                                                        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, var(--border) 0%, transparent 100%)' }} />
+                                                    </div>
+                                                )}
 
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                                    {module.lessons.sort((a,b) => (a.display_order||0) - (b.display_order||0)).map((lesson, idx) => {
+                                                    {module.lessons.sort(lessonSortFn).map((lesson, idx) => {
                                                         const globalIdx = allSortedLessons.findIndex(l => l.id === lesson.id);
                                                         const prevLesson = globalIdx > 0 ? allSortedLessons[globalIdx - 1] : null;
                                                         const isPrereqLocked = !isMod && prevLesson && (prevLesson.progress || 0) < 100;
@@ -296,17 +342,17 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                                                 key={lesson.id}
                                                                 className="glass-card"
                                                                 style={{
-                                                                    padding: '1.25rem',
+                                                                    padding: '0.75rem',
                                                                     cursor: isLocked ? 'not-allowed' : 'pointer',
                                                                     position: 'relative',
                                                                     display: 'flex',
                                                                     flexDirection: 'column',
-                                                                    gap: '1rem',
+                                                                    gap: '0.75rem',
                                                                     opacity: isLocked ? 0.7 : 1,
                                                                     filter: isLocked ? 'grayscale(0.6)' : 'none',
                                                                     border: isLocked ? '1px solid var(--border)' : '1px solid var(--primary-light)',
                                                                     transform: isLocked ? 'none' : 'translateY(0)',
-                                                                    transition: 'all 0.3s ease'
+                                                                    transition: 'all 0.2s ease'
                                                                 }}
                                                                 whileHover={!isLocked ? { translateY: -4, borderColor: 'var(--primary)', boxShadow: '0 12px 24px rgba(var(--primary-rgb), 0.15)' } : {}}
                                                                 onClick={() => {
@@ -324,9 +370,9 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                                                     </div>
                                                                 )}
                                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                                        <div style={{ padding: '0.6rem', borderRadius: '0.75rem', background: lesson.content?.isExam ? 'rgba(234, 179, 8, 0.1)' : 'var(--primary-light)', color: lesson.content?.isExam ? '#eab308' : 'var(--primary)' }}>
-                                                                            {lesson.content?.isExam ? <Trophy size={18} /> : getIcon(lesson.media_type)}
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                                        <div style={{ padding: '0.4rem', borderRadius: '0.5rem', background: lesson.content?.isExam ? 'rgba(234, 179, 8, 0.1)' : 'var(--primary-light)', color: lesson.content?.isExam ? '#eab308' : 'var(--primary)' }}>
+                                                                            {lesson.content?.isExam ? <Trophy size={16} /> : getIcon(lesson.media_type)}
                                                                         </div>
                                                                         <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{lesson.title}</h3>
                                                                     </div>
@@ -346,10 +392,12 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                                                     padding: '0.75rem 1rem', 
                                                                     borderRadius: '12px' 
                                                                 }}>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಹಂತ' : 'Level'}</span>
-                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lesson.level}</span>
-                                                                    </div>
+                                                                    {!lesson.content?.isFinal && (
+                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಹಂತ' : 'Level'}</span>
+                                                                            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lesson.level}</span>
+                                                                        </div>
+                                                                    )}
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Done'}</span>
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 700, color: lesson.progress === 100 ? '#10b981' : 'var(--text-muted)' }}>
@@ -368,7 +416,11 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                                                         {lesson.progress === 100 && (
-                                                                            <button onClick={(e)=>{e.stopPropagation(); onSelectLesson(lesson);}} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                                                            <button 
+                                                                                onClick={(e)=>{e.stopPropagation(); onSelectLesson(lesson);}} 
+                                                                                className="btn revise-btn"
+                                                                                style={{ padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, height: 'auto', minHeight: 'auto' }}
+                                                                            >
                                                                                 <RefreshCw size={12} style={{marginRight:'0.3rem'}}/> {language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'}
                                                                             </button>
                                                                         )}
@@ -405,6 +457,133 @@ const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, l
                             </div>
                         );
                     })}
+
+                    {/* 🎓 Independence Graduation Exam Section */}
+                    {filteredLessons.filter(l => !!l.content?.isFinal).length > 0 && (
+                        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 0.5rem' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                                    <Trophy size={18} />
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: '#eab308' }}>
+                                    {language === 'kn' ? 'ಪದವಿ ಪ್ರಧಾನ ಹಂತ' : 'Graduation Milestone'}
+                                </h3>
+                                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(234, 179, 8, 0.3) 0%, transparent 100%)' }} />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                {filteredLessons.filter(l => !!l.content?.isFinal).sort(lessonSortFn).map((lesson) => {
+                                    const allSortedLessons = [...lessons].sort(lessonSortFn);
+                                    const globalIdx = allSortedLessons.findIndex(l => l.id === lesson.id);
+                                    const prevLesson = globalIdx > 0 ? allSortedLessons[globalIdx - 1] : null;
+                                    const isPrereqLocked = !isMod && prevLesson && (prevLesson.progress || 0) < 100;
+                                    const isPaywallLocked = !isPaid; // Always paid for graduation
+                                    const isLocked = isPaywallLocked || isPrereqLocked;
+
+                                    return (
+                                        <motion.div
+                                            key={lesson.id}
+                                            className="glass-card"
+                                            style={{
+                                                padding: '1.5rem',
+                                                cursor: isLocked ? 'not-allowed' : 'pointer',
+                                                position: 'relative',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '1rem',
+                                                opacity: isLocked ? 0.8 : 1,
+                                                borderColor: !isLocked ? '#eab308' : 'var(--border)',
+                                                background: !isLocked ? 'linear-gradient(135deg, rgba(234, 179, 8, 0.05) 0%, transparent 100%)' : 'rgba(255,255,255,0.02)',
+                                                borderWidth: !isLocked ? '2px' : '1px',
+                                                boxShadow: !isLocked ? '0 10px 30px rgba(234, 179, 8, 0.1)' : 'none'
+                                            }}
+                                            whileHover={!isLocked ? { scale: 1.01, boxShadow: '0 15px 40px rgba(234, 179, 8, 0.2)' } : {}}
+                                            onClick={() => {
+                                                if (isPaywallLocked) { navigate('/payment'); return; }
+                                                if (isPrereqLocked) { 
+                                                    showToast(`ದಯವಿಟ್ಟು ಮೊದಲು ಹಿಂದಿನ ಪಾಠವನ್ನು ಮುಗಿಸಿ: "${prevLesson.title}" (Please finish the previous lesson first)`, 'info');
+                                                    return; 
+                                                }
+                                                onSelectLesson(lesson);
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                                    <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(234, 179, 8, 0.15)', color: '#eab308' }}>
+                                                        <Trophy size={28} />
+                                                    </div>
+                                                    <div>
+                                                        <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)', margin: 0 }}>{lesson.title}</h2>
+                                                        <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
+                                                            {language === 'kn' ? 'ನಿಮ್ಮ ಕಲಿಕೆಯ ಪೂರ್ಣತೆಯ ಅಂತಿಮ ಪರೀಕ್ಷೆ' : 'The final step to mastering Simplish English.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                {isLocked && (
+                                                    <div style={{ background: 'rgba(30, 41, 59, 0.6)', padding: '0.5rem 1rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                        <Lock size={14} /> {isPaywallLocked ? 'PREMIUM' : (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'LOCKED')}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.5rem' }}>
+                                                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '120px' }}>
+                                                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Status'}</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 800, color: lesson.progress === 100 ? '#10b981' : 'var(--text-main)' }}>
+                                                        {lesson.progress === 100 ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ' : 'Pending')}
+                                                    </span>
+                                                </div>
+                                                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '0.6rem 1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '120px' }}>
+                                                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>{language === 'kn' ? 'ಸಮಯ' : 'Time'}</span>
+                                                    <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>{lesson.estimated_time || '30'}m</span>
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                                                <button 
+                                                    className="btn" 
+                                                    style={{ 
+                                                        background: isLocked ? 'var(--bg-dark)' : '#eab308', 
+                                                        color: isLocked ? 'var(--text-muted)' : '#000', 
+                                                        padding: '0.8rem 2.5rem', 
+                                                        borderRadius: '12px', 
+                                                        fontWeight: 800, 
+                                                        fontSize: '1rem',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.5rem',
+                                                        opacity: isLocked ? 0.6 : 1
+                                                    }}
+                                                    disabled={isLocked}
+                                                >
+                                                    {lesson.progress === 100 ? (language === 'kn' ? 'ಮತ್ತೆ ನೋಡಿ' : 'Review Result') : (language === 'kn' ? 'ಪರೀಕ್ಷೆ ಆರಂಭಿಸಿ' : 'Take Exam Now')}
+                                                    <ArrowRight size={20} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    
+                    {/* Final Graduation Exam Uploader (Admin Only) */}
+                    {isMod && (
+                        <div style={{ marginTop: '3rem', padding: '2.5rem', border: '2px dashed #eab308', borderRadius: '24px', textAlign: 'center', background: 'rgba(234, 179, 8, 0.05)' }}>
+                            <Trophy size={48} color="#eab308" style={{ marginBottom: '1rem' }} />
+                            <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 900, color: 'var(--text-main)' }}>{language === 'kn' ? 'ಅಂತಿಮ ಪದವಿ ಪರೀಕ್ಷೆ ನಿರ್ವಹಣೆ' : 'Curriculum Governance'}</h3>
+                            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', maxWidth: '400px', marginInline: 'auto' }}>
+                                {language === 'kn' ? 'ಇಡೀ ಪಠ್ಯಕ್ರಮದ ಅಂತಿಮ ಪರೀಕ್ಷೆಯನ್ನು ಇಲ್ಲಿ ಸೇರಿಸಿ ಅಥವಾ ಬದಲಾಯಿಸಿ.' : 'Upload or update the final assessment representing the complete curriculum mastery.'}
+                            </p>
+                            <button 
+                                onClick={onAddLesson} 
+                                className="btn"
+                                style={{ background: '#eab308', color: '#000', fontWeight: 800, padding: '0.75rem 2rem' }}
+                            >
+                                <Plus size={18} /> {language === 'kn' ? 'ಅಂತಿಮ ಪರೀಕ್ಷೆ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ' : 'Upload Milestone Exam'}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

@@ -19,14 +19,29 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
         if (!testContent) return;
         const initialShuffles = {};
         testContent.forEach((q, idx) => {
-            if (q.type === 'Matching' && q.pairs) {
-                // Fisher-Yates shuffle
-                const items = [...q.pairs.map(p => p.kannada)];
-                for (let i = items.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [items[i], items[j]] = [items[j], items[i]];
+            const isMatching = q.type === 'Matching' || (q.text && q.text.toLowerCase().includes('match the following'));
+            
+            if (isMatching) {
+                let pairs = q.pairs;
+                // Safeguard: If type is 'Text' but text says 'Matching', try to extract pairs from correct_answer
+                if (!pairs && q.correct_answer && q.correct_answer.includes('-')) {
+                    pairs = q.correct_answer.split(',').map(pair => {
+                        const [eng, kan] = pair.trim().split('-').map(s => s.trim());
+                        return eng && kan ? { english: eng, kannada: kan } : null;
+                    }).filter(Boolean);
+                    q.pairs = pairs; // Attach for the render loop
+                    q._isMatchingSafeguard = true;
                 }
-                initialShuffles[idx] = items;
+
+                if (pairs && pairs.length > 0) {
+                    // Fisher-Yates shuffle
+                    const items = [...pairs.map(p => p.kannada)];
+                    for (let i = items.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [items[i], items[j]] = [items[j], items[i]];
+                    }
+                    initialShuffles[idx] = items;
+                }
             }
         });
         setShuffledOptions(initialShuffles);
@@ -84,10 +99,12 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
         try {
             let correctCount = 0;
             testContent.forEach((q, idx) => {
-                if (q.type === 'Matching') {
+                const isMatching = q.type === 'Matching' || q._isMatchingSafeguard;
+                if (isMatching) {
                     const matches = userAnswers[idx] || {};
-                    const isAllCorrect = q.pairs.every(p => matches[p.english] === p.kannada);
-                    if (isAllCorrect && Object.keys(matches).length === q.pairs.length) {
+                    const pairs = q.pairs || [];
+                    const isAllCorrect = pairs.every(p => matches[p.english] === p.kannada);
+                    if (isAllCorrect && Object.keys(matches).length === pairs.length && pairs.length > 0) {
                         correctCount++;
                     }
                 } else if (q.options && q.options.length > 0) {
@@ -232,9 +249,11 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
             )}
 
             {testContent.map((q, idx) => {
-                if (q.type === 'Matching') {
+                const isMatching = q.type === 'Matching' || q._isMatchingSafeguard;
+                if (isMatching) {
                     const matches = userAnswers[idx] || {};
-                    const isCorrect = q.pairs.every(p => matches[p.english] === p.kannada) && Object.keys(matches).length === q.pairs.length;
+                    const pairs = q.pairs || [];
+                    const isCorrect = pairs.every(p => matches[p.english] === p.kannada) && Object.keys(matches).length === pairs.length;
                     
                     let cardStyle = { padding: '1.5rem', border: '1px solid var(--border)' };
                     if (submitted) {
@@ -251,7 +270,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                                 {/* Left Column: English */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {q.pairs.map((p, pIdx) => {
+                                    {pairs.map((p, pIdx) => {
                                         const isSelected = activeMatchLeft?.qIndex === idx && activeMatchLeft?.item === p.english;
                                         const isMatched = matches[p.english];
                                         return (
@@ -277,7 +296,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {(shuffledOptions[idx] || []).map((kan, kIdx) => {
                                         const isMatchedWith = Object.keys(matches).find(key => matches[key] === kan);
-                                        const isCorrectMatch = isMatchedWith && q.pairs.find(p => p.english === isMatchedWith)?.kannada === kan;
+                                        const isCorrectMatch = isMatchedWith && pairs.find(p => p.english === isMatchedWith)?.kannada === kan;
                                         
                                         let itemStyle = {
                                             padding: '0.8rem 1rem',
@@ -308,7 +327,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                             {submitted && !isCorrect && (
                                 <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '0.5rem', fontSize: '0.9rem' }}>
                                     <strong style={{ color: '#10b981', display: 'block', marginBottom: '0.5rem' }}>ಸರಿಯಾದ ಉತ್ತರಗಳು (Correct Matches):</strong>
-                                    {q.pairs.map((p, pIdx) => (
+                                    {pairs.map((p, pIdx) => (
                                         <div key={pIdx}>{p.english} = {p.kannada}</div>
                                     ))}
                                 </div>

@@ -1,19 +1,15 @@
 :root {
-  --bg-dark: #fafaf9;
-  /* Warm, low-glare background */
+  --bg-dark: #f8fafc;
   --bg-card: #ffffff;
+  --bg-dropdown: #ffffff;
   --primary: #0052cc;
-  /* Strong Education Blue */
   --primary-light: #e0e7ff;
   --accent: #f59e0b;
-  /* Heritage Amber for encouragement */
   --primary-rgb: 0, 82, 204;
   --text-main: #0f172a;
   --text-main-rgb: 15, 23, 42;
-  /* Near-black for maximum contrast */
-  --text-muted: #475569;
-  --border: #cbd5e1;
-  /* Darker border for better visibility */
+  --text-muted: #64748b;
+  --border: #e2e8f0;
   --nav-bg: #ffffff;
 
   /* Badges - Light Mode */
@@ -23,22 +19,18 @@
   --badge-mod-text: #075985;
   --badge-user-bg: #f1f5f9;
   --badge-user-text: #475569;
-  --badge-active-bg: #dcfce7;
-  --badge-active-text: #166534;
-  --badge-inactive-bg: #ffedd5;
-  --badge-inactive-text: #9a3412;
 
-  /* Fluid Typography (Mobile -> Desktop scaling) */
-  --font-size-sm: clamp(0.8rem, 0.17vw + 0.76rem, 0.89rem);
-  --font-size-base: clamp(1rem, 0.34vw + 0.91rem, 1.19rem);
-  --font-size-md: clamp(1.25rem, 0.61vw + 1.1rem, 1.58rem);
-  --font-size-lg: clamp(1.56rem, 1vw + 1.31rem, 2.11rem);
-  --font-size-xl: clamp(1.95rem, 1.56vw + 1.56rem, 2.81rem);
+  /* Scaled Down Fluid Typography (Mobile-First Optimization) */
+  --font-size-sm: clamp(0.75rem, 0.15vw + 0.7rem, 0.82rem);
+  --font-size-base: clamp(0.9rem, 0.3vw + 0.85rem, 1rem);
+  --font-size-md: clamp(1.1rem, 0.5vw + 1rem, 1.25rem);
+  --font-size-lg: clamp(1.3rem, 0.8vw + 1.2rem, 1.6rem);
+  --font-size-xl: clamp(1.6rem, 1.2vw + 1.4rem, 2rem);
 
   /* Layout Variables */
   --sidebar-width: 0px;
-  --nav-height: 60px;
-  --bottom-nav-height: 70px;
+  --nav-height: 56px;
+  --bottom-nav-height: 64px;
 
   /* Admin Dashboard Tokens */
   --admin-header-bg: #f8fafc;
@@ -51,27 +43,16 @@
 [data-theme='dark'] {
   --bg-dark: #0f172a;
   --bg-card: #1e293b;
+  --bg-dropdown: #1e293b;
   --primary: #3b82f6;
   --primary-rgb: 59, 130, 246;
   --primary-light: rgba(59, 130, 246, 0.15);
   --accent: #fbbf24;
   --text-main: #f8fafc;
   --text-main-rgb: 248, 250, 252;
-  --text-muted: #94a3b8;
+  --text-muted: #cbd5e1;
   --border: #334155;
-  --nav-bg: #1e293b;
-
-  /* Badges - Dark Mode */
-  --badge-admin-bg: rgba(239, 68, 68, 0.2);
-  --badge-admin-text: #fecaca;
-  --badge-mod-bg: rgba(56, 189, 248, 0.2);
-  --badge-mod-text: #bae6fd;
-  --badge-user-bg: rgba(148, 163, 184, 0.2);
-  --badge-user-text: #e2e8f0;
-  --badge-active-bg: rgba(34, 197, 94, 0.2);
-  --badge-active-text: #bbf7d0;
-  --badge-inactive-bg: rgba(245, 158, 11, 0.2);
-  --badge-inactive-text: #fde68a;
+  --nav-bg: #0f172a;
 }
 
 * {
@@ -97,9 +78,9 @@ body {
 .glass-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 1rem;
-  box-shadow: none;
-  /* Removed expensive shadows for low-end GPUs */
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  /* Solid, flat design for performance */
 }
 
 .neon-glow {
@@ -209,11 +190,32 @@ a.btn,
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-h1,
-h2,
+h1 {
+  font-size: var(--font-size-xl);
+  margin-bottom: 0.75rem;
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+  margin-bottom: 0.5rem;
+}
+
 h3 {
-  letter-spacing: -0.025em;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-md);
+  margin-bottom: 0.5rem;
+}
+
+/* Specific button fixes for Dark theme visibility */
+.revise-btn {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.retry-btn {
+  background: var(--accent) !important;
+  color: #000000 !important;
+  border: none !important;
 }
 
 .progress-bar {

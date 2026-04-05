@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Glasses, Target, Loader2, Headphones, Sparkles, ChevronLeft, Video, Download, FileText } from 'lucide-react';
 import api from '../../utils/api';
+import simplishTalksLogo from '../../assets/logo_final.jpg';
 import MagicShiftDashboard from './MagicShiftDashboard';
 import SentenceEvolution from './SentenceEvolution';
 import ReadingLab from './ReadingLab';
@@ -99,7 +100,7 @@ const UniversalStudyArea = ({ user, lesson, onBack, isCourseCompleted, onNextLes
                     className="glass-card"
                     style={{ padding: '4rem', background: 'linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)', border: '2px solid var(--primary)' }}
                 >
-                    <img src="/logo.png" alt="Congratulations" style={{ width: '80px', height: '80px', margin: '0 auto 2rem auto', objectFit: 'contain' }} />
+                    <img src={simplishTalksLogo} alt="Congratulations" style={{ width: '80px', height: '80px', margin: '0 auto 2rem auto', objectFit: 'contain' }} />
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'var(--text-main)' }}>
                         {language === 'kn' ? 'ಅಭಿನಂದನೆಗಳು!' : 'Congratulations!'}
                     </h1>
@@ -230,7 +231,7 @@ const UniversalStudyArea = ({ user, lesson, onBack, isCourseCompleted, onNextLes
                                     }}
                                 >
                                     {tab.isLogo ? (
-                                        <img src="/logo.png" alt="Icon" style={{ width: '16px', height: '16px', borderRadius: '4px', filter: isActive ? 'brightness(0) invert(1)' : 'grayscale(100%) opacity(0.6)' }} />
+                                        <img src={simplishTalksLogo} alt="Icon" style={{ width: '16px', height: '16px', borderRadius: '4px', filter: isActive ? 'brightness(0) invert(1)' : 'grayscale(100%) opacity(0.6)' }} />
                                     ) : (
                                         <tab.icon size={16} />
                                     )}
@@ -274,7 +275,7 @@ const UniversalStudyArea = ({ user, lesson, onBack, isCourseCompleted, onNextLes
                                         controls 
                                         src={lesson.video_url} 
                                         style={{ width: '100%', borderRadius: '12px' }}
-                                        poster="/logo.png"
+                                        poster={simplishTalksLogo}
                                     />
                                 </div>
                                 <div className="glass-card" style={{ padding: '2rem', border: '1px solid var(--border)' }}>

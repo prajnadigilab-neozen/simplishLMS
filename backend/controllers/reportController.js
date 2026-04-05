@@ -19,102 +19,64 @@ exports.getSummaryMetrics = async (req, res) => {
             return parseFloat(((current - previous) / previous * 100).toFixed(1));
         };
 
-        // 1. Total Registered Users
-        let totalUsers = 0;
-        try {
-            const { count, error } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .neq('status', 'deleted');
-            if (error) throw error;
-            totalUsers = count || 0;
-        } catch (err) {
-            console.error('[Reports] Total users fetch failed:', err.message);
-        }
+        // 1. Unified Parallel Execution (SRE Optimization)
+        const start = Date.now();
+        const results = await Promise.allSettled([
+            // 1a. Total Registered Users
+            supabase.from('users').select('*', { count: 'exact', head: true }).neq('status', 'deleted'),
+            // 1b. Registrations Current Month
+            supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', startOfMonth),
+            // 1c. Registrations Last Month
+            supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth),
+            // 1d. Active Today (last 24h)
+            supabase.from('users').select('*', { count: 'exact', head: true }).gt('last_login_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+            // 1e. Revenue (Total All-time)
+            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed') : Promise.resolve({ data: [] }),
+            // 1f. Revenue (Current Month)
+            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfMonth) : Promise.resolve({ data: [] }),
+            // 1g. Revenue (Last Month)
+            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] }),
+            // 1h. Avg Active (Reduced window to 7-days for speed)
+            supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        ]);
 
-        // 2. Registrations MoM
-        let registrationsCurrentMonth = 0;
-        let registrationsLastMonth = 0;
-        try {
-            const { count: currentCount } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .gte('created_at', startOfMonth);
-            registrationsCurrentMonth = currentCount || 0;
+        const totalUsers = results[0].value?.count || 0;
+        const registrationsCurrentMonth = results[1].value?.count || 0;
+        const registrationsLastMonth = results[2].value?.count || 0;
+        const activeToday = results[3].value?.count || 0;
 
-            const { count: lastCount } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .gte('created_at', startOfLastMonth)
-                .lte('created_at', endOfLastMonth);
-            registrationsLastMonth = lastCount || 0;
-        } catch (err) {
-            console.error('[Reports] Registration MoM fetch failed:', err.message);
-        }
-        const registrationMoM = calculateGrowth(registrationsCurrentMonth, registrationsLastMonth);
-
-        // 3. Active Today
-        let activeToday = 0;
-        try {
-            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-            const { count } = await supabase
-                .from('users')
-                .select('*', { count: 'exact', head: true })
-                .gt('last_login_at', dayAgo);
-            activeToday = count || 0;
-        } catch (err) {
-            console.error('[Reports] Active today fetch failed:', err.message);
-        }
-
-        // 3b. Avg Daily Active (30-day)
-        let avgDailyActive30d = 0;
-        try {
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-            const { data: activity } = await supabase
-                .from('user_progress')
-                .select('user_id, last_accessed_at')
-                .gte('last_accessed_at', thirtyDaysAgo);
-            
-            if (activity && activity.length > 0) {
-                const dailyUsers = {};
-                activity.forEach(a => {
-                    if (!a.last_accessed_at) return;
-                    const date = a.last_accessed_at.split('T')[0];
-                    if (!dailyUsers[date]) dailyUsers[date] = new Set();
-                    dailyUsers[date].add(a.user_id);
-                });
-                
-                const counts = Object.values(dailyUsers).map(set => set.size);
-                const sum = counts.reduce((acc, c) => acc + c, 0);
-                avgDailyActive30d = counts.length > 0 ? Math.round(sum / 30) : 0; 
-            }
-        } catch (err) {
-            console.error('[Reports] Avg active calculation failed:', err.message);
-        }
-
-        // 4. Revenue (Authorized Staff)
+        // Process Revenue
         let totalRevenueAllTime = 0;
         let revenueMoM = 0;
-
         if (canSeeRevenue) {
-            try {
-                const { data: allTime, error: e1 } = await supabase.from('payments').select('amount').eq('status', 'completed');
-                if (e1) throw e1;
-                totalRevenueAllTime = (allTime || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const allTime = results[4].value?.data || [];
+            const currentMonth = results[5].value?.data || [];
+            const lastMonth = results[6].value?.data || [];
 
-                const { data: currentMonth, error: e2 } = await supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfMonth);
-                if (e2) throw e2;
-                const revCurrent = (currentMonth || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-                const { data: lastMonth, error: e3 } = await supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth);
-                if (e3) throw e3;
-                const revLast = (lastMonth || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-
-                revenueMoM = calculateGrowth(revCurrent, revLast);
-            } catch (err) {
-                console.error('[Reports] Revenue calculation failed:', err.message);
-            }
+            totalRevenueAllTime = allTime.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const revCurrent = currentMonth.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const revLast = lastMonth.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            revenueMoM = calculateGrowth(revCurrent, revLast);
         }
+
+        // Process Avg Daily Active
+        let avgDailyActive30d = 0; // Keeping name for compatibility, but using 7-day window
+        const activity = results[7].value?.data || [];
+        if (activity.length > 0) {
+            const dailyUsers = {};
+            activity.forEach(a => {
+                if (!a.last_accessed_at) return;
+                const date = a.last_accessed_at.split('T')[0];
+                if (!dailyUsers[date]) dailyUsers[date] = new Set();
+                dailyUsers[date].add(a.user_id);
+            });
+            const counts = Object.values(dailyUsers).map(set => set.size);
+            const sum = counts.reduce((acc, c) => acc + c, 0);
+            avgDailyActive30d = counts.length > 0 ? Math.round(sum / (counts.length || 7)) : 0;
+        }
+
+        const registrationMoM = calculateGrowth(registrationsCurrentMonth, registrationsLastMonth);
+        console.log(`[Reports] Summary generation completed in ${Date.now() - start}ms`);
 
         res.json({
             totalUsers,
@@ -157,26 +119,25 @@ exports.getDailyReport = async (req, res) => {
         const fromISO = fromDate.toISOString();
         const toISO = toDate.toISOString();
 
-        // 1. Fetch Registrations
-        const { data: regs, error: e1 } = await supabase.from('users').select('created_at').gte('created_at', fromISO).lte('created_at', toISO);
-        if (e1) console.warn('[Reports] Daily regs fetch error:', e1.message);
+        // 1. Unified Parallel Execution (SRE Optimization)
+        const start = Date.now();
+        const results = await Promise.allSettled([
+            // 1a. Fetch Registrations
+            supabase.from('users').select('created_at').gte('created_at', fromISO).lte('created_at', toISO),
+            // 1b. Fetch Deletions
+            supabase.from('users').select('deleted_at').eq('status', 'deleted').gte('deleted_at', fromISO).lte('deleted_at', toISO),
+            // 1c. Fetch Revenue (Authorized Staff)
+            canSeeRevenue ? supabase.from('payments').select('created_at, amount').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
+            // 1d. Fetch Activity
+            supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO)
+        ]);
 
-        // 2. Fetch Deletions
-        const { data: dels, error: e2 } = await supabase.from('users').select('deleted_at').eq('status', 'deleted').gte('deleted_at', fromISO).lte('deleted_at', toISO);
-        if (e2) console.warn('[Reports] Daily dels fetch error:', e2.message);
+        const regs = results[0].value?.data || [];
+        const dels = results[1].value?.data || [];
+        const payments = results[2].value?.data || [];
+        const activity = results[3].value?.data || [];
 
-        // 3. Fetch Revenue (Authorized Staff)
-        let payments = [];
-
-        if (canSeeRevenue) {
-            const { data, error: e3 } = await supabase.from('payments').select('created_at, amount').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO);
-            if (e3) console.warn('[Reports] Daily revenue fetch error:', e3.message);
-            payments = data || [];
-        }
-
-        // 4. Fetch Activity
-        const { data: activity, error: e4 } = await supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO);
-        if (e4) console.warn('[Reports] Daily activity fetch error:', e4.message);
+        console.log(`[Reports] Daily report data fetched in ${Date.now() - start}ms`);
 
         const breakdown = {};
         let current = new Date(fromDate);

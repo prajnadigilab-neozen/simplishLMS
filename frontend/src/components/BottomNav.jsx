@@ -8,8 +8,11 @@ import {
     Sparkles, 
     ShieldCheck 
 } from 'lucide-react';
+import { useTheme } from './ThemeContext';
+import simplishTalksLogo from '../assets/logo_final.jpg';
 
 const BottomNav = ({ onNavigate, currentView, user, language }) => {
+    const { theme } = useTheme();
     const role = user?.role?.toLowerCase();
     const isAdmin = ['admin', 'moderator', 'super_admin'].includes(role);
 
@@ -29,16 +32,16 @@ const BottomNav = ({ onNavigate, currentView, user, language }) => {
             left: '1rem',
             right: '1rem',
             height: '70px',
-            background: 'rgba(15, 23, 42, 0.8)',
+            background: theme === 'dark' ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
             backdropFilter: 'blur(16px) saturate(180%)',
             WebkitBackdropFilter: 'blur(16px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: `1px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'var(--border)'}`,
             borderRadius: '24px',
             display: 'flex',
             justifyContent: 'space-around',
             alignItems: 'center',
             zIndex: 1000,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+            boxShadow: theme === 'dark' ? '0 8px 32px rgba(0, 0, 0, 0.5)' : '0 8px 32px rgba(0, 0, 0, 0.1)',
             padding: '0 0.5rem',
         }}>
             {items.map(item => {
@@ -78,7 +81,7 @@ const BottomNav = ({ onNavigate, currentView, user, language }) => {
                         )}
                         
                         <div style={{
-                            color: isActive ? 'var(--primary)' : 'rgba(255, 255, 255, 0.6)',
+                            color: isActive ? 'var(--primary)' : 'var(--text-muted)',
                             transform: isActive ? 'translateY(-2px)' : 'none',
                             transition: 'all 0.3s ease',
                             padding: '4px',
@@ -89,15 +92,16 @@ const BottomNav = ({ onNavigate, currentView, user, language }) => {
                         }}>
                             {item.id === 'study_area' ? (
                                 <img 
-                                    src="/logo.png" 
+                                    src={simplishTalksLogo} 
                                     alt="Study" 
                                     style={{ 
                                         width: '24px', 
                                         height: '24px', 
                                         borderRadius: '6px', 
-                                        filter: isActive ? 'none' : 'grayscale(100%) brightness(1.2) opacity(0.8)',
+                                        filter: isActive ? 'none' : theme === 'dark' ? 'grayscale(100%) brightness(1.2) opacity(0.8)' : 'grayscale(100%) opacity(0.6)',
                                         transition: 'all 0.3s ease'
                                     }} 
+                                    onError={(e) => { e.target.style.display = 'none'; }}
                                 />
                             ) : (
                                 <item.icon 
@@ -109,7 +113,7 @@ const BottomNav = ({ onNavigate, currentView, user, language }) => {
                                 fontSize: '0.75rem',
                                 fontWeight: isActive ? '800' : '600',
                                 letterSpacing: '0.02em',
-                                color: isActive ? 'var(--primary)' : 'rgba(255, 255, 255, 0.6)',
+                                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
                                 transition: 'all 0.3s ease',
                                 textAlign: 'center'
                             }}>

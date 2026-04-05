@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, BookOpen, MessageSquare, ShieldCheck, ChevronDown, ChevronUp, Briefcase, GraduationCap, Users, Sun, Moon } from 'lucide-react';
 import AuthForm from './AuthForm';
 import simplishLogo from '../assets/simplish_logo.jpg';
-import simplishTalksLogo from '../assets/simplish_talks_logo.png';
+import simplishTalksLogo from '../assets/logo_final.jpg';
 
 const FAQItem = ({ question, answer }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -189,11 +189,11 @@ const LandingPage = ({ onAuthSuccess }) => {
                         background: 'white'
                     }}>
                         <img
-                            src="/logo.png"
+                            src={simplishTalksLogo}
                             alt="SIMPLISH - Learn English via Kannada"
                             fetchPriority="high"
                             loading="eager"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                         />
                     </div>
                     <span className="desktop-only" style={{ fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.02em', fontSize: '1.2rem' }}>SIMPLISH</span>
@@ -343,10 +343,10 @@ const LandingPage = ({ onAuthSuccess }) => {
                                 padding: '2px'
                             }}>
                                 <img
-                                    src="/logo.png"
+                                    src={simplishTalksLogo}
                                     alt="SIMPLISH"
                                     loading="lazy"
-                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                                 />
                             </div>
                             <h3 style={{ fontSize: '1.3rem', fontWeight: 900 }}>{t.prod1Title}</h3>
@@ -452,9 +452,9 @@ const LandingPage = ({ onAuthSuccess }) => {
                         background: 'white'
                     }}>
                         <img
-                            src="/logo.png"
+                            src={simplishTalksLogo}
                             alt="SIMPLISH"
-                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                         />
                     </div>
                     <span style={{ fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.02em', fontSize: '1.1rem' }}>SIMPLISH</span>

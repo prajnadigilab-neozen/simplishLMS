@@ -94,19 +94,18 @@ app.use(cookieParser());
 app.use(morgan('dev'));
 
 // 🛡️ Security Fix: Global XSS Sanitization (Bilingual-safe)
-app.use(sanitizeInputs);
-
-// Special raw parser for Razorpay Webhooks (needed for signature verification)
-// Sanitized billing webhook raw parser
-app.post('/api/v1/billing/internal-webhook', express.raw({ type: 'application/json' }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(sanitizeInputs);
 
 // Ensure uploads directory exists
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
 }
+
+// Special raw parser for Razorpay Webhooks (needed for signature verification)
+// Sanitized billing webhook raw parser
+app.post('/api/v1/billing/internal-webhook', express.raw({ type: 'application/json' }));
 
 // ==========================================
 // 3. ROUTES  (versioned under /api/v1)
