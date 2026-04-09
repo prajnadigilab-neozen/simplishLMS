@@ -20,10 +20,13 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { reportApi, authApi, settingsApi } from '../utils/api';
 import { useToast } from './Toast';
+import { useUser } from '../context/UserContext';
 import Reports from './Reports'; // We'll keep the detailed breakdown here
 import UserManagement from './UserManagement'; // We'll reuse parts of this
 
-const AdminDashboard = ({ user }) => {
+const AdminDashboard = ({ user: userProp }) => {
+    const { user: contextUser } = useUser();
+    const user = userProp || contextUser;
     const [activeTab, setActiveTab] = useState('stats');
     const [stats, setStats] = useState(null);
     const [activity, setActivity] = useState([]);
@@ -37,8 +40,9 @@ const AdminDashboard = ({ user }) => {
     const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
 
     useEffect(() => {
+        console.log('[AdminDashboard] User:', user?.id, 'Role:', role, 'CanSeeRevenue:', canSeeRevenue);
         fetchDashboardData();
-    }, []);
+    }, [user, role, canSeeRevenue]);
 
     const fetchDashboardData = async () => {
         setLoading(true);
@@ -77,6 +81,7 @@ const AdminDashboard = ({ user }) => {
                 avgActive: summaryData.avgDailyActive30d || avgActive,
                 dailyData
             });
+            console.log('[AdminDashboard] REVENUE DATA RECEIVED:', summaryData.totalRevenueAllTime);
 
             setActivity(activityRes.data || []);
 
@@ -175,6 +180,7 @@ const AdminDashboard = ({ user }) => {
         }
     };
 
+
     const KPICard = ({ title, value, icon: Icon, color, trend }) => (
         <motion.div 
             whileHover={{ y: -5 }}
@@ -210,6 +216,12 @@ const AdminDashboard = ({ user }) => {
             {stats?.dailyData && title.includes('REGISTRATIONS') && (
                 <Sparkline 
                     data={[...stats.dailyData].reverse().map(d => d.registrations)} 
+                    color={color} 
+                />
+            )}
+            {stats?.dailyData && title.includes('REVENUE') && (
+                <Sparkline 
+                    data={[...stats.dailyData].reverse().map(d => d.revenue)} 
                     color={color} 
                 />
             )}

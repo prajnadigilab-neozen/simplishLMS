@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, BookOpen, MessageSquare, ShieldCheck, ChevronDown, ChevronUp, Briefcase, GraduationCap, Users, Sun, Moon } from 'lucide-react';
+import { safeGetItem, safeSetItem } from '../utils/storageUtils';
 import AuthForm from './AuthForm';
 import simplishLogo from '../assets/simplish_logo.jpg';
 import simplishTalksLogo from '../assets/logo_final.jpg';
@@ -46,11 +47,11 @@ const FAQItem = ({ question, answer }) => {
 const LandingPage = ({ onAuthSuccess }) => {
     const [showAuth, setShowAuth] = useState(false);
     const [lang, setLang] = useState('en'); // 'en' or 'kn'
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [theme, setTheme] = useState(safeGetItem('theme') || 'light');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
+        safeSetItem('theme', theme);
     }, [theme]);
 
     const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
@@ -70,7 +71,7 @@ const LandingPage = ({ onAuthSuccess }) => {
             prod1Title: "SIMPLISH (The Foundation)",
             prod1Sub: "Your Bilingual English Coach",
             prod1Desc: "Don't struggle with complicated rules. We teach you English through Kannada. Step-by-step, master basic grammar and sentence creation.",
-            prod1Hook: "\"Yavagalu anumanisabedi, nimminda sadyavide.\"",
+            prod1Hook: "\"Never doubt, you can do it.\"",
             prod2Title: "SIMPLISH - Talks (The Action)",
             prod2Sub: "Practice Without Judgement",
             prod2Desc: "Practice speaking anytime with friendly AI agents. Engage in real-life situations without any pressure of physical classes.",
@@ -94,20 +95,20 @@ const LandingPage = ({ onAuthSuccess }) => {
             faq2Q: "How does the AI coach work?",
             faq2A: "Imagine practicing with a polite friend who never judges you. SIMPLISH - Talks uses AI to let you chat privately on your phone, offering gentle corrections and encouragement.",
             faq3Q: "Is this for true beginners?",
-            faq3A: "Absolutely. We start from the very beginning—the alphabet and easy sentences—and grow from there at your pace.",
+            faq3A: "Absolutely. We start from the very beginning—the simple and easy sentences—and grow from there at your pace.",
             faq4Q: "Do I need to attend live classes?",
             faq4A: "No travel, no rigid timings. Learn and practice whenever you want through your phone, anywhere in Karnataka.",
             footerMotto: "Empowering Kannada speakers with simple, accessible English.",
-            footerCopyright: "© 2026 SIMPLISH - A Movement for Rural Excellence",
+            footerCopyright: "© 2026 SIMPLISH - A Simple Movement for Excellence",
             footerLinks: ["Contact Us", "Privacy Policy", "Terms of Service"]
         },
         kn: {
             signIn: "ಸೈನ್ ಇನ್",
             backHome: "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ",
             heroBadge: "ನಿಮ್ಮ ಯಶಸ್ಸಿನ ಭಾಷೆ",
-            heroTitle: "ಇಂಗ್ಲಿಷ್ ಕೇವಲ ಒಂದು ಭಾಷೆ,",
-            heroTitleAccent: "ನಿಮ್ಮ ಅರ್ಹತೆಯ ಅಳತೆಯಲ್ಲ.",
-            heroDesc: "ನಿಮ್ಮ ಭಯವನ್ನು ಸ್ವಾತಂತ್ರ್ಯವಾಗಿ ಬದಲಾಯಿಸಿ. ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸುಲಭವಾದ ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡುವ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿ. ನಾವು ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕ ನಿಮ್ಮನ್ನು \"ಶೂನ್ಯದಿಂದ ಆತ್ಮವಿಶ್ವಾಸದವರೆಗೆ\" ಮುನ್ನಡೆಸುತ್ತೇವೆ - ಯಾವುದೇ ಮುಜುಗರವಿಲ್ಲ, ಯಾವುದೇ ಒತ್ತಡವಿಲ್ಲ.",
+            heroTitle: "ಇಂಗ್ಲಿಷ್ ಒಂದು ಭಾಷೆ ಮಾತ್ರ,",
+            heroTitleAccent: "ನಿಮ್ಮ ಮೌಲ್ಯ ಅದರಿಂದ ನಿರ್ಧಾರವಾಗುವುದಿಲ್ಲ",
+            heroDesc: "ನಿಮ್ಮ ಭಯವನ್ನು ಆತ್ಮವಿಶ್ವಾಸವಾಗಿ ಬದಲಾಯಿಸಿ. ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸುಲಭವಾದ ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡುವ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿ. ನಾವು ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕ ನಿಮ್ಮನ್ನು \"ತಳ ಹಂತದಿಂದ ಉನ್ನತ ಮಟ್ಟದವರೆಗೆ\" ಮುನ್ನಡೆಸುತ್ತೇವೆ - ಯಾವುದೇ ಮುಜುಗರವಿಲ್ಲ, ಯಾವುದೇ ಒತ್ತಡವಿಲ್ಲ.",
             ctaFundamentals: "ಮೂಲ ಕಲಿಕೆಯನ್ನು ಪ್ರಾರಂಭಿಸಿ",
             ctaSpeaking: "ಈಗಲೇ ಮಾತನಾಡಲು ಪ್ರಾರಂಭಿಸಿ",
             productsTitle: "ಇಂಗ್ಲಿಷ್ ಕಲಿಯಲು ಎರಡು ಸರಳ ಮಾರ್ಗಗಳು",
@@ -117,33 +118,33 @@ const LandingPage = ({ onAuthSuccess }) => {
             prod1Desc: "ಜಟಿಲವಾದ ನಿಯಮಗಳ ಬಗ್ಗೆ ಚಿಂತಿಸಬೇಡಿ. ನಾವು ನಿಮಗೆ ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಸುತ್ತೇವೆ. ಹಂತ-ಹಂತವಾಗಿ, ಮೂಲ ವ್ಯಾಕರಣ ಮತ್ತು ವಾಕ್ಯ ರಚನೆಯನ್ನು ಕಲಿಯಿರಿ.",
             prod1Hook: "\"ಯಾವಾಗಲೂ ಅನುಮಾನಿಸಬೇಡಿ, ನಿಮ್ಮಿಂದ ಸಾಧ್ಯವಿದೆ.\"",
             prod2Title: "SIMPLISH - Talks (ಕ್ರಿಯೆ)",
-            prod2Sub: "ನಿರ್ಣಯವಿಲ್ಲದೆ ಅಭ್ಯಾಸ ಮಾಡಿ",
+            prod2Sub: "ಪೂರ್ವಾಗ್ರಹವಿಲ್ಲದೆ ಅಭ್ಯಾಸ ಮಾಡಿ",
             prod2Desc: "ಸ್ನೇಹಿ AI ಏಜೆಂಟ್‌ಗಳೊಂದಿಗೆ ಯಾವಾಗ ಬೇಕಾದರೂ ಮಾತನಾಡಲು ಅಭ್ಯಾಸ ಮಾಡಿ. ಯಾವುದೇ ದೈಹಿಕ ತರಗತಿಗಳ ಒತ್ತಡವಿಲ್ಲದೆ ನೈಜ ಜೀವನದ ಸಂದರ್ಭಗಳಲ್ಲಿ ತೊಡಗಿಸಿಕೊಳ್ಳಿ.",
             prod2Feat1: "ಶೂನ್ಯದಿಂದ ಸರಳ ಇಂಗ್ಲಿಷ್‌ಗೆ",
             prod2Feat2: "ದೈಹಿಕ ತರಗತಿಯ ಅಗತ್ಯವಿಲ್ಲ",
             brandTitle: "ಗೋಡೆಯನ್ನು ಒಡೆಯುವುದು",
-            brandDesc1: "ಬಹಳ ಸಮಯದಿಂದ, ಇಂಗ್ಲಿಷ್ ಕಠಿಣ ಪರಿಶ್ರಮ ಪಡುವ ಜನರನ್ನು ಅವರು ಅರ್ಹವಾದ ಉದ್ಯೋಗಗಳು, ಗೌರವ ಮತ್ತು ಅವಕಾಶಗಳಿಂದ ದೂರವಿಟ್ಟಿರುವ \"ಗೋಡೆ\"ಯಾಗಿದೆ. SIMPLISH ನಲ್ಲಿ, ನಾವು ಆ ಗೋಡೆಯನ್ನು ಒಡೆದು ಬಾಗಿಲನ್ನು ನಿರ್ಮಿಸುತ್ತಿದ್ದೇವೆ.",
-            brandDesc2: "ಗ್ರಾಮೀಣ ಸಬಲೀಕರಣವು ಸುಲಭವಾಗಿ ಲಭ್ಯವಿರುವ ಶಿಕ್ಷಣದಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ ಎಂದು ನಾವು ನಂಬುತ್ತೇವೆ. ಇಂಗ್ಲಿಷ್ ಕಲಿಯಲು ನೀವು ಕನ್ನಡವನ್ನು ಮರೆಯುವ ಅಗತ್ಯವಿಲ್ಲ - ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯೇ ನಿಮ್ಮ ದೊಡ್ಡ ಶಕ್ತಿ.",
-            brandCTA: "ಅವಕಾಶಕ್ಕಾಗಿ ನಿಮ್ಮ ಬಾಗಿಲು",
+            brandDesc1: "ಬಹಳ ಸಮಯದಿಂದ ಇಂಗ್ಲಿಷ್ ಭಾಷೆಯು, ಕಠಿಣ ಪರಿಶ್ರಮ ಪಡುವ ಜನರನ್ನು ಅವರಿಗೆ ಅರ್ಹವಾದ ಉದ್ಯೋಗಗಳು, ಗೌರವ ಮತ್ತು ಅವಕಾಶಗಳಿಂದ ದೂರವಿಟ್ಟಿರುವ \"ಗೋಡೆ\"ಯಾಗಿದೆ. SIMPLISH ನಲ್ಲಿ, ನಾವು ಆ ಗೋಡೆಯನ್ನು ಒಡೆದು ಬಾಗಿಲನ್ನು ನಿರ್ಮಿಸುತ್ತಿದ್ದೇವೆ.",
+            brandDesc2: "ನಮ್ಮ ನಂಬಿಕೆ ಏನೆಂದರೆ ಶಕ್ತಿಕರಣವು ಸುಲಭವಾಗಿ ಲಭ್ಯವಾಗುವ ಶಿಕ್ಷಣದಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ. ಇಂಗ್ಲಿಷ್ ಕಲಿಯಲು ನೀವು ಕನ್ನಡವನ್ನು ಮರೆಯುವ ಅಗತ್ಯವಿಲ್ಲ - ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯೇ ನಿಮ್ಮ ದೊಡ್ಡ ಶಕ್ತಿ.",
+            brandCTA: "ಇದು ನಿಮ್ಮ ಅವಕಾಶಗಳ ಬಾಗಿಲು.",
             resultsTitle: "ನೈಜ ಜಗತ್ತಿಗೆ ನೈಜ ಫಲಿತಾಂಶಗಳು",
             feat1Title: "ಕೆಲಸದ ಸ್ಥಳದಲ್ಲಿ ಯಶಸ್ಸು",
             feat1Desc: "ಸಂದರ್ಶನಗಳನ್ನು ಎದುರಿಸಲು ಮತ್ತು ನೀವು ಅರ್ಹವಾದ ಕೆಲಸವನ್ನು ಪಡೆಯಲು ಆತ್ಮವಿಶ್ವಾಸ ಬೆಳೆಸಿಕೊಳ್ಳಿ.",
             feat1Hook: "ನಡೆಯಿರಿ, ಧೈರ್ಯವಾಗಿ ಮಾತನಾಡಿ!",
             feat2Title: "ಪರೀಕ್ಷೆಗಳಲ್ಲಿ ಉತ್ತೀರ್ಣರಾಗಿ",
             feat2Desc: "ಪ್ರಶ್ನೆಗಳನ್ನು ನಿಖರವಾಗಿ ಅರ್ಥಮಾಡಿಕೊಳ್ಳಿ ಮತ್ತು ಉತ್ತರಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ವ್ಯಕ್ತಪಡಿಸಿ.",
-            feat3Title: "ಇನ್ನು ನಾಚಿಕೆ ಇಲ್ಲ",
-            feat3Desc: "ನಿರ್ಣಯದ ಭಯವನ್ನು ಹೋಗಲಾಡಿಸುವ ದ್ವಿಭಾಷಾ ತರಬೇತಿಯೊಂದಿಗೆ ನಿಮ್ಮನ್ನು ಸಬಲಗೊಳಿಸಿ.",
+            feat3Title: "ಇನ್ನು ಸಂಕೋಚ ಬೇಡ",
+            feat3Desc: "ಭಯವನ್ನು ಹೋಗಲಾಡಿಸಿ ಆತ್ಮವಿಶ್ವಾಸ ಹೆಚ್ಚಿಸುವ ದ್ವಿಭಾಷಾ ತರಬೇತಿಯೊಂದಿಗೆ ನಿಮ್ಮನ್ನು ಸಬಲಗೊಳಿಸಿ.",
             faqTitle: "ನಿಮ್ಮ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಗಳು",
             faq1Q: "ನನಗೆ ಕನ್ನಡ ಮಾತ್ರ ತಿಳಿದಿದ್ದರೆ ಪರವಾಗಿಲ್ಲವೇ?",
             faq1A: "ಹೌದು! ನಮ್ಮ ವೇದಿಕೆಯನ್ನು ಕರ್ನಾಟಕಕ್ಕಾಗಿ ವಿಶೇಷವಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ. ನಾವು ವಿಷಯಗಳನ್ನು ಕನ್ನಡದಲ್ಲಿ ವಿವರಿಸುತ್ತೇವೆ, ಇದರಿಂದ ನಿಮಗೆ ತಕ್ಷಣ ಅರ್ಥವಾಗುತ್ತದೆ.",
             faq2Q: "AI ಕೋಚ್ ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?",
             faq2A: "ಯಾವಾಗಲೂ ನಿಮ್ಮನ್ನು ನಿರ್ಣಯಿಸದ ಒಬ್ಬ ಸುಸಂಸ್ಕೃತ ಸ್ನೇಹಿತರೊಂದಿಗೆ ಅಭ್ಯಾಸ ಮಾಡುವುದನ್ನು ಕಲ್ಪಿಸಿಕೊಳ್ಳಿ. SIMPLISH - Talks ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ಖಾಸಗಿಯಾಗಿ ಮಾತನಾಡಲು AI ಅನ್ನು ಬಳಸುತ್ತದೆ, ತಿದ್ದುಪಡಿಗಳು ಮತ್ತು ಪ್ರೋತ್ಸಾಹವನ್ನು ನೀಡುತ್ತದೆ.",
             faq3Q: "ಇದು ಸಂಪೂರ್ಣ ಆರಂಭಿಕರಿಗಾಗಿ ಇದೆಯೇ?",
-            faq3A: "ಖಂಡಿತವಾಗಿಯೂ. ನಾವು ತೀರಾ ಆರಂಭದಿಂದ - ಅಕ್ಷರಮಾಲೆ ಮತ್ತು ಸುಲಭ ವಾಕ್ಯಗಳಿಂದ ಪ್ರಾರಂಭಿಸುತ್ತೇವೆ ಮತ್ತು ನಿಮ್ಮ ವೇಗಕ್ಕೆ ಅನುಗುಣವಾಗಿ ಬೆಳೆಯುತ್ತೇವೆ.",
+            faq3A: "ಖಂಡಿತವಾಗಿಯೂ. ನಾವು ತೀರಾ ಆರಂಭದಿಂದ - ಸರಳ ಮತ್ತು ಸುಲಭ ವಾಕ್ಯಗಳಿಂದ ಪ್ರಾರಂಭಿಸುತ್ತೇವೆ ಮತ್ತು ನಿಮ್ಮ ವೇಗಕ್ಕೆ ಅನುಗುಣವಾಗಿ ಅಭ್ಯಾಸ ಮಾಡಿ.",
             faq4Q: "ನಾನು ನೇರ ತರಗತಿಗಳಿಗೆ ಹಾಜರಾಗಬೇಕೇ?",
             faq4A: "ಯಾವುದೇ ಪ್ರಯಾಣವಿಲ್ಲ, ಯಾವುದೇ ಕಟ್ಟುನಿಟ್ಟಾದ ಸಮಯವಿಲ್ಲ. ಕರ್ನಾಟಕದ ಎಲ್ಲಿಯಾದರೂ ನಿಮ್ಮ ಫೋನ್ ಮೂಲಕ ಯಾವಾಗ ಬೇಕಾದರೂ ಕಲಿಯಿರಿ ಮತ್ತು ಅಭ್ಯಾಸ ಮಾಡಿ.",
             footerMotto: "ಸರಳ ಮತ್ತು ಸುಲಭವಾಗಿ ಲಭ್ಯವಿರುವ ಇಂಗ್ಲಿಷ್‌ನೊಂದಿಗೆ ಕನ್ನಡ ಮಾತನಾಡುವವರನ್ನು ಸಬಲಗೊಳಿಸುವುದು.",
-            footerCopyright: "© 2026 SIMPLISH - ಗ್ರಾಮೀಣ ಶ್ರೇಷ್ಠತೆಗಾಗಿ ಒಂದು ಚಳುವಳಿ",
+            footerCopyright: "© 2026 SIMPLISH - ಉನ್ನತಿಯೆಡೆಗೆ ಸರಳ ಪಯಣ",
             footerLinks: ["ನಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸಿ", "ಗೌಪ್ಯತಾ ನೀತಿ", "ಸೇವಾ ನಿಯಮಗಳು"]
         }
     };

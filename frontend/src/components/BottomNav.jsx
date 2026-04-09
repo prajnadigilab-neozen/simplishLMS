@@ -9,9 +9,11 @@ import {
     ShieldCheck 
 } from 'lucide-react';
 import { useTheme } from './ThemeContext';
+import { useUser } from '../context/UserContext';
 import simplishTalksLogo from '../assets/logo_final.jpg';
 
-const BottomNav = ({ onNavigate, currentView, user, language }) => {
+const BottomNav = ({ onNavigate, currentView }) => {
+    const { user, language } = useUser();
     const { theme } = useTheme();
     const role = user?.role?.toLowerCase();
     const isAdmin = ['admin', 'moderator', 'super_admin'].includes(role);

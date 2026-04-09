@@ -1,7 +1,7 @@
-const supabase = require('../config/supabase');
-const mediaService = require('../services/mediaService');
-const fs = require('fs');
 const path = require('path');
+const logger = require('../utils/logger');
+const lessonService = require('../services/lessonService');
+const mediaService = require('../services/mediaService');
 
 // 🛡️ SRE Caching Strategy: Global Lesson List Cache (TTL 5 mins)
 let lessonCache = {
@@ -21,17 +21,13 @@ const formatUrl = (url) => {
 // 🛡️ SRE Pre-warming: Populate cache manually on startup
 exports.preWarmCache = async () => {
     try {
-        console.log('[SRE] Pre-warming Lesson Cache...');
-        const { data, error } = await supabase
-            .from('lessons')
-            .select('*')
-            .order('display_order', { ascending: true });
-        if (error) throw error;
+        logger.info('[SRE] Pre-warming Lesson Cache...');
+        const data = await lessonService.getAllLessons();
         lessonCache.data = data;
         lessonCache.expiresAt = Date.now() + CACHE_TTL;
-        console.log(`[SRE] Cache Ready (${data.length} lessons)`);
+        logger.info(`[SRE] Cache Ready (${data.length} lessons)`);
     } catch (err) {
-        console.error('[SRE] Pre-warm Failed:', err.message);
+        logger.error({ err }, '[SRE] Pre-warm Failed');
     }
 };
 
@@ -48,53 +44,38 @@ exports.uploadLesson = async (req, res) => {
     }
 
     try {
-        const { data, error } = await supabase
-            .from('lessons')
-            .insert([{
-                title,
-                description,
-                level,
-                media_type: 'mixed', // Deprecated but setting to "mixed" in case something depends on it
-                media_url: pdfUrl || audioUrl || videoUrl, // Fallback for backwards compatibility
-                pdf_url: pdfUrl,
-                audio_url: audioUrl,
-                video_url: videoUrl,
-                transcription: transcription,
-                content: content ? (typeof content === 'string' ? JSON.parse(content) : content) : {},
-                display_order: parseInt(req.body.displayOrder) || 0,
-                module_title: (req.body.moduleTitle && req.body.moduleTitle.toLowerCase() !== 'general') ? req.body.moduleTitle : null,
-                unit_number: parseInt(req.body.unitNumber) || 1
-            }])
-            .select()
-            .single();
-
-        if (error) throw error;
+        const data = await lessonService.upsertLesson({
+            title,
+            description,
+            level,
+            media_type: 'mixed',
+            media_url: pdfUrl || audioUrl || videoUrl,
+            pdf_url: pdfUrl,
+            audio_url: audioUrl,
+            video_url: videoUrl,
+            transcription: transcription,
+            content: content ? (typeof content === 'string' ? JSON.parse(content) : content) : {},
+            display_order: parseInt(req.body.displayOrder) || 0,
+            module_title: (req.body.moduleTitle && req.body.moduleTitle.toLowerCase() !== 'general') ? req.body.moduleTitle : null,
+            unit_number: parseInt(req.body.unitNumber) || 1
+        });
 
         res.status(201).json({
-            message: 'Lesson created successfully on Supabase',
+            message: 'Lesson created successfully',
             lesson: data
         });
     } catch (error) {
-        console.error("Lesson Upload Error:", error);
+        logger.error({ error }, "Lesson Upload Error");
         res.status(500).json({
             message: 'Error creating lesson',
-            details: error.message || error.details || 'Unknown database error'
+            details: error.message || 'Unknown database error'
         });
     }
 };
 
 exports.getAllLessons = async (req, res) => {
     try {
-        const limit = Math.min(parseInt(req.query.limit) || 50, 100);
-        const offset = parseInt(req.query.offset) || 0;
-
-        const { data, error, count } = await supabase
-            .from('lessons')
-            .select('*', { count: 'exact' })
-            .order('display_order', { ascending: true })
-            .range(offset, offset + limit - 1);
-
-        if (error) throw error;
+        const data = await lessonService.getAllLessons();
 
         // Apply CDN formatting
         const formattedData = data.map(lesson => ({
@@ -107,12 +88,10 @@ exports.getAllLessons = async (req, res) => {
 
         res.json({
             lessons: formattedData,
-            total: count,
-            limit,
-            offset
+            total: data.length
         });
     } catch (error) {
-        console.error('getAllLessons error:', error);
+        logger.error({ error }, 'getAllLessons error');
         res.status(500).json({ message: 'Error fetching lessons' });
     }
 };
@@ -124,70 +103,18 @@ exports.getMyLessonsProgress = async (req, res) => {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // 🛡️ Optimized Dashboard Fetch: Use SRE Lesson Cache if valid
-        let lessons;
-        const now = Date.now();
-        if (lessonCache.data && lessonCache.expiresAt > now) {
-            console.log('[SRE] Serving lessons from Memory Cache (p95 optimization)');
-            lessons = lessonCache.data;
-        } else {
-            const { data, error: lessonsError } = await supabase
-                .from('lessons')
-                .select('*')
-                .order('display_order', { ascending: true });
+        const { lessons, progressList, allAssessments, assessmentResults } = await lessonService.getEnhancedLessonsProgress(userId);
 
-            if (lessonsError) throw lessonsError;
+        // Map everything together
+        const enhancedLessons = lessons.map(lesson => {
+            const up = progressList.find(p => p.lesson_id === lesson.id);
+            const assessmentForLesson = allAssessments.find(a => a.lesson_id === lesson.id);
             
-            // Update cache
-            lessonCache.data = data;
-            lessonCache.expiresAt = now + CACHE_TTL;
-            lessons = data;
-        }
-
-        // 2. Fetch user progress
-        const { data: progressList, error: progressError } = await supabase
-            .from('user_progress')
-            .select('*')
-            .eq('user_id', userId);
-
-        if (progressError) throw progressError;
-
-        // 3. Fetch all assessments to link lessons to results
-        const { data: allAssessments, error: asError } = await supabase
-            .from('assessments')
-            .select('id, lesson_id');
-
-        if (asError) throw asError;
-
-        // 4. Fetch assessment results
-        const { data: assessmentResults, error: assessmentError } = await supabase
-            .from('assessment_results')
-            .select('*')
-            .eq('user_id', userId);
-
-        if (assessmentError) throw assessmentError;
-
-        const lList = lessons || [];
-        const pList = progressList || [];
-        const aList = allAssessments || [];
-        const aResults = assessmentResults || [];
-
-        console.log(`[Dashboard] Found ${lList.length} lessons, ${pList.length} progress records, ${aResults.length} assessment results.`);
-
-        // 5. Map everything together
-        const enhancedLessons = lList.map(lesson => {
-            const up = pList.find(p => p.lesson_id === lesson.id);
-
-            // Find assessment for this lesson
-            const assessmentForLesson = aList.find(a => a.lesson_id === lesson.id);
-
-            // Find results for this assessment
             const ar = assessmentForLesson
-                ? aResults.filter(a => a.assessment_id === assessmentForLesson.id)
+                ? assessmentResults.filter(a => a.assessment_id === assessmentForLesson.id)
                     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
                 : null;
 
-            // Priority: Local progress score (latest) > Assessment result score
             const finalScore = (up && up.score !== null && up.score !== undefined) ? up.score : (ar ? ar.score : null);
 
             return {
@@ -196,7 +123,7 @@ exports.getMyLessonsProgress = async (req, res) => {
                 spent_time_ms: up ? up.spent_time_ms : 0,
                 status: up ? up.status : 'not_started',
                 score: finalScore,
-                passed: ar ? ar.passed : (finalScore >= 70), // Fallback for exams/lessons without assessment records
+                passed: ar ? ar.passed : (finalScore >= 70),
                 pdf_url: formatUrl(lesson.pdf_url),
                 audio_url: formatUrl(lesson.audio_url),
                 video_url: formatUrl(lesson.video_url),
@@ -204,7 +131,6 @@ exports.getMyLessonsProgress = async (req, res) => {
             };
         });
 
-        // 6. Sort correctly: Module Order (Basic -> Intermediate -> Advanced -> Expert) THEN display_order
         const levelOrder = { 'Basic': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 };
         enhancedLessons.sort((a, b) => {
             const orderA = levelOrder[a.level] || 99;
@@ -215,7 +141,7 @@ exports.getMyLessonsProgress = async (req, res) => {
 
         res.json({ lessons: enhancedLessons });
     } catch (error) {
-        console.error('getMyLessonsProgress error details:', error);
+        logger.error({ error }, 'getMyLessonsProgress error details');
         res.status(500).json({
             message: 'Error fetching user progress for lessons',
             error: error.message || 'Unknown'
@@ -226,10 +152,6 @@ exports.getMyLessonsProgress = async (req, res) => {
 exports.updateLesson = async (req, res) => {
     const { id } = req.params;
     const { title, description, level, displayOrder, content } = req.body;
-
-    console.log(`--- Update Lesson Attempt ---`);
-    console.log(`ID: ${id}`);
-    console.log(`Body:`, req.body);
 
     let pdfUrl = req.files?.pdf ? `/uploads/${req.files.pdf[0].filename}` : req.body.pdfUrl;
     let audioUrl = req.files?.audio ? `/uploads/${req.files.audio[0].filename}` : req.body.audioUrl;
@@ -244,6 +166,7 @@ exports.updateLesson = async (req, res) => {
 
     try {
         const updatePayload = {
+            id,
             title,
             description,
             level,
@@ -261,32 +184,14 @@ exports.updateLesson = async (req, res) => {
         if (videoUrl !== undefined) updatePayload.video_url = videoUrl;
         if (transcription !== undefined) updatePayload.transcription = transcription;
 
-        console.log(`Payload for Supabase:`, updatePayload);
+        const data = await lessonService.upsertLesson(updatePayload);
 
-        const { data, error } = await supabase
-            .from('lessons')
-            .update(updatePayload)
-            .eq('id', id)
-            .select()
-            .maybeSingle();
-
-        if (error) {
-            console.error('Supabase Update Error Object:', error);
-            throw error;
-        }
-
-        if (!data) {
-            console.warn(`Lesson with ID ${id} not found for update.`);
-            return res.status(404).json({ message: 'Lesson not found' });
-        }
-
-        console.log('Update Successful. Returning updated lesson.');
         res.json({ message: 'Lesson updated successfully', lesson: data });
     } catch (error) {
-        console.error("Critical Update Controller Error:", error);
+        logger.error({ error }, "Update Controller Error");
         res.status(500).json({
             message: 'Error updating lesson',
-            details: error.message || error.details || 'Unknown database error'
+            details: error.message || 'Unknown database error'
         });
     }
 };
@@ -295,35 +200,21 @@ exports.deleteLesson = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // 1. Get lesson to find media path
-        const { data: lesson, error: fetchError } = await supabase
-            .from('lessons')
-            .select('media_url')
-            .eq('id', id)
-            .single();
-
-        if (fetchError || !lesson) {
+        const lesson = await lessonService.getLessonById(id);
+        if (!lesson) {
             return res.status(404).json({ message: 'Lesson not found' });
         }
 
         const mediaPath = lesson.media_url;
+        await lessonService.deleteLesson(id);
 
-        // 2. Delete from Supabase
-        const { error: deleteError } = await supabase
-            .from('lessons')
-            .delete()
-            .eq('id', id);
-
-        if (deleteError) throw deleteError;
-
-        // 3. Delete file from storage via MediaService
         if (mediaPath) {
             await mediaService.deleteFile(mediaPath);
         }
 
-        res.json({ message: 'Lesson deleted successfully from Supabase' });
+        res.json({ message: 'Lesson deleted successfully' });
     } catch (error) {
-        console.error("Delete Error:", error);
+        logger.error({ error }, "Delete Error");
         res.status(500).json({ message: 'Error deleting lesson' });
     }
 };
@@ -333,71 +224,26 @@ exports.updateProgress = async (req, res) => {
     const { lessonId } = req.params;
     const { spentTimeMs, status, completionPercentage, lastActiveTab, score } = req.body;
 
-    console.log(`[Progress] Request from user ${userId} for lesson ${lessonId}`);
-
     if (!userId) {
-        return res.status(401).json({ message: 'User ID missing from request' });
+        return res.status(401).json({ message: 'User ID missing' });
     }
 
     try {
-        const payload = {
-            user_id: userId,
-            lesson_id: lessonId,
+        const data = await lessonService.updateProgress(userId, lessonId, {
             spent_time_ms: spentTimeMs || 0,
             status: status || 'started',
             completion_percentage: completionPercentage || 0,
-            last_accessed_at: new Date().toISOString()
-        };
+            score: (score !== undefined && score !== null) ? score : undefined,
+            last_active_tab: lastActiveTab
+        });
 
-        if (score !== undefined && score !== null) {
-            payload.score = score;
-        }
-
-        if (lastActiveTab) {
-            payload.last_active_tab = lastActiveTab;
-        }
-
-        console.log(`[Progress] Attempting UPSERT to Supabase...`);
-        const { data, error } = await supabase
-            .from('user_progress')
-            .upsert(payload, { 
-                onConflict: 'user_id,lesson_id',
-                ignoreDuplicates: false 
-            })
-            .select();
-
-        if (error) {
-            console.error(`[Progress] Supabase Error:`, error);
-            
-            // Fallback: Try a simpler insert if schema mismatch occurred
-            console.log(`[Progress] Attempting safe fallback UPSERT...`);
-            const { data: safeData, error: safeError } = await supabase
-                .from('user_progress')
-                .upsert({
-                    user_id: userId,
-                    lesson_id: lessonId,
-                    status: payload.status,
-                    completion_percentage: payload.completion_percentage,
-                    last_accessed_at: payload.last_accessed_at
-                }, { onConflict: 'user_id,lesson_id' })
-                .select();
-
-            if (safeError) {
-                throw new Error(`Progress tracking completely failed: ${safeError.message}`);
-            }
-            
-            return res.json(safeData?.[0] || { message: 'Progress saved (fallback)' });
-        }
-
-        console.log(`[Progress] Success!`);
-        res.json(data?.[0] || { message: 'Progress saved' });
+        res.json(data);
     } catch (error) {
-        console.error('Critical failure in updateProgress:', error);
-        // Resilient Response: Even if DB fails, don't crash the frontend lesson experience
+        logger.error({ error }, 'updateProgress error');
         res.status(200).json({ 
             message: 'Progress recorded locally (sync delayed)', 
             warning: error.message,
-            status: status || 'started'
+            status: req.body.status || 'started'
         });
     }
 };

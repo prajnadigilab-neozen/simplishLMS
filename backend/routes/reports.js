@@ -6,7 +6,7 @@ const isSuperAdmin = require('../middleware/isSuperAdmin');
 
 // Custom middleware: Staff only (admin/moderator/super_admin)
 const isStaff = (req, res, next) => {
-    const role = req.user?.role?.toLowerCase();
+    const role = req.user?.role;
     if (role === 'super_admin' || role === 'moderator' || role === 'admin') {
         return next();
     }

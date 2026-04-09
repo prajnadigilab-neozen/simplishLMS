@@ -1,0 +1,19 @@
+Category,Feature,Module,Test Scenario,Expected Result,Status
+Auth,Admin Login,Admin,Login with valid admin credentials,Redirect to Dashboard,PASS/FAIL
+Metrics,KPI Accuracy,Admin,Verify 'Total Users' and 'Active Memberships',Matches Database records,PASS/FAIL
+Metrics,Growth Trends,Admin,Analyze MoM growth for lessons,Correct calculation displayed,PASS/FAIL
+CMS,Lesson Creation,Admin,Upload PDF/Video/Audio to new lesson,Files saved in /uploads,PASS/FAIL
+CMS,Media Playback,Admin,Play uploaded video/audio in Study Area,Smooth playback,PASS/FAIL
+Users,Role Promotion,Admin,Change user role to Admin,Role updated in 'users' table,PASS/FAIL
+Users,Account Suspension,Admin,Set user status to 'Inactive',User can no longer login,PASS/FAIL
+Billing,Transaction History,Admin,View all-time billing records,Accurate display of history,PASS/FAIL
+Onboarding,Registration,User,New user registration,Immediate success confirmation,PASS/FAIL
+Onboarding,Placement Test,User,Take placement test,Correct level assignment,PASS/FAIL
+Study Area,Sequential Navigation,User,Try to access Lesson 2 before Lesson 1 test,Lesson 2 is locked,PASS/FAIL
+Study Area,Mixed Media Switch,User,Toggle between Video/Audio/PDF,Smooth view transition,PASS/FAIL
+Assessments,Interactive Matching,User,Match English words to Kannada,Pairs linked with feedback,PASS/FAIL
+Assessments,Score Calculation,User,Complete a test with 70%+,Mastery achieved next lesson unlocked,PASS/FAIL
+Wallet,Balance Visibility,User,Check balance in Navbar and Top-up page,Consistently displayed,PASS/FAIL
+Wallet,Paywall Logic,User,Access Expert lesson without Premium,Access denied lock shown,PASS/FAIL
+Wallet,Top-up Flow,User,Initiate payment for balance,Balance updated on confirmation,PASS/FAIL
+Profile,Progress Persistence,User,Logout and login after completing lesson,Progress is preserved,PASS/FAIL

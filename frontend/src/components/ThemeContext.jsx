@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { safeSetItem, safeGetItem } from '../utils/storageUtils';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(() => {
-        const saved = localStorage.getItem('simplish_theme');
+        const saved = safeGetItem('simplish_theme');
         if (saved) return saved;
         return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     });
 
     useEffect(() => {
-        localStorage.setItem('simplish_theme', theme);
+        safeSetItem('simplish_theme', theme);
         document.documentElement.setAttribute('data-theme', theme);
     }, [theme]);
 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { safeGetItem, safeRemoveItem } from './storageUtils';
 
 // Using relative paths — Vite proxy forwards /api → localhost:5000
 // This works in dev (via proxy) and in production (same-origin deployment).
@@ -14,7 +15,7 @@ const api = axios.create({
 
 // Automatically attach token from localStorage to every request
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('simplish_token');
+    const token = safeGetItem('simplish_token');
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -27,10 +28,10 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401) {
             // Check if we are already logging out to prevent loops
-            if (localStorage.getItem('simplish_token')) {
+            if (safeGetItem('simplish_token')) {
                 console.warn('Token expired or invalid. Logging out automatically.');
-                localStorage.removeItem('simplish_token');
-                localStorage.removeItem('simplish_user');
+                safeRemoveItem('simplish_token');
+                safeRemoveItem('simplish_user');
                 window.location.href = '/'; // Force a full reload to reset React state
             }
         }

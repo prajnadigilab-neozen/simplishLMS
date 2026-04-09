@@ -1,4 +1,6 @@
-const supabase = require('../config/supabase');
+const assessmentService = require('../services/assessmentService').default;
+const userService = require('../services/userService').default;
+const lessonService = require('../services/lessonService');
 const scoring = require('../utils/scoring');
 const ocr = require('../utils/ocr');
 const transcription = require('../utils/transcription');
@@ -20,16 +22,7 @@ exports.getAssessmentByLesson = async (req, res) => {
     const { lessonId } = req.params;
     try {
         console.log(`[Assessment] Querying assessments for lesson_id: ${lessonId}`);
-        const { data: assessment, error: assessmentError } = await supabase
-            .from('assessments')
-            .select('*')
-            .eq('lesson_id', lessonId)
-            .maybeSingle(); // Better than .single() as it doesn't throw if 0 rows
-
-        if (assessmentError) {
-            console.error('Supabase Assessment Fetch Error:', assessmentError);
-            throw assessmentError;
-        }
+        const assessment = await assessmentService.getAssessmentByLesson(lessonId);
 
         if (!assessment) {
             console.log(`No assessment found for lesson ${lessonId}`);
@@ -37,16 +30,7 @@ exports.getAssessmentByLesson = async (req, res) => {
         }
 
         console.log(`Found assessment: ${assessment.id}. Fetching questions...`);
-
-        const { data: questions, error: questionsError } = await supabase
-            .from('questions')
-            .select('*')
-            .eq('assessment_id', assessment.id);
-
-        if (questionsError) {
-            console.error('Supabase Questions Fetch Error:', questionsError);
-            throw questionsError;
-        }
+        const questions = await assessmentService.getQuestionsByAssessment(assessment.id);
 
         console.log(`Found ${questions?.length || 0} questions.`);
 
@@ -66,7 +50,7 @@ exports.getAssessmentByLesson = async (req, res) => {
         console.error('Critical getAssessmentByLesson Catch:', error);
         res.status(500).json({
             message: 'Error fetching assessment',
-            details: error.message || error.details || 'Unknown database error'
+            details: error.message || 'Unknown database error'
         });
     }
 };
@@ -77,12 +61,7 @@ exports.submitAssessment = async (req, res) => {
     let answers = typeof req.body.answers === 'string' ? JSON.parse(req.body.answers) : req.body.answers;
 
     try {
-        const { data: questions, error: questionsError } = await supabase
-            .from('questions')
-            .select('*')
-            .eq('assessment_id', assessmentId);
-
-        if (questionsError) throw questionsError;
+        const questions = await assessmentService.getQuestionsByAssessment(assessmentId);
 
         // Step 1: Process any media files (Voice/OCR)
         if (req.files && req.files.length > 0) {
@@ -105,34 +84,21 @@ exports.submitAssessment = async (req, res) => {
         // Calculate score
         const { score, passed } = scoring.calculateScore(questions, answers);
 
-        // Store result on Supabase
-        const { data: result, error: resultError } = await supabase
-            .from('assessment_results')
-            .insert([{
-                user_id: userId,
-                assessment_id: assessmentId,
-                score,
-                passed
-            }])
-            .select()
-            .single();
+        // Store result via Service Layer
+        const result = await assessmentService.saveResult({
+            user_id: userId,
+            assessment_id: assessmentId,
+            score,
+            passed
+        });
 
-        if (resultError) throw resultError;
-
-        // Update user streak on Supabase
+        // Update user streak via Service Layer
         if (passed) {
-            const { error: streakError } = await supabase.rpc('increment_streak', { user_id: userId });
-            if (streakError) {
-                // Fallback if RPC isn't defined yet, do manual update
-                await supabase
-                    .from('users')
-                    .update({ streak_count: 5 /* This is a placeholder, naturally you'd fetch current first or use a trigger */ })
-                    .eq('id', userId);
-            }
+            await userService.incrementStreak(userId);
         }
 
         res.json({
-            message: 'Assessment submitted successfully via Supabase',
+            message: 'Assessment submitted successfully successfully',
             result,
             processedAnswers: answers
         });
@@ -145,53 +111,23 @@ exports.submitAssessment = async (req, res) => {
 exports.upsertAssessment = async (req, res) => {
     const { lessonId } = req.params;
     const { title, questions } = req.body;
-    const { createClient } = require('@supabase/supabase-js');
-    const adminSupabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { autoRefreshToken: false, persistSession: false }
-    });
 
     try {
-        // 1. Upsert Assessment
-        let assessment;
-        const { data: existing, error: existingError } = await adminSupabase
-            .from('assessments')
-            .select('*')
-            .eq('lesson_id', lessonId)
-            .maybeSingle();
-
-        if (existingError) throw existingError;
-
-        if (existing) {
-            const { data, error } = await adminSupabase
-                .from('assessments')
-                .update({ title: title || 'Assessment' })
-                .eq('id', existing.id)
-                .select()
-                .single();
-            if (error) throw error;
-            assessment = data;
-        } else {
-            const { data, error } = await adminSupabase
-                .from('assessments')
-                .insert([{ lesson_id: lessonId, title: title || 'Assessment' }])
-                .select()
-                .single();
-            if (error) throw error;
-            assessment = data;
-        }
+        // 1. Upsert Assessment via Service Layer
+        const assessment = await assessmentService.upsertAssessment({ 
+            lesson_id: lessonId, 
+            title: title || 'Assessment',
+            updated_at: new Date().toISOString()
+        });
 
         const assessmentId = assessment.id;
 
-        // 2. Delete existing questions
-        await adminSupabase
-            .from('questions')
-            .delete()
-            .eq('assessment_id', assessmentId);
+        // 2. Delete existing questions via Service Layer
+        await assessmentService.deleteQuestions(assessmentId);
 
-        // 3. Insert new questions (only if questions array is provided)
+        // 3. Insert new questions (only if questions array is provided) via Service Layer
         if (questions && questions.length > 0) {
             const questionsToInsert = questions.map(q => {
-                // Ensure options is strictly a JSON array (or null) for Supabase JSONB column
                 let jsonOptions = null;
                 if (q.options) {
                     jsonOptions = Array.isArray(q.options) ? q.options : [q.options];
@@ -208,22 +144,15 @@ exports.upsertAssessment = async (req, res) => {
                 };
             });
 
-            const { error: questionsInsertError } = await adminSupabase
-                .from('questions')
-                .insert(questionsToInsert);
-
-            if (questionsInsertError) {
-                console.error('Questions Insert Error Details:', questionsInsertError);
-                throw questionsInsertError;
-            }
+            await assessmentService.insertQuestions(questionsToInsert);
         }
 
-        res.json({ message: 'Assessment and questions saved successfully on Supabase', assessmentId });
+        res.json({ message: 'Assessment and questions saved successfully', assessmentId });
     } catch (error) {
         console.error("Upsert Assessment Catch Error:", error);
         res.status(500).json({
             message: 'Error saving assessment',
-            details: error.message || error.details || 'Unknown database error'
+            details: error.message || 'Unknown database error'
         });
     }
 };

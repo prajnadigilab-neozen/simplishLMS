@@ -3,8 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Camera, MapPin, AlignLeft, Save, X, Loader2, Phone } from 'lucide-react';
 import { authApi } from '../utils/api';
 import { useToast } from './Toast';
+import { useUser } from '../context/UserContext';
+import { safeGetItem, safeRemoveItem } from '../utils/storageUtils';
 
-const ProfileSettings = ({ user, onUpdate, onBack, language }) => {
+const ProfileSettings = ({ onBack }) => {
+    const { user, setUser, language } = useUser();
     const [form, setForm] = useState({
         fullName: user.fullName || '',
         email: user.email || '',
@@ -46,10 +49,16 @@ const ProfileSettings = ({ user, onUpdate, onBack, language }) => {
             if (form.password) formData.append('password', form.password);
             if (avatarFile) formData.append('avatar', avatarFile);
 
-            const token = localStorage.getItem('simplish_token');
+            const token = safeGetItem('simplish_token');
             const res = await authApi.updateProfile(formData, token);
 
-            await onUpdate(res.data.user);
+            const updatedUser = {
+              ...res.data.user,
+              role: res.data.user.role?.toLowerCase()?.replace(/\s+|_/g, '_'),
+              isLoggedIn: true,
+              token: token
+            };
+            setUser(updatedUser);
             onBack();
         } catch (err) {
             showToast(err.response?.data?.message || 'Failed to update profile', 'error');
@@ -69,8 +78,9 @@ const ProfileSettings = ({ user, onUpdate, onBack, language }) => {
                 await authApi.deleteMe();
                 showToast('Your account has been deleted successfully.', 'success');
                 // The API call usually triggers a logout or requires it
-                localStorage.removeItem('simplish_token');
-                localStorage.removeItem('simplish_user');
+                safeRemoveItem('simplish_token');
+                safeRemoveItem('simplish_user');
+                safeRemoveItem('simplish_active_lesson');
                 window.location.href = '/';
             } catch (err) {
                 showToast(err.response?.data?.message || 'Failed to delete account', 'error');

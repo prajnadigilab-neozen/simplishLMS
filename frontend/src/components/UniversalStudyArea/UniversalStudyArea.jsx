@@ -11,8 +11,13 @@ import VocabularyLab from './VocabularyLab';
 import MilestoneTest from './MilestoneTest';
 import ExamInterface from './ExamInterface';
 import { useToast } from '../Toast';
+import { useUser } from '../../context/UserContext';
+import { useCurriculum } from '../../hooks/useCurriculum';
+import { safeSetItem } from '../../utils/storageUtils';
 
-const UniversalStudyArea = ({ user, lesson, onBack, isCourseCompleted, onNextLesson, language }) => {
+const UniversalStudyArea = ({ lesson, onBack }) => {
+    const { user, language } = useUser();
+    const { isCourseCompleted, handleNextLesson: onNextLesson } = useCurriculum();
     const [activeTab, setActiveTab] = useState('study'); // study, reading, listening, vocabulary, test
     const [loading, setLoading] = useState(true);
     const tabsContainerRef = React.useRef(null);
@@ -83,7 +88,7 @@ const UniversalStudyArea = ({ user, lesson, onBack, isCourseCompleted, onNextLes
 
     const handleTabChange = async (tab) => {
         setActiveTab(tab);
-        localStorage.setItem('simplish_last_tab', tab);
+        safeSetItem('simplish_last_tab', tab);
         await saveProgress(tab);
     };
 

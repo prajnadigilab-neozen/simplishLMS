@@ -1,0 +1,43 @@
+﻿[dotenv@17.2.4] injecting env (9) from backend\.env -- tip: ≡ƒöæ add access controls to secrets: https://dotenvx.com/ops
+
+====== REVENUE DIAGNOSTIC ======
+
+[1] Total payments found (last 20): 19
+   id=05240dd5 amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=5e405e1d amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=428cf2db amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=2d648f3d amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=b602e3dd amount=99 status=completed type=TOPUP date=2026-04-04
+   id=f18a15a3 amount=99 status=completed type=TOPUP date=2026-04-04
+   id=ad5041e2 amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=da96b465 amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=53a57beb amount=99 status=completed type=MEMBERSHIP date=2026-04-04
+   id=b2d37ad5 amount=99 status=pending type=MEMBERSHIP date=2026-04-04
+   id=d17ff071 amount=99 status=pending type=MEMBERSHIP date=2026-04-04
+   id=75769d7e amount=99 status=pending type=TOPUP date=2026-04-04
+   id=6fea67f5 amount=99 status=pending type=MEMBERSHIP date=2026-04-04
+   id=b7287760 amount=99 status=pending type=MEMBERSHIP date=2026-04-04
+   id=fcb2e4d4 amount=99 status=pending type=MEMBERSHIP date=2026-04-04
+   id=d9cc5097 amount=99 status=completed type=MEMBERSHIP date=2026-04-01
+   id=550c73cd amount=99 status=completed type=MEMBERSHIP date=2026-03-31
+   id=02efb959 amount=99 status=pending type=MEMBERSHIP date=2026-03-31
+   id=484cbc84 amount=100 status=pending type=MEMBERSHIP date=2026-03-31
+
+[2] Payments with status='completed': 11
+   Total Revenue from completed: 1089
+
+[3] Payments by status:
+   status='pending' count=8 total_amount=793
+   status='completed' count=11 total_amount=1089
+
+[4] Revenue allTime query result: 11 rows, total = 1089
+
+[5] Sample amount values (raw type check):
+   amount=100 (typeof: number) status=pending
+   amount=99 (typeof: number) status=pending
+   amount=99 (typeof: number) status=completed
+   amount=99 (typeof: number) status=completed
+   amount=99 (typeof: number) status=pending
+
+====== END DIAGNOSTIC ======
+

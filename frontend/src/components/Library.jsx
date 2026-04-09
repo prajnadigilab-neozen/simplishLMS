@@ -22,8 +22,10 @@ import {
 import { useNavigate } from 'react-router-dom';
 import api, { lessonApi } from '../utils/api';
 import { useToast } from './Toast';
+import { useUser } from '../context/UserContext';
 
-const Library = ({ user, onSelectLesson, onEditLesson, onAddLesson, onAddExam, language }) => {
+const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
+    const { user, language } = useUser();
     const [lessons, setLessons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');

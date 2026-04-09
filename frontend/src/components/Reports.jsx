@@ -17,6 +17,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useUser } from '../context/UserContext';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const formatCurrency = (amount) => {
@@ -35,7 +36,9 @@ const todayStr = () => toLocalDateStr(new Date());
 const sevenDaysAgoStr = () => toLocalDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
 // ── Component ─────────────────────────────────────────────────────────────────
-const Reports = ({ user, hideHeader = false }) => {
+const Reports = ({ user: userProp, hideHeader = false }) => {
+    const { user: contextUser } = useUser();
+    const user = userProp || contextUser;
     const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
     const isSuperAdmin = role === 'super_admin';
     const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
@@ -43,6 +46,10 @@ const Reports = ({ user, hideHeader = false }) => {
     // Date filter state
     const [fromDate, setFromDate] = useState(sevenDaysAgoStr());
     const [toDate, setToDate] = useState(todayStr());
+
+    useEffect(() => {
+        console.log('[Reports] User:', user?.id, 'Role:', role, 'CanSeeRevenue:', canSeeRevenue);
+    }, [user, role, canSeeRevenue]);
 
     // Data state
     const [dailyBreakdown, setDailyBreakdown] = useState([]);
@@ -58,6 +65,7 @@ const Reports = ({ user, hideHeader = false }) => {
         try {
             const res = await reportApi.getDailyReport({ from, to });
             setDailyBreakdown(res.data.daily_breakdown || []);
+            console.log('[Reports] DAILY BREAKDOWN DATA:', res.data.daily_breakdown);
         } catch (err) {
             console.error('Failed to load reports:', err);
         } finally {

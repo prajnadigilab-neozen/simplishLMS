@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { billingApi, settingsApi } from '../utils/api';
 import { useToast } from './Toast';
 import { 
@@ -11,9 +12,10 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
 
-const CheckoutSync = ({ user, onUpdateUser }) => {
+const CheckoutSync = () => {
+    const { user, refreshUserContext } = useUser();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [records, setRecords] = useState([]);
@@ -92,7 +94,7 @@ const CheckoutSync = ({ user, onUpdateUser }) => {
                                 ? `Success! ₹${amount} added to your balance${settings.topup_duration_days > 0 ? ` + ${settings.topup_duration_days} days access` : ''}.` 
                                 : `Success! Service extended by ${settings.subscription_duration_days} days.`;
                             showToast(successMsg, 'success');
-                            if (onUpdateUser) await onUpdateUser();
+                            await refreshUserContext();
                             navigate('/');
                         }
                     } catch (err) {
@@ -129,7 +131,7 @@ const CheckoutSync = ({ user, onUpdateUser }) => {
                                 ? `Success! ₹${amount} added to your balance${settings.topup_duration_days > 0 ? ` + ${settings.topup_duration_days} days access` : ''}.` 
                                 : `Success! Service extended by ${settings.subscription_duration_days} days.`;
                             showToast(successMsg, 'success');
-                            if (onUpdateUser) await onUpdateUser();
+                            await refreshUserContext();
                             navigate('/');
                         }
                     } catch (err) {

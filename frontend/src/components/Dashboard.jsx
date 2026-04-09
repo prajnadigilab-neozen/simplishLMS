@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Loader2, CheckCircle2, Lock, Trophy } from 'lucide-react';
 import { lessonApi, placementApi, reportApi } from '../utils/api';
+import { useUser } from '../context/UserContext';
 
-const Dashboard = ({ user, onStartLesson, language }) => {
+const Dashboard = ({ onStartLesson }) => {
+    const { user, language } = useUser();
     const navigate = useNavigate();
     const getGrade = (score) => {
         if (score === null || score === undefined) return '-';

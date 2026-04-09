@@ -17,9 +17,11 @@ import {
 } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { UserProvider, useUser } from '../context/UserContext';
 import logoImg from '../assets/logo_final.jpg';
 
-const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
+const Navbar = ({ onNavigate }) => {
+    const { user, handleLogout, language, setLanguage } = useUser();
     const location = useLocation();
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
@@ -29,7 +31,6 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
     const toggleLanguage = () => {
         const newLang = language === 'kn' ? 'en' : 'kn';
         setLanguage(newLang);
-        localStorage.setItem('simplish_language', newLang);
     };
 
     const role = user?.role?.toLowerCase();
@@ -154,9 +155,7 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
                             background: 'rgba(255,255,255,0.03)',
                             border: '1px solid var(--border)',
                             borderRadius: '16px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            gap: '1rem'
+                            cursor: 'pointer'
                         }}
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRight: '1px solid var(--border)', paddingRight: '0.75rem' }}>
@@ -308,7 +307,7 @@ const Navbar = ({ user, onLogout, language, setLanguage, onNavigate }) => {
                                             </span>
                                         </button>
                                         <button 
-                                            onClick={() => { onLogout(); setIsProfileOpen(false); }}
+                                            onClick={() => { handleLogout(); setIsProfileOpen(false); }}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem',
                                                 border: 'none', background: 'none', color: '#e11d48', borderRadius: '12px', cursor: 'pointer', transition: '0.2s'

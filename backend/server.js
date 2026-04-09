@@ -1,3 +1,6 @@
+// 🚀 Incremental TS Migration: Register ts-node to allow requiring .ts files
+require('ts-node/register');
+
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -16,19 +19,25 @@ const http = require('http');
 http.globalAgent.keepAlive = true;
 http.globalAgent.maxSockets = 1000;
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+const env = require('./config/env');
+const logger = require('./utils/logger');
+const Sentry = require('@sentry/node');
+const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 
-// ==========================================
-// 1. STARTUP — Validate Required Env Vars
-// ==========================================
-// Crash fast if critical config is missing so we know immediately at startup
-// rather than getting cryptic errors on the first request.
-const REQUIRED_ENV = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-REQUIRED_ENV.forEach(key => {
-    if (!process.env[key]) {
-        console.error(`FATAL: Missing required environment variable: ${key}`);
-        process.exit(1);
-    }
-});
+// 🔐 Initialize Sentry (MUST be first)
+if (env.SENTRY_DSN) {
+    Sentry.init({
+        dsn: env.SENTRY_DSN,
+        integrations: [
+            nodeProfilingIntegration(),
+        ],
+        // Performance Monitoring
+        tracesSampleRate: 1.0, 
+        // Set sampling rate for profiling - relative to tracesSampleRate
+        profilesSampleRate: 1.0,
+        environment: env.SENTRY_ENVIRONMENT
+    });
+}
 
 const app = express();
 app.disable('x-powered-by'); 
@@ -37,20 +46,21 @@ app.use((req, res, next) => {
     res.setHeader('X-Simplish-Shield', 'active');
     next();
 });
-const PORT = (process.env.PORT || '5000').toString().trim();
-const CDN_URL = process.env.CDN_URL ? process.env.CDN_URL.replace(/\/$/, '') : ''; // Guard: Ensure no trailing slash
+
+const PORT = env.PORT;
+const CDN_URL = env.CDN_URL;
 
 if (CDN_URL) {
-    console.log(`[SRE] CDN Content Offloading: ACTIVE (Base: ${CDN_URL})`);
+    logger.info(`[SRE] CDN Content Offloading: ACTIVE (Base: ${CDN_URL})`);
 } else {
-    console.warn(`[SRE] CDN Content Offloading: INACTIVE (Serving from local /uploads)`);
+    logger.warn(`[SRE] CDN Content Offloading: INACTIVE (Serving from local /uploads)`);
 }
 
 // = [SRE SECURE MIDDLEWARE] =
 const { apiLimiter, authLimiter } = require('./middleware/rateLimit');
 const authMiddleware = require('./middleware/auth');
 const sanitizeInputs = require('./middleware/sanitize');
-const isProd = process.env.NODE_ENV === 'production';
+const isProd = env.NODE_ENV === 'production';
 
 // 🛡️ Security Fix: Force HTTPS in production (Rule 22)
 app.use((req, res, next) => {
@@ -61,7 +71,7 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL?.trim() || 'http://localhost:5173', // Hardcoded default for safety, but prefers ENV
+    origin: env.FRONTEND_URL || 'http://localhost:5173', // Hardcoded default for safety, but prefers ENV
     credentials: true
 }));
 // app.use('/api/', apiLimiter); // Temporarily disabled to unblock development 429 loops
@@ -163,24 +173,23 @@ app.use('/uploads', (req, res, next) => {
 // ==========================================
 // 4. ERROR HANDLING
 // ==========================================
-app.use((err, req, res, next) => {
-    try {
-        const errorLog = `[${new Date().toISOString()}] ${req.method} ${req.url} - ${err.stack}\n`;
-        fs.appendFileSync('error.log', errorLog);
-    } catch (logErr) {
-        // Fallback: Don't let a logging failure crash the entire server process!
-        console.error('CRITICAL: Failed to write to error.log (Permissions? Room?):', logErr.message);
-    }
+// 🔐 SRE: Sentry Error Handler (Must be before any other error middleware)
+if (env.SENTRY_DSN) {
+    Sentry.setupExpressErrorHandler(app);
+}
 
-    if (process.env.NODE_ENV !== 'production') {
-        console.error('SERVER ERROR:', err.message);
-        console.error('PATH:', req.url);
-        console.error(err.stack);
-    }
+app.use((err, req, res, next) => {
+    logger.error({ 
+        method: req.method, 
+        url: req.url, 
+        stack: err.stack 
+    }, `Server Error: ${err.message}`);
+
+    const isDev = env.NODE_ENV !== 'production';
     
     res.status(err.status || 500).json({ 
         message: err.message || 'Something went wrong on the server.',
-        error: process.env.NODE_ENV !== 'production' ? err.message : undefined 
+        error: isDev ? err.message : undefined 
     });
 });
 
@@ -190,7 +199,7 @@ app.use((err, req, res, next) => {
 const numCPUs = Math.min(os.cpus().length, 6); // Rule 18: Tuned to 6 workers for max OS 'Headroom' during Stress
 
 if (cluster.isMaster) {
-    console.log(`[SRE] Master ${process.pid} is running. Scaling to ${numCPUs} workers...`);
+    logger.info(`[SRE] Master ${process.pid} is running. Scaling to ${numCPUs} workers...`);
 
     // Fork workers
     for (let i = 0; i < numCPUs; i++) {
@@ -198,50 +207,40 @@ if (cluster.isMaster) {
     }
 
     cluster.on('exit', (worker, code, signal) => {
-        console.warn(`[SRE] Worker ${worker.process.pid} died. Reviving...`);
+        logger.warn(`[SRE] Worker ${worker.process.pid} died. Reviving...`);
         cluster.fork();
     });
 
     // Master logic for cron jobs (ensure only one master handles these)
     cron.schedule('0 0 * * *', () => {
-        console.log('--- Triggering daily system cleanup cron job (Master) ---');
+        logger.info('--- Triggering daily system cleanup cron job (Master) ---');
         dailyCleanup();
     });
 } else {
     // Workers share the same TCP connection on port 5000
-    if (process.env.NODE_ENV !== 'test') {
+    if (env.NODE_ENV !== 'test') {
         app.listen(PORT, async () => {
             // Rule 19: Pre-warm memory caches for sub-1s interactivity
             const lessonController = require('./controllers/lessonController');
             await lessonController.preWarmCache();
             
-            if (process.env.NODE_ENV !== 'production') {
-                console.log(`[SRE] Worker ${process.pid} active on port ${PORT}`);
-            }
+            logger.info(`[SRE] Worker ${process.pid} active on port ${PORT}`);
         });
     }
 }
 
 // --- SYSTEM CRASH LOGGING ---
 process.on('uncaughtException', (err) => {
-    const log = `[${new Date().toISOString()}] UNCAUGHT EXCEPTION: ${err.message}\n${err.stack}\n`;
-    try { fs.appendFileSync('error.log', log); } catch (e) {}
-    console.error(log);
+    logger.error({ stack: err.stack }, `UNCAUGHT EXCEPTION: ${err.message}`);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    const log = `[${new Date().toISOString()}] UNHANDLED REJECTION: ${reason}\n`;
-    try { fs.appendFileSync('error.log', log); } catch (e) {}
-    console.error(log);
+    logger.error({ reason }, 'UNHANDLED REJECTION');
 });
 
-if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        if (process.env.NODE_ENV !== 'production') {
-            console.log(`Server running on port ${PORT}`);
-            console.log(`API available at: http://localhost:${PORT}/api/v1`);
-        }
-    });
+if (env.NODE_ENV !== 'test') {
+    // Note: The app.listen is now handled solely within the cluster worker branch above 
+    // to prevent double-listening/EADDRINUSE conflicts.
 }
 
 

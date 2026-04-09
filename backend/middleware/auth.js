@@ -33,7 +33,8 @@ module.exports = async (req, res, next) => {
             .eq('id', user.id)
             .single();
 
-        const role = userRecord?.role || user.app_metadata?.role || user.user_metadata?.role || 'user';
+        const rawRole = userRecord?.role || user.app_metadata?.role || user.user_metadata?.role || 'user';
+        const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : 'user';
 
         req.user = {
             id: user.id,

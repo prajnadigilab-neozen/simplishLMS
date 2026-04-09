@@ -1,6 +1,10 @@
 const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/supabase');
 const mediaService = require('../services/mediaService');
+const userService = require('../services/userService').default;
+const lessonService = require('../services/lessonService');
+const logger = require('../utils/logger');
+const env = require('../config/env');
 
 // Helper to normalize Indian phone numbers to exactly 10 digits
 const normalizePhone = (phone) => {
@@ -15,15 +19,16 @@ const normalizePhone = (phone) => {
 };
 
 exports.register = async (req, res) => {
-    console.log('--- Supabase Registration Attempt ---');
-    console.log('Request Body:', req.body);
+    logger.info('--- Supabase Registration Attempt ---');
+    logger.info({ body: req.body }, 'Request Body');
     const fullName = req.body.fullName || req.body.full_name;
     const { email, phone, password } = req.body;
+    // 🛡️ Security Fix: Explicitly ignore any role provided in the request
+    const role = 'user'; 
 
     // Validation: At least one of (Email OR Phone) and password are required
-    // (fullName is now optional to support partial onboarding from external triggers)
     if (!password || (!email && !phone)) {
-        console.warn('Registration Validation Failed:', { password: !!password, email: !!email, phone: !!phone });
+        logger.warn({ password: !!password, email: !!email, phone: !!phone }, 'Registration Validation Failed');
         return res.status(400).json({
             message: 'Password and either email or phone are required'
         });
@@ -34,24 +39,19 @@ exports.register = async (req, res) => {
         const options = {
             data: {
                 full_name: fullName || 'New User',
-                role: req.body.role || 'user',
-                onboarding_completed: !!fullName // If name is provided, consider initial onboarding step done
+                role: role, // Hardcoded to 'user'
+                onboarding_completed: !!fullName
             }
         };
 
         if (phone) {
             signUpData.phone = normalizePhone(phone);
 
-            // Check if phone already exists in public.users to prevent duplicate registrations
-            const { data: existingUser, error: checkError } = await supabase
-                .from('users')
-                .select('id, email')
-                .eq('phone', signUpData.phone)
-                .limit(1)
-                .maybeSingle();
+            // Check if phone already exists via Service Layer
+            const existingUser = await userService.getUserByPhone(signUpData.phone);
 
             if (existingUser) {
-                console.warn('Registration Blocked: Phone number already in use', signUpData.phone);
+                logger.warn({ phone: signUpData.phone }, 'Registration Blocked: Phone number already in use');
                 return res.status(422).json({
                     message: 'Register Failed: This mobile number is already registered. Please Sign In instead or use a different number.',
                     code: 'DUPLICATE_PHONE'
@@ -61,7 +61,7 @@ exports.register = async (req, res) => {
             signUpData.email = email;
         }
 
-        console.log('Attempting Registration for:', phone || email);
+        logger.info({ identifier: phone || email }, 'Attempting Registration');
 
         const { data, error } = await supabase.auth.signUp({
             ...signUpData,
@@ -69,28 +69,26 @@ exports.register = async (req, res) => {
         });
 
         if (error) {
-            console.error('Supabase Register Error:', error.message);
+            logger.error({ error: error.message }, 'Supabase Register Error');
             return res.status(error.status || 400).json({
                 message: error.message,
                 details: error
             });
         }
 
-        // --- PUBLIC SYNC (Mandatory for feature reliability) ---
+        // --- PUBLIC SYNC via Service Layer ---
         try {
-            await supabase
-                .from('users')
-                .upsert({
-                    id: data.user.id,
-                    full_name: fullName || 'New User',
-                    email: email || null,
-                    phone: normalizePhone(phone) || null,
-                    role: req.body.role || 'user',
-                    onboarding_completed: !!fullName
-                }, { onConflict: 'id' });
-            console.log('User synced to public.users:', data.user.id);
+            await userService.upsertUser({
+                id: data.user.id,
+                full_name: fullName || 'New User',
+                email: email || null,
+                phone: normalizePhone(phone) || null,
+                role: role, // Hardcoded to 'user'
+                onboarding_completed: !!fullName
+            });
+            logger.info({ userId: data.user.id }, 'User synced to public.users via userService');
         } catch (syncErr) {
-            console.warn('Non-fatal sync error:', syncErr.message);
+            logger.warn({ err: syncErr.message }, 'Non-fatal sync error');
         }
 
         res.status(201).json({
@@ -100,7 +98,7 @@ exports.register = async (req, res) => {
                 email: data.user.email,
                 phone: data.user.phone,
                 fullName: fullName || 'New User',
-                role: 'user',
+                role: role,
                 onboarding_completed: false,
                 current_level: 1,
                 wallet_balance: 0,
@@ -109,7 +107,7 @@ exports.register = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Registration error:', error);
+        logger.error({ error }, 'Registration error');
         res.status(500).json({ message: 'Server error during registration' });
     }
 };
@@ -119,7 +117,7 @@ exports.login = async (req, res) => {
     
     try {
         // --- 1. Supabase Auth Sign In ---
-        console.log('[DEBUG] Login Attempt:', { email, phone, hasPassword: !!password });
+        logger.info({ email, phone, hasPassword: !!password }, 'Login Attempt');
         
         const loginOptions = { password };
 
@@ -129,39 +127,34 @@ exports.login = async (req, res) => {
             loginOptions.email = email;
         }
 
-        console.log('[DEBUG] Login Options:', JSON.stringify(loginOptions));
+        logger.info({ loginOptions }, 'Login Options');
         
         const { data, error } = await supabase.auth.signInWithPassword(loginOptions);
 
         if (error) {
-            console.error('[DEBUG] Supabase Login Error:', error);
+            logger.error({ error }, 'Supabase Login Error');
             return res.status(401).json({ message: error.message });
         }
 
         if (!data || !data.user || !data.session) {
-            console.error('Login succeeded but session/user is missing:', data);
+            logger.error({ data }, 'Login succeeded but session/user is missing');
             return res.status(500).json({ 
                 message: 'Internal error: Authentication succeeded but session data is incomplete.',
                 details: !data ? 'data is null' : !data.user ? 'user is null' : 'session is null'
             });
         }
 
-        console.log('[DEBUG] Login Succeeded, Session:', !!data.session);
+        logger.info({ session: !!data.session }, '[DEBUG] Login Succeeded');
 
         // --- 2. Profile Check ---
-        console.log('Fetching profile for user:', data.user.id);
-        const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', data.user.id)
-            .single();
+        logger.info({ userId: data.user.id }, 'Fetching profile for user');
+        const profile = await userService.getUserById(data.user.id);
 
-        if (profileError) {
-            console.warn('[DEBUG] Non-fatal: Profile fetch error (user might not be in public.users yet):', profileError.message);
+        if (!profile) {
+            logger.warn({ userId: data.user.id }, '[DEBUG] Non-fatal: Profile not found for user');
         } else {
-            console.log('[DEBUG] Profile fetched, role:', profile?.role);
+            logger.info({ role: profile?.role }, '[DEBUG] Profile fetched');
         }
-
 
         if (profile?.status === 'inactive') {
             return res.status(403).json({ message: 'Your account has been restricted. Please contact support.' });
@@ -172,12 +165,9 @@ exports.login = async (req, res) => {
 
         // --- TRACK ACTIVITY ---
         try {
-            await supabase
-                .from('users')
-                .update({ last_login_at: new Date().toISOString() })
-                .eq('id', data.user.id);
+            await userService.updateUser(data.user.id, { last_login_at: new Date().toISOString() });
         } catch (activityErr) {
-            console.warn('Non-fatal: Failed to update last_login_at:', activityErr.message);
+            logger.warn({ err: activityErr.message }, 'Non-fatal: Failed to update last_login_at');
         }
 
         const isProd = process.env.NODE_ENV === 'production';
@@ -205,13 +195,13 @@ exports.login = async (req, res) => {
             wallet_balance: profile?.wallet_balance || 0
         };
 
-        console.log('Login successful, returning user data');
+        logger.info('Login successful, returning user data');
         res.json({
             token: data.session.access_token,
             user: userData
         });
     } catch (error) {
-        console.error('CRITICAL LOGIN ERROR:', error);
+        logger.error({ error }, 'CRITICAL LOGIN ERROR');
         res.status(500).json({
             message: 'Server error during login',
             error: error.message
@@ -286,45 +276,24 @@ exports.updateProfile = async (req, res) => {
         }
 
         if (Object.keys(profileUpdates).length > 0) {
-            let updatedProfile, profileError;
+            let updatedProfile;
+            try {
+                updatedProfile = await userService.updateUser(userId, profileUpdates);
+            } catch (profileError) {
+                // If columns like bio/location/avatar_url don't exist yet, retry with core fields only
+                if (profileError.code === '42703' || profileError.message?.includes('schema cache')) {
+                    logger.warn('Profile columns not found in schema, retrying with core fields only');
+                    const coreUpdates = {};
+                    if (fullName) coreUpdates.full_name = fullName;
+                    if (email) coreUpdates.email = email;
+                    if (phone) coreUpdates.phone = phone;
 
-            ({ data: updatedProfile, error: profileError } = await supabase
-                .from('users')
-                .update(profileUpdates)
-                .eq('id', userId)
-                .select()
-                .maybeSingle());
-
-            // If columns like bio/location/avatar_url don't exist yet, retry with core fields only
-            if (profileError && (profileError.code === '42703' || profileError.message?.includes('schema cache'))) {
-                console.warn('Profile columns not found in schema, retrying with core fields only');
-                const coreUpdates = {};
-                if (fullName) coreUpdates.full_name = fullName;
-                if (email) coreUpdates.email = email;
-                if (phone) coreUpdates.phone = phone;
-
-                if (Object.keys(coreUpdates).length > 0) {
-                    ({ data: updatedProfile, error: profileError } = await supabase
-                        .from('users')
-                        .update(coreUpdates)
-                        .eq('id', userId)
-                        .select()
-                        .maybeSingle());
+                    if (Object.keys(coreUpdates).length > 0) {
+                        updatedProfile = await userService.updateUser(userId, coreUpdates);
+                    }
                 } else {
-                    profileError = null;
+                    return res.status(400).json({ message: profileError.message });
                 }
-            }
-
-            if (profileError) return res.status(400).json({ message: profileError.message });
-
-            // If no row was updated (user not in public.users), fetch current data
-            if (!updatedProfile) {
-                const { data: currentProfile } = await supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', userId)
-                    .maybeSingle();
-                updatedProfile = currentProfile;
             }
 
             return res.json({
@@ -350,14 +319,14 @@ exports.updateProfile = async (req, res) => {
 
         res.json({ message: 'No changes made' });
     } catch (err) {
-        console.error('updateProfile error:', err);
+        logger.error({ err }, 'updateProfile error');
         res.status(500).json({ message: 'Server error during profile update' });
     }
 };
 
 exports.getAllUsers = async (req, res) => {
-    console.log('--- getAllUsers Attempt (Paginated) ---');
-    console.log('Request User:', req.user?.id, 'Role:', req.user?.role);
+    logger.info('--- getAllUsers Attempt (Paginated) ---');
+    logger.info({ userId: req.user?.id, role: req.user?.role }, 'Request User');
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 50;
     const start = (page - 1) * limit;
@@ -368,7 +337,7 @@ exports.getAllUsers = async (req, res) => {
 
     try {
         // Create a fresh client to ensure service role bypasses any stateful RLS
-        const adminClient = createClient(process.env.SUPABASE_URL?.trim(), process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+        const adminClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
         // 1. Get total count - filter out super_admins if caller is not one
         let countQuery = adminClient
@@ -381,7 +350,7 @@ exports.getAllUsers = async (req, res) => {
 
         const { count, error: countError } = await countQuery;
 
-        console.log('Total users count from DB (filtered):', count);
+        logger.info({ count }, 'Total users count from DB (filtered)');
         if (countError) throw countError;
 
         // 2. Fetch data with same filter
@@ -398,7 +367,7 @@ exports.getAllUsers = async (req, res) => {
         const { data, error } = await dataQuery;
 
         if (error) {
-            console.error('Supabase getAllUsers Error:', error);
+            logger.error({ error }, 'Supabase getAllUsers Error');
             return res.status(error.status || 400).json({ message: error.message });
         }
 
@@ -424,7 +393,7 @@ exports.getAllUsers = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('getAllUsers error:', err);
+        logger.error({ err }, 'getAllUsers error');
         res.status(500).json({ message: 'Error fetching users' });
     }
 };
@@ -444,7 +413,7 @@ exports.updateRole = async (req, res) => {
 
     try {
         // Create a fresh admin client to ensure full Auth + DB access bypasses any RLS/cache issues
-        const adminClient = createClient(process.env.SUPABASE_URL?.trim(), process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+        const adminClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
         // 1. Fetch current Auth metadata to preserve fields like full_name or avatar_url
         const userRes = await adminClient.auth.admin.getUserById(id);
@@ -454,7 +423,7 @@ exports.updateRole = async (req, res) => {
         
         if (fetchError || !user) {
 
-            console.warn('updateRole: User not found in Auth system', id);
+            logger.warn({ userId: id }, 'updateRole: User not found in Auth system');
             return res.status(404).json({ message: 'User not found in authentication system' });
         }
 
@@ -464,7 +433,7 @@ exports.updateRole = async (req, res) => {
         });
         
         if (authError) {
-            console.error('updateRole: Auth update failed', authError.message);
+            logger.error({ err: authError.message }, 'updateRole: Auth update failed');
             throw authError;
         }
 
@@ -477,25 +446,25 @@ exports.updateRole = async (req, res) => {
             .maybeSingle(); // maybeSingle returns null without error if no row matches
 
         if (profileError) {
-            console.error('updateRole: Profile update failed', profileError.message);
+            logger.error({ err: profileError.message }, 'updateRole: Profile update failed');
             throw profileError;
         }
 
         if (!profile) {
-            console.warn('updateRole: Auth updated, but profile not found in public.users table', id);
+            logger.warn({ userId: id }, 'updateRole: Auth updated, but profile not found in public.users table');
             return res.json({ 
                 message: 'User role updated in Auth, but user profile was missing from the database.',
                 user: { id, role } 
             });
         }
 
-        console.log('updateRole: Success', { id, role });
+        logger.info({ id, role }, 'updateRole: Success');
         res.json({ message: 'User role updated successfully', user: profile });
     } catch (err) {
-        console.error('updateRole CRITICAL ERROR:', err);
+        logger.error({ err }, 'updateRole CRITICAL ERROR');
         res.status(500).json({ 
             message: 'Error updating role', 
-            details: process.env.NODE_ENV !== 'production' ? err.message : undefined 
+            details: env.NODE_ENV !== 'production' ? err.message : undefined 
         });
     }
 };
@@ -504,16 +473,8 @@ exports.getProfile = async (req, res) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-        // Try to get profile from public.users table
-        const { data: profile, error: profileError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-
-        if (profileError) {
-            console.warn('Profile fetch error in getProfile (likely missing is_paid):', profileError.message);
-        }
+        // Try to get profile from Service Layer
+        const profile = await userService.getUserById(userId);
 
         if (profile) {
             return res.json({
@@ -551,7 +512,7 @@ exports.getProfile = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('getProfile error:', err);
+        logger.error({ err }, 'getProfile error');
         // Even on error, try to return basic info if we have req.user
         if (req.user) {
             return res.json({
@@ -588,7 +549,7 @@ exports.deleteUser = async (req, res) => {
 
         res.json({ message: 'User permanently deleted (GDPR compliant)' });
     } catch (err) {
-        console.error('deleteUser error:', err);
+        logger.error({ err }, 'deleteUser error');
         res.status(500).json({ message: 'Error deleting user' });
     }
 };
@@ -602,17 +563,10 @@ exports.updateStatus = async (req, res) => {
     }
 
     try {
-        const { data, error } = await supabase
-            .from('users')
-            .update({ status })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
+        const data = await userService.updateUser(id, { status });
         res.json({ message: `User status updated to ${status}`, user: data });
     } catch (err) {
-        console.error('updateStatus error:', err);
+        logger.error({ err }, 'updateStatus error');
         res.status(500).json({ message: 'Error updating status' });
     }
 };
@@ -622,40 +576,28 @@ exports.deleteMe = async (req, res) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     try {
-        console.log(`--- GDPR Hard Delete Requested for user: ${userId} ---`);
+        logger.info({ userId }, '--- GDPR Hard Delete Requested ---');
 
         // Rule 21: GDPR Compliance — Hard delete, not soft delete
         
         // 1. Delete progress
-        const { error: progressError } = await supabase.from('user_progress').delete().eq('user_id', userId);
-        if (progressError) {
-            console.error('GDPR Delete: Failed to clear user_progress', progressError);
-            throw new Error(`Failed to clear user progress: ${progressError.message}`);
-        }
+        await lessonService.clearUserProgress(userId);
         
         // 2. Delete Profile
-        const { error: profileError } = await supabase
-            .from('users')
-            .delete()
-            .eq('id', userId);
-
-        if (profileError) {
-            console.error('GDPR Delete: Failed to clear public.users profile', profileError);
-            throw new Error(`Failed to delete profile: ${profileError.message}`);
-        }
+        await userService.deleteUser(userId);
 
         // 3. Delete Auth Account
         const { error: authError } = await supabase.auth.admin.deleteUser(userId);
         if (authError) {
-            console.error('GDPR Delete: Failed to purge auth system record', authError);
+            logger.error({ err: authError.message }, 'GDPR Delete: Failed to purge auth system record');
             throw new Error(`Failed to purge authentication record: ${authError.message}`);
         }
 
-        console.log(`GDPR Hard Delete SUCCESS for user: ${userId}`);
+        logger.info({ userId }, 'GDPR Hard Delete SUCCESS');
         res.clearCookie('simplish_session');
         res.json({ message: 'Your account has been permanently deleted.' });
     } catch (err) {
-        console.error('GDPR DELETE ERROR:', err);
+        logger.error({ err }, 'GDPR DELETE ERROR');
         res.status(500).json({ message: 'Error deleting account', details: err.message });
     }
 };
@@ -667,7 +609,7 @@ exports.getSystemLogs = async (req, res) => {
     }
 
     try {
-        const adminClient = createClient(process.env.SUPABASE_URL?.trim(), process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+        const adminClient = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
         const { data, error } = await adminClient
             .from('system_logs')
             .select('*')
@@ -675,14 +617,14 @@ exports.getSystemLogs = async (req, res) => {
             .limit(50);
 
         if (error) {
-            console.error('Supabase getSystemLogs Error:', error);
+            logger.error({ error }, 'Supabase getSystemLogs Error');
             if (error.code === '42P01') return res.json({ logs: [] }); // Table missing gracefully handled
             return res.status(400).json({ message: error.message });
         }
 
         res.json({ logs: data || [] });
     } catch (err) {
-        console.error('getSystemLogs error:', err);
+        logger.error({ err }, 'getSystemLogs error');
         res.status(500).json({ message: 'Error fetching system logs' });
     }
 };

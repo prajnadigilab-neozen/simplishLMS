@@ -1,24 +1,11 @@
-const supabase = require('../config/supabase');
+const billingService = require('../services/billingService');
 
 /**
  * [GET] /api/v1/settings
- * Fetches global platform settings (like subscription_price).
- * PUBLIC: Needed for the Payment page before login if applicable (though usually logged-in).
  */
 exports.getSettings = async (req, res) => {
     try {
-        const { data, error } = await supabase
-            .from('settings')
-            .select('*');
-
-        if (error) throw error;
-
-        // Convert array to object for easier frontend consumption
-        const settings = (data || []).reduce((acc, curr) => {
-            acc[curr.key] = curr.value;
-            return acc;
-        }, {});
-
+        const settings = await billingService.getSettings();
         res.json(settings);
     } catch (error) {
         console.error('getSettings error:', error);
@@ -28,11 +15,9 @@ exports.getSettings = async (req, res) => {
 
 /**
  * [PUT] /api/v1/settings
- * Updates global platform settings.
- * AUTH: Super Admin Only.
  */
 exports.updateSettings = async (req, res) => {
-    const { settings } = req.body; // Expects object: { key: value }
+    const { settings } = req.body;
     const role = req.user?.role?.toLowerCase();
 
     if (role !== 'super_admin' && role !== 'admin') {
@@ -50,11 +35,7 @@ exports.updateSettings = async (req, res) => {
             updated_at: new Date().toISOString()
         }));
 
-        const { error } = await supabase
-            .from('settings')
-            .upsert(updates, { onConflict: 'key' });
-
-        if (error) throw error;
+        await billingService.updateSettings(updates);
 
         res.json({ message: 'Settings updated successfully' });
     } catch (error) {
