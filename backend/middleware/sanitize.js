@@ -1,17 +1,15 @@
+const xss = require('xss');
+
 /**
- * Simple XSS Sanitization Middleware
- * Strips <script> tags and common event handlers while preserving 
- * multi-language characters (Kannada/UTF-8).
+ * Robust XSS Sanitization Middleware
+ * Uses the 'xss' library to strictly whitelist safe HTML elements and strip 
+ * executable scripts and malicious attributes while preserving multi-language characters.
  */
 const sanitizeInputs = (req, res, next) => {
     const sanitize = (val) => {
         if (typeof val !== 'string') return val;
-        
-        // Remove <script> tags and common event handlers
-        return val
-            .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
-            .replace(/on\w+="[^"]*"/gim, "")
-            .replace(/on\w+='[^']*'/gim, "");
+        // Apply strict sanitization
+        return xss(val);
     };
 
     if (req.body) {

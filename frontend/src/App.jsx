@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { safeSetItem, safeGetItem, safeRemoveItem } from './utils/storageUtils';
 import { UserProvider, useUser } from './context/UserContext';
+import { CurriculumProvider } from './context/CurriculumContext';
 import { useCurriculum } from './hooks/useCurriculum';
 import { ToastProvider, useToast } from './components/Toast';
 
@@ -238,7 +239,9 @@ function App() {
     <BrowserRouter>
       <ToastProvider>
         <UserProvider>
-          <AppShell />
+          <CurriculumProvider>
+            <AppShell />
+          </CurriculumProvider>
         </UserProvider>
       </ToastProvider>
     </BrowserRouter>

@@ -137,7 +137,7 @@ exports.confirm = async (req, res) => {
 
     try {
         // --- MOCK VERIFICATION ---
-        if (!razorpay_order_id.startsWith('token_sync_')) {
+        if (!razorpay_order_id.startsWith('token_sync_') || env.NODE_ENV === 'production') {
             // 1. Verify Signature
             const sign = razorpay_order_id + "|" + razorpay_payment_id;
             const expectedSign = crypto

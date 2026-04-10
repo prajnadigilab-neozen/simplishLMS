@@ -239,8 +239,8 @@ exports.updateProgress = async (req, res) => {
 
         res.json(data);
     } catch (error) {
-        logger.error({ error }, 'updateProgress error');
-        res.status(200).json({ 
+        logger.error({ error, userId, lessonId }, 'updateProgress error');
+        res.status(500).json({ 
             message: 'Progress recorded locally (sync delayed)', 
             warning: error.message,
             status: req.body.status || 'started'

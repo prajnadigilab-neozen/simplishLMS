@@ -1,4 +1,5 @@
 import supabase from '../config/supabase';
+import logger from '../utils/logger';
 import { User, UserUpdateData } from '../types';
 
 /**
@@ -76,10 +77,8 @@ const userService = {
     incrementStreak: async (userId: string): Promise<boolean> => {
         const { error } = await supabase.rpc('increment_streak', { user_id: userId });
         if (error) {
-            // Fallback: manual increment if RPC is missing
-            const { data: user } = await supabase.from('users').select('streak_count').eq('id', userId).single();
-            const newStreak = (user?.streak_count || 0) + 1;
-            await supabase.from('users').update({ streak_count: newStreak }).eq('id', userId);
+            logger.error({ error, user_id: userId }, 'Streak Increment RPC Failed');
+            throw error;
         }
         return true;
     },
@@ -93,10 +92,8 @@ const userService = {
             amount: Number(amount) 
         });
         if (error) {
-            // Fallback: manual increment if RPC is missing (Risk of race conditions, but better than total failure)
-            const { data: user } = await supabase.from('users').select('wallet_balance').eq('id', userId).single();
-            const newBalance = (user?.wallet_balance || 0) + Number(amount);
-            await supabase.from('users').update({ wallet_balance: newBalance }).eq('id', userId);
+            logger.error({ error, userId, amount }, 'Wallet Increment RPC Failed');
+            throw error;
         }
         return true;
     }

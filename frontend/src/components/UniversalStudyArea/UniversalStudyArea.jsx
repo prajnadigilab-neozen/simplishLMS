@@ -17,7 +17,7 @@ import { safeSetItem } from '../../utils/storageUtils';
 
 const UniversalStudyArea = ({ lesson, onBack }) => {
     const { user, language } = useUser();
-    const { isCourseCompleted, handleNextLesson: onNextLesson } = useCurriculum();
+    const { courseCompleted, handleNextLesson: onNextLesson } = useCurriculum();
     const [activeTab, setActiveTab] = useState('study'); // study, reading, listening, vocabulary, test
     const [loading, setLoading] = useState(true);
     const tabsContainerRef = React.useRef(null);
@@ -41,18 +41,18 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
 
     useEffect(() => {
         // Validation: If no lesson or invalid lesson ID, redirect back
-        if (!isCourseCompleted && (!lesson || !lesson.id)) {
+        if (!courseCompleted && (!lesson || !lesson.id)) {
             showToast(language === 'kn' ? "ತಪ್ಪಾದ ಪಾಠ ಮಾಹಿತಿ. ಲೈಬ್ರರಿಗೆ ಹಿಂತಿರುಗಿಸಲಾಗುತ್ತಿದೆ..." : "Invalid lesson data. Redirecting to Library...", 'error');
             onBack();
             return;
         }
 
         // Reset to study tab for new lesson unless course is completed
-        if (!isCourseCompleted) {
+        if (!courseCompleted) {
             setActiveTab('study');
         }
         setLoading(false);
-    }, [lesson, isCourseCompleted]);
+    }, [lesson, courseCompleted]);
 
     // 1. HEARTBEAT PULSE (Automated Progress FR-06)
     useEffect(() => {
@@ -96,7 +96,7 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
         return <div className="flex items-center justify-center p-20"><Loader2 className="animate-spin text-primary" size={48} /></div>;
     }
 
-    if (isCourseCompleted) {
+    if (courseCompleted) {
         return (
             <div className="universal-study-area" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
                 <motion.div

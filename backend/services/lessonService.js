@@ -77,6 +77,8 @@ const lessonService = {
                 lesson_id: lessonId,
                 ...progressData,
                 updated_at: new Date().toISOString()
+            }, { 
+                onConflict: 'user_id,lesson_id' 
             })
             .select()
             .single();
