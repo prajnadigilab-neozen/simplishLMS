@@ -199,7 +199,7 @@ const CheckoutSync = () => {
                         
                         <div style={{ marginBottom: '2rem' }}>
                             <div style={{ fontSize: '0.85rem', opacity: 0.7, marginBottom: '0.25rem' }}>CURRENT BALANCE</div>
-                            <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>₹{Number(user?.wallet_balance || 0).toFixed(2)}</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: 900 }}>₹{(Number(user?.wallet_balance || 0) / 100).toFixed(2)}</div>
                         </div>
 
                         <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
@@ -231,7 +231,7 @@ const CheckoutSync = () => {
                             {records.slice(0, 3).map((record, i) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '12px', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
                                     <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>
-                                        ₹{record.amount} <span style={{ opacity: 0.5, fontWeight: 500 }}>({record.type})</span>
+                                        ₹{(Number(record.amount) || 0) / 100} <span style={{ opacity: 0.5, fontWeight: 500 }}>({record.type})</span>
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: record.status === 'completed' ? '#10b981' : '#ef4444', fontWeight: 800 }}>{record.status.toUpperCase()}</div>
                                 </div>
@@ -366,7 +366,7 @@ const CheckoutSync = () => {
                                 {records.map((record, idx) => (
                                     <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                         <td style={{ padding: '1.25rem', fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>{record.transaction_id}</td>
-                                        <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: 700 }}>₹{record.amount}</td>
+                                        <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: 700 }}>₹{(Number(record.amount) || 0) / 100}</td>
                                         <td style={{ padding: '1.25rem', fontSize: '0.85rem' }}>{new Date(record.created_at).toLocaleDateString()}</td>
                                         <td style={{ padding: '1.25rem' }}>
                                             <span style={{ fontSize: '0.75rem', fontWeight: 800, color: record.status === 'completed' ? '#10b981' : '#ef4444' }}>

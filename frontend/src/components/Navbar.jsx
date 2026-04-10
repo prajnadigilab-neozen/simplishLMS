@@ -161,7 +161,7 @@ const Navbar = ({ onNavigate }) => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRight: '1px solid var(--border)', paddingRight: '0.75rem' }}>
                             <Wallet size={16} color="var(--primary)" />
                             <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                                ₹{typeof user.wallet_balance === 'number' ? user.wallet_balance.toFixed(2) : Number(user.wallet_balance || 0).toFixed(2)}
+                                ₹{(Number(user.wallet_balance || 0) / 100).toFixed(2)}
                             </span>
                         </div>
                         

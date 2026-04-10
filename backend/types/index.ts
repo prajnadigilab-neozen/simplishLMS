@@ -7,7 +7,8 @@ export interface User {
     full_name?: string;
     role: UserRole;
     status: 'active' | 'inactive' | 'deleted';
-    wallet_balance: number;
+    wallet_balance: number; // Stored in Paise (Integer)
+    state?: string;      // Current state of residence for tax calculation
     xp: number;
     streak_count: number;
     is_paid: boolean;

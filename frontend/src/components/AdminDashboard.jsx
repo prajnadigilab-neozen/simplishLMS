@@ -529,6 +529,85 @@ const AdminDashboard = ({ user: userProp }) => {
                                         </p>
                                     </div>
 
+                                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+                                        <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <ShieldCheck size={22} color="var(--primary)" />
+                                            Financial & Tax Configuration
+                                        </h3>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                                    GST Rate (%)
+                                                </label>
+                                                <input 
+                                                    type="number"
+                                                    value={settings.gst_rate || '18'}
+                                                    onChange={(e) => setSettings({ ...settings, gst_rate: e.target.value })}
+                                                    className="admin-input-small"
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)', fontWeight: 600 }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                                    CGST Rate (%)
+                                                </label>
+                                                <input 
+                                                    type="number"
+                                                    value={settings.cgst_rate || '9'}
+                                                    onChange={(e) => setSettings({ ...settings, cgst_rate: e.target.value })}
+                                                    className="admin-input-small"
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)', fontWeight: 600 }}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                                    SGST Rate (%)
+                                                </label>
+                                                <input 
+                                                    type="number"
+                                                    value={settings.sgst_rate || '9'}
+                                                    onChange={(e) => setSettings({ ...settings, sgst_rate: e.target.value })}
+                                                    className="admin-input-small"
+                                                    style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)', fontWeight: 600 }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginBottom: '1.5rem' }}>
+                                            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                                                Base Operating State (For CGST/SGST Calculation)
+                                            </label>
+                                            <select 
+                                                value={settings.base_state || 'Karnataka'}
+                                                onChange={(e) => setSettings({ ...settings, base_state: e.target.value })}
+                                                style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)', fontWeight: 600 }}
+                                            >
+                                                {['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry'].map(s => (
+                                                    <option key={s} value={s}>{s}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderRadius: '12px', background: 'rgba(var(--primary-rgb), 0.05)', border: '1px solid rgba(var(--primary-rgb), 0.1)' }}>
+                                            <div>
+                                                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700 }}>Enable Automated Invoicing</h4>
+                                                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Generates sequential tax invoices for all completed transactions.</p>
+                                            </div>
+                                            <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={settings.invoice_enabled === 'true'}
+                                                    onChange={(e) => setSettings({ ...settings, invoice_enabled: e.target.checked ? 'true' : 'false' })}
+                                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                                />
+                                                <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: settings.invoice_enabled === 'true' ? 'var(--primary)' : '#ccc', transition: '.4s', borderRadius: '34px' }}>
+                                                    <span style={{ position: 'absolute', height: '18px', width: '18px', left: settings.invoice_enabled === 'true' ? '20px' : '2px', bottom: '2px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+
                                     <button 
                                         onClick={handleUpdateSettings}
                                         disabled={savingSettings}

@@ -11,6 +11,7 @@ const reportService = {
     getSummaryMetrics: async (canSeeRevenue = false) => {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        console.log('[DEBUG-VERIFY-VERSION-V100] Using amount_paise version of reportService');
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999).toISOString();
         const activeWindow = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -28,9 +29,9 @@ const reportService = {
             // 5. Avg Active Today (7d window)
             supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', weekWindow),
             // 6. Revenue
-            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed') : Promise.resolve({ data: [] }),
-            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfMonth) : Promise.resolve({ data: [] }),
-            canSeeRevenue ? supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] })
+            canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed') : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed').gte('created_at', startOfMonth) : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] })
         ]);
         
         results.forEach((r, i) => {
@@ -70,7 +71,7 @@ const reportService = {
             // Deletions
             supabase.from('users').select('deleted_at').eq('status', 'deleted').gte('deleted_at', fromISO).lte('deleted_at', toISO),
             // Revenue
-            canSeeRevenue ? supabase.from('payments').select('created_at, amount').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('payments').select('created_at, amount_paise').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
             // Activity (Unique Active Users)
             supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO)
         ]);
@@ -129,7 +130,7 @@ const reportService = {
             .from('payments')
             .select(`
                 id,
-                amount,
+                amount_paise,
                 status,
                 currency,
                 created_at,

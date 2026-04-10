@@ -1,7 +1,7 @@
 /**
- * isModerator middleware
+ * isAdmin middleware
  * Must be called AFTER authMiddleware so req.user is populated.
- * Returns 403 Forbidden if the authenticated user is not a moderator or super_admin.
+ * Returns 403 Forbidden if the authenticated user is not an admin, moderator, or super_admin.
  */
 module.exports = (req, res, next) => {
     // Bypass for integration tests

@@ -33,11 +33,38 @@ exports.initiate = async (req, res) => {
             }
         }
 
-        // Use provided amount for TOPUP, otherwise default to subscription_price from settings
-        let price = (type === 'TOPUP') ? Number(amount) : Number(config.subscription_price || 99);
-        if (isNaN(price) || price <= 0) price = 99; // Final fallback to prevent NaN crashes
+        // 1. Fetch Dynamic Financial Settings
+        const settings = await billingService.getSettings();
+        const gstRate = parseFloat(settings.gst_rate || 18);
+        const baseState = settings.base_state || 'Karnataka';
+        const invoiceEnabled = settings.invoice_enabled === 'true';
         
-        const amountInPaisa = Math.round(price * 100);
+        // 2. Fetch User Profile for State Detection
+        const userProfile = await userService.getUserById(userId);
+        const userState = userProfile?.state || 'Unknown'; // Fallback triggers IGST
+        
+        // Use provided amount for TOPUP, otherwise default to subscription_price from settings
+        let priceRupees = (type === 'TOPUP') ? Number(amount) : Number(settings.subscription_price || 99);
+        if (isNaN(priceRupees) || priceRupees <= 0) priceRupees = 99;
+        
+        // 3. SECURE INTEGER MATH: Convert to Paise immediately
+        const totalAmountPaise = Math.round(priceRupees * 100);
+        
+        // 4. TAX CALCULATION (Paise-based Integer Math)
+        // Taxable = (Total * 100) / (100 + GST_Rate) -> rounded to nearest Paise
+        const taxableAmountPaise = Math.round((totalAmountPaise * 100) / (100 + gstRate));
+        const totalGstPaise = totalAmountPaise - taxableAmountPaise;
+
+        let cgstPaise = 0, sgstPaise = 0, igstPaise = 0;
+        
+        if (userState === baseState) {
+            // Intra-state: CGST + SGST (50/50 split of total GST)
+            cgstPaise = Math.round(totalGstPaise / 2);
+            sgstPaise = totalGstPaise - cgstPaise; // Handle odd Paise
+        } else {
+            // Inter-state or Unknown: IGST
+            igstPaise = totalGstPaise;
+        }
 
         // --- MOCK MODE CHECK ---
         const isMockMode = env.RAZORPAY_KEY_ID === 'rzp_test_your_key_id' || !env.RAZORPAY_KEY_ID;
@@ -97,10 +124,16 @@ exports.initiate = async (req, res) => {
 
         const transactionRecord = await razorpay.orders.create(options);
 
-        // Store the record in our database
+        // Store the record with full tax breakdown in Paise
         await billingService.createPayment({
             user_id: userId,
-            amount: price,
+            amount_paise: totalAmountPaise,
+            taxable_amount_paise: taxableAmountPaise,
+            cgst_paise: cgstPaise,
+            sgst_paise: sgstPaise,
+            igst_paise: igstPaise,
+            gst_rate: gstRate,
+            state: userState,
             currency,
             status: 'pending',
             transaction_id: transactionRecord.id,
@@ -156,39 +189,40 @@ exports.confirm = async (req, res) => {
         if (!record) throw new Error('Record not found');
 
         if (record.status === 'pending') {
-            const config = await billingService.getSettings();
+            const settings = await billingService.getSettings();
+            
+            // Generate Invoice Number if enabled
+            let invoiceNo = null;
+            if (settings.invoice_enabled === 'true') {
+                const prefix = settings.invoice_prefix || 'Lab-SL/26-27/';
+                const nextNum = parseInt(settings.next_invoice_number || 1);
+                invoiceNo = `${prefix}${nextNum.toString().padStart(4, '0')}`;
+                
+                // Increment for next time (Atomic update in DB is better, but this works for now)
+                await billingService.updateSettings({ key: 'next_invoice_number', value: (nextNum + 1).toString() });
+            }
 
-            // Update Payment Status via Service Layer
+            // Update Payment Status & Tax Record
             await billingService.updatePayment(razorpay_order_id, { 
                 status: 'completed', 
                 transaction_id: razorpay_payment_id,
+                invoice_no: invoiceNo,
                 updated_at: new Date().toISOString() 
             });
 
-            // Fetch User profile via Service Layer
-            const userProfile = await userService.getUserById(userId);
-            const updates = {};
-
+            // Handle Credits/Wallet (Paise increments)
             if (record.payment_type === 'TOPUP') {
-                // Handle Wallet Topup ATOMICALLY
-                await userService.incrementWallet(userId, Number(record.amount));
-
-                // Hybrid Logic: Also award membership days if configured
-                const topupDays = parseInt(config.topup_duration_days || 0);
-                if (topupDays > 0) {
-                    const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
-                    const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
-                    const newExpiry = new Date(baseDate.getTime() + topupDays * 24 * 60 * 60 * 1000);
-                    updates.subscription_expires_at = newExpiry.toISOString();
-                    updates.is_paid = true;
-                }
-            } else {
-                // Handle Lifecycle extension (MEMBERSHIP)
-                const durationDays = parseInt(config.subscription_duration_days || 30);
+                await userService.incrementWallet(userId, BigInt(record.amount_paise));
+            }
+            
+            const updates = {};
+            const durationDays = parseInt(record.payment_type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+            
+            if (durationDays > 0) {
+                const userProfile = await userService.getUserById(userId);
                 const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
                 const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
                 const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
-                
                 updates.subscription_expires_at = newExpiry.toISOString();
                 updates.is_paid = true;
             }
@@ -233,15 +267,17 @@ exports.processInternal = async (req, res) => {
             const record = await billingService.getPaymentByTransactionId(entryId);
 
             if (record && record.status === 'pending') {
+                const settings = await billingService.getSettings();
                 await billingService.updatePayment(entryId, { status: 'completed', transaction_id: syncId });
 
                 if (record.payment_type === 'TOPUP') {
-                    await userService.incrementWallet(userId, Number(record.amount));
-                } else {
-                    const config = await billingService.getSettings();
-                    const durationDays = parseInt(config.subscription_duration_days || 30);
+                    await userService.incrementWallet(userId, BigInt(record.amount_paise));
+                }
+                
+                const durationDays = parseInt(record.payment_type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+                
+                if (durationDays > 0) {
                     const userProfile = await userService.getUserById(userId);
-
                     const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
                     const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
                     const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);

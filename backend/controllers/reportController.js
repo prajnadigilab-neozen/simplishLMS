@@ -21,15 +21,15 @@ exports.getSummaryMetrics = async (req, res) => {
         };
 
         const totalRevenueAllTime = canSeeRevenue 
-            ? metrics.revenue.allTime.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+            ? metrics.revenue.allTime.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
             : 0;
 
         const revCurrent = canSeeRevenue
-            ? metrics.revenue.currentMonth.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+            ? metrics.revenue.currentMonth.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
             : 0;
 
         const revLast = canSeeRevenue
-            ? metrics.revenue.lastMonth.reduce((sum, p) => sum + (Number(p.amount) || 0), 0)
+            ? metrics.revenue.lastMonth.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
             : 0;
 
         const revenueMoM = canSeeRevenue ? calculateGrowth(revCurrent, revLast) : 0;
@@ -108,9 +108,9 @@ exports.getDailyReport = async (req, res) => {
         (data.payments || []).forEach(p => {
             const d = p.created_at.toString().split('T')[0];
             if (breakdown[d]) {
-                const amt = Number(p.amount) || 0;
-                breakdown[d].revenue += amt;
-                if (amt < 499) breakdown[d].topUpRevenue += amt;
+                const amtRupees = (Number(p.amount_paise) || 0) / 100;
+                breakdown[d].revenue += amtRupees;
+                if (amtRupees < 499) breakdown[d].topUpRevenue += amtRupees;
             }
         });
 

@@ -5,6 +5,7 @@ const mediaService = require('../services/mediaService');
 const logger = require('../utils/logger');
 const env = require('../config/env');
 const { normalizePhone } = require('../utils/phone');
+const { maskPhone, maskEmail } = require('../utils/pii');
 
 /**
  * Filters out properties with an `undefined` value from an object. 
@@ -34,7 +35,7 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { fullName, email, phone, bio, location } = req.body;
+    const { fullName, email, phone, bio, location, state } = req.body;
     let avatarUrl = req.file ? mediaService.getUrl(req.file.filename) : undefined;
 
     try {
@@ -71,7 +72,8 @@ exports.updateProfile = async (req, res) => {
             email: email,
             phone: phone ? normalizePhone(phone) : undefined,
             bio: bio !== undefined ? (bio ? bio.substring(0, 500) : null) : undefined,
-            location: location
+            location: location,
+            state: state
         });
         
         if (avatarUrl) {
@@ -92,7 +94,8 @@ exports.updateProfile = async (req, res) => {
                     role: updatedProfile.role,
                     avatarUrl: updatedProfile.avatar_url,
                     bio: updatedProfile.bio,
-                    location: updatedProfile.location
+                    location: updatedProfile.location,
+                    state: updatedProfile.state
                 }
             });
         }
@@ -130,8 +133,7 @@ exports.getAllUsers = async (req, res) => {
             return res.status(error.status || 400).json({ message: error.message });
         }
 
-        const { maskPhone, maskEmail } = require('../utils/pii');
-        const sanitizedUsers = (data || []).map(u => {
+        const sanitizedUsers = data.map(u => {
             if (isSuperAdminCaller) return u;
             return {
                 ...u,

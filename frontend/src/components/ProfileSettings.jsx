@@ -14,6 +14,7 @@ const ProfileSettings = ({ onBack }) => {
         phone: user.phone || '',
         bio: user.bio || '',
         location: user.location || '',
+        state: user.state || 'Karnataka',
         password: ''
     });
     const [avatarFile, setAvatarFile] = useState(null);
@@ -46,6 +47,7 @@ const ProfileSettings = ({ onBack }) => {
             formData.append('phone', form.phone);
             formData.append('bio', form.bio);
             formData.append('location', form.location);
+            formData.append('state', form.state);
             if (form.password) formData.append('password', form.password);
             if (avatarFile) formData.append('avatar', avatarFile);
 
@@ -262,6 +264,20 @@ const ProfileSettings = ({ onBack }) => {
                                     onChange={e => setForm({ ...form, location: e.target.value })}
                                     placeholder={language === 'kn' ? 'ಉದಾ: ಬೆಂಗಳೂರು, ಭಾರತ' : "e.g. Bengaluru, India"}
                                 />
+                            </div>
+
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>{language === 'kn' ? 'ರಾಜ್ಯ (ತೆರಿಗೆಗಾಗಿ)' : 'State (For Tax/GST)'}</label>
+                                <MapPin size={18} style={iconStyle} />
+                                <select
+                                    style={inputStyle}
+                                    value={form.state}
+                                    onChange={e => setForm({ ...form, state: e.target.value })}
+                                >
+                                    {['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry'].map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div style={{ position: 'relative' }}>

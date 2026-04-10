@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require('../controllers/authController');
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/auth');
+const isAdmin = require('../middleware/isAdmin');
 const isSuperAdmin = require('../middleware/isSuperAdmin');
 const upload = require('../middleware/upload');
 const validateFile = require('../middleware/validateFile');
@@ -19,15 +20,9 @@ router.get('/profile', authMiddleware, authController.getProfile);
 router.put('/profile', authMiddleware, upload.single('avatar'), validateFile, userController.updateProfile);
 router.delete('/me', authMiddleware, authController.deleteMe);
 
-// Admin & Moderator
-const isAdminOrMod = (req, res, next) => {
-    const role = req.user?.role?.toLowerCase();
-    if (role === 'super_admin' || role === 'moderator') return next();
-    res.status(403).json({ message: 'Access Denied: Admins/Moderators only' });
-};
-
-router.get('/users', authMiddleware, isAdminOrMod, userController.getAllUsers);
-router.put('/users/:id/status', authMiddleware, isAdminOrMod, userController.updateStatus);
+// Admin, Moderator & Super Admin access
+router.get('/users', authMiddleware, isAdmin, userController.getAllUsers);
+router.put('/users/:id/status', authMiddleware, isAdmin, userController.updateStatus);
 
 // Super Admin Only
 router.put('/users/:id/role', authMiddleware, isSuperAdmin, userController.updateRole);
