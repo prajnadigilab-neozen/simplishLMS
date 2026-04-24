@@ -96,6 +96,18 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
                 setLoadingNextLesson(true);
                 try {
                     const response = await lessonApi.getAll();
+                    
+                    // Mark current lesson as completed in the DB as a robust fallback
+                    try {
+                        await lessonApi.updateProgress(lessonId, {
+                            status: 'completed',
+                            completionPercentage: 100,
+                            progress: 100
+                        });
+                    } catch (pErr) {
+                        console.warn("Failed to update progress from frontend:", pErr);
+                    }
+
                     const allLessons: Lesson[] = response.data.lessons || [];
                     const levels = ["Basic", "Intermediate", "Advanced", "Expert"];
 

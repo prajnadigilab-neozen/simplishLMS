@@ -4,6 +4,7 @@ const lessonService = require('../services/lessonService');
 const scoring = require('../utils/scoring');
 const ocr = require('../utils/ocr');
 const transcription = require('../utils/transcription');
+const logger = require('../utils/logger');
 
 // Supabase may return options as a Postgres array string e.g. '{opt1,opt2}'
 // or already as a JS array. This helper always returns a proper JS array.
@@ -92,13 +93,29 @@ exports.submitAssessment = async (req, res) => {
             passed
         });
 
-        // Update user streak via Service Layer
+        // Update user progress and streak via Service Layer
         if (passed) {
             await userService.incrementStreak(userId);
+            
+            // Mark the associated lesson as completed
+            try {
+                const assessment = await assessmentService.getAssessmentById(assessmentId);
+                if (assessment?.lesson_id) {
+                    // Record progress in database
+                    await lessonService.updateProgress(userId, assessment.lesson_id, {
+                        status: 'completed',
+                        completion_percentage: 100
+                    });
+                    console.log(`[Assessment] Lesson ${assessment.lesson_id} marked as completed for user ${userId}`);
+                }
+            } catch (err) {
+                console.error('Failed to update progress in assessment controller:', err);
+                // Non-blocking for the assessment result itself
+            }
         }
 
         res.json({
-            message: 'Assessment submitted successfully successfully',
+            message: 'Assessment submitted successfully',
             result,
             processedAnswers: answers
         });

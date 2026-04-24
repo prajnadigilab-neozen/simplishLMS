@@ -229,10 +229,14 @@ exports.updateProgress = async (req, res) => {
     }
 
     try {
+        const finalCompletion = (completionPercentage !== undefined && completionPercentage !== null)
+            ? completionPercentage 
+            : ((req.body.progress !== undefined && req.body.progress !== null) ? req.body.progress : 0);
+
         const data = await lessonService.updateProgress(userId, lessonId, {
             spent_time_ms: spentTimeMs || 0,
             status: status || 'started',
-            completion_percentage: completionPercentage || 0,
+            completion_percentage: finalCompletion,
             score: (score !== undefined && score !== null) ? score : undefined,
             last_active_tab: lastActiveTab
         });

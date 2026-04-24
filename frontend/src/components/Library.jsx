@@ -403,12 +403,18 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Done'}</span>
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: 700, color: lesson.progress === 100 ? '#10b981' : 'var(--text-muted)' }}>
-                                                                            {lesson.progress === 100 ? (language === 'kn' ? 'ಹೌದು' : 'Yes') : (language === 'kn' ? 'ಇಲ್ಲ' : 'No')}
+                                                                            {lesson.progress === 100 
+                                                                                ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
+                                                                                : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ' : 'Not Completed')}
                                                                         </span>
                                                                     </div>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Score'}</span>
-                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: lesson.score >= 80 ? '#10b981' : (lesson.score ? 'var(--primary)' : 'var(--text-muted)') }}>{lesson.score ? `${lesson.score}%` : '---'}</span>
+                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: lesson.score >= 80 ? '#10b981' : (lesson.score ? 'var(--primary)' : 'var(--text-muted)') }}>
+                                                                            {lesson.score !== null && lesson.score !== undefined 
+                                                                                ? `${lesson.score}%` 
+                                                                                : (language === 'kn' ? 'ಅಂಕಗಳಿಲ್ಲ' : 'No Score')}
+                                                                        </span>
                                                                     </div>
                                                                 </div>
 
@@ -417,20 +423,11 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Clock size={14} /> {lesson.estimated_time || '15'}m</span>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                        {lesson.progress === 100 && (
-                                                                            <button 
-                                                                                onClick={(e)=>{e.stopPropagation(); onSelectLesson(lesson);}} 
-                                                                                className="btn revise-btn"
-                                                                                style={{ padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 800, height: 'auto', minHeight: 'auto' }}
-                                                                            >
-                                                                                <RefreshCw size={12} style={{marginRight:'0.3rem'}}/> {language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'}
-                                                                            </button>
-                                                                        )}
                                                                         <button 
                                                                             style={{ 
-                                                                                background: isLocked ? 'var(--bg-dark)' : 'var(--primary)', 
-                                                                                color: isLocked ? 'var(--text-muted)' : 'white', 
-                                                                                border: 'none', 
+                                                                                background: isLocked ? 'var(--bg-dark)' : (lesson.progress === 100 ? 'rgba(var(--primary-rgb), 0.1)' : 'var(--primary)'), 
+                                                                                color: isLocked ? 'var(--text-muted)' : (lesson.progress === 100 ? 'var(--primary)' : 'white'), 
+                                                                                border: lesson.progress === 100 ? '1px solid var(--primary)' : 'none', 
                                                                                 padding: '0.4rem 1.25rem', 
                                                                                 borderRadius: '8px', 
                                                                                 fontSize: '0.75rem', 
@@ -443,8 +440,8 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                                             disabled={isLocked}
                                                                         >
                                                                             {lesson.progress === 100 
-                                                                                ? (language === 'kn' ? 'ನೋಡಿ' : 'Review') 
-                                                                                : (language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start')} <ArrowRight size={14} />
+                                                                                ? <><RefreshCw size={14} /> {language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'}</> 
+                                                                                : <>{language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start'} <ArrowRight size={14} /></>}
                                                                         </button>
                                                                     </div>
                                                                 </div>

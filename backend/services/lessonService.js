@@ -70,20 +70,36 @@ const lessonService = {
      * Update or create a progress record for a user and lesson.
      */
     updateProgress: async (userId, lessonId, progressData) => {
-        const { data, error } = await supabase
-            .from('user_progress')
-            .upsert({
-                user_id: userId,
-                lesson_id: lessonId,
-                ...progressData,
-                updated_at: new Date().toISOString()
-            }, { 
-                onConflict: 'user_id,lesson_id' 
-            })
-            .select()
-            .single();
-        if (error) throw error;
-        return data;
+        try {
+            if (!userId || !lessonId) {
+                console.error('[LessonService] updateProgress called with missing IDs:', { userId, lessonId });
+                throw new Error('User ID and Lesson ID are required for progress updates');
+            }
+
+            const { data, error } = await supabase
+                .from('user_progress')
+                .upsert({
+                    user_id: userId,
+                    lesson_id: lessonId,
+                    ...progressData,
+                    updated_at: new Date().toISOString()
+                }, { 
+                    onConflict: 'user_id,lesson_id' 
+                })
+                .select()
+                .single();
+                
+            if (error) {
+                console.error(`[LessonService] Database error during updateProgress for user ${userId}, lesson ${lessonId}:`, error);
+                throw error;
+            }
+            
+            console.log(`[LessonService] Successfully updated progress for user ${userId}, lesson ${lessonId}`);
+            return data;
+        } catch (err) {
+            console.error('[LessonService] Unexpected error in updateProgress:', err);
+            throw err;
+        }
     },
 
     /**

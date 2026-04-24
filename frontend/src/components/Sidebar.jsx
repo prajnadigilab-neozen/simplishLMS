@@ -77,7 +77,17 @@ const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) =
                     }}>
                         <img src={simplishTalksLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                     </div>
-                    <h2 style={{ color: 'var(--primary)', fontWeight: 800, margin: 0 }}>SIMPLISH</h2>
+                    <h2 style={{
+                        margin: 0,
+                        fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
+                        textTransform: 'lowercase',
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        letterSpacing: '-0.5px'
+                    }}>
+                        <span style={{ color: '#007FFF' }}>sim</span>
+                        <span style={{ color: '#00A86B' }}>plish</span>
+                    </h2>
                 </div>
                 <button
                     className="mobile-only"

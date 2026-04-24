@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-    Sparkles, 
-    Sun, 
-    Moon, 
-    Zap, 
-    Wallet, 
-    LayoutDashboard, 
-    Library, 
-    ShieldCheck, 
+import {
+    Sparkles,
+    Sun,
+    Moon,
+    Zap,
+    Wallet,
+    LayoutDashboard,
+    Library,
+    ShieldCheck,
     User as UserIcon,
     LogOut,
     ChevronDown,
@@ -61,27 +61,38 @@ const Navbar = ({ onNavigate }) => {
             height: 'var(--nav-height)',
         }}>
             {/* ── Left Section: Logo & Branding ── */}
-        <div 
-            style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
-        >
-            <div 
-                onClick={() => onNavigate('dashboard')}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+            <div
+                style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}
             >
-                <div style={{ 
-                    background: 'white', // High contrast background for the logo
-                    padding: '2px',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                }}>
-                    <img src={logoImg} alt="Simplish" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+                <div
+                    onClick={() => onNavigate('dashboard')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                >
+                    <div style={{
+                        background: 'white', // High contrast background for the logo
+                        padding: '2px',
+                        borderRadius: '6px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
+                    }}>
+                        <img src={logoImg} alt="Simplish" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
+                        <span style={{
+                            fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
+                            textTransform: 'lowercase',
+                            fontSize: '1.5rem',
+                            fontWeight: 'bold',
+                            letterSpacing: '-0.5px'
+                        }}>
+                            <span style={{ color: '#007FFF' }}>sim</span>
+                            <span style={{ color: '#00A86B' }}>plish</span>
+                        </span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        {/* ── Center Section: Navigation Links ── */}
+            {/* ── Center Section: Navigation Links ── */}
             <nav className="desktop-only" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 {navItems.map(item => {
                     const isActive = currentPath === item.id;
@@ -104,15 +115,15 @@ const Navbar = ({ onNavigate }) => {
                             }}
                         >
                             {item.id === 'study_area' ? (
-                                <img 
-                                    src={logoImg} 
-                                    alt="Icon" 
-                                    style={{ 
-                                        width: '18px', 
-                                        height: '18px', 
-                                        borderRadius: '4px', 
-                                        filter: isActive ? 'none' : 'grayscale(100%) opacity(0.6)' 
-                                    }} 
+                                <img
+                                    src={logoImg}
+                                    alt="Icon"
+                                    style={{
+                                        width: '18px',
+                                        height: '18px',
+                                        borderRadius: '4px',
+                                        filter: isActive ? 'none' : 'grayscale(100%) opacity(0.6)'
+                                    }}
                                 />
                             ) : (
                                 <item.icon size={18} />
@@ -121,7 +132,7 @@ const Navbar = ({ onNavigate }) => {
                                 {language === 'kn' ? item.label : item.en}
                             </span>
                             {isActive && (
-                                <motion.div 
+                                <motion.div
                                     layoutId="activeNav"
                                     style={{
                                         position: 'absolute',
@@ -143,7 +154,7 @@ const Navbar = ({ onNavigate }) => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                 {/* Wallet Balance Pill */}
                 {user && (
-                    <motion.div 
+                    <motion.div
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => navigate('/payment')}
@@ -160,11 +171,20 @@ const Navbar = ({ onNavigate }) => {
                     >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRight: '1px solid var(--border)', paddingRight: '0.75rem' }}>
                             <Wallet size={16} color="var(--primary)" />
-                            <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
-                                ₹{(Number(user.wallet_balance || 0) / 100).toFixed(2)}
-                            </span>
+                            {(() => {
+                                const expiry = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
+                                const isActive = expiry && new Date(expiry) > new Date();
+                                // Additive Logic: Base Plan Value (₹99) + Current Wallet Balance
+                                const basePlanValue = isActive ? 9900 : 0;
+                                const displayBalance = basePlanValue + Number(user.wallet_balance || 0);
+                                return (
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                        ₹{(Number(displayBalance) / 100).toFixed(2)}
+                                    </span>
+                                );
+                            })()}
                         </div>
-                        
+
                         {(() => {
                             const expiry = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
                             const now = new Date();
@@ -292,7 +312,7 @@ const Navbar = ({ onNavigate }) => {
 
                                     {/* Menu List */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                        <button 
+                                        <button
                                             onClick={() => { navigate('/profile'); setIsProfileOpen(false); }}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem',
@@ -306,7 +326,7 @@ const Navbar = ({ onNavigate }) => {
                                                 {language === 'kn' ? 'ಖಾತೆ ವಿವರಗಳು (Profile)' : 'Profile Settings'}
                                             </span>
                                         </button>
-                                        <button 
+                                        <button
                                             onClick={() => { handleLogout(); setIsProfileOpen(false); }}
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem',
@@ -317,7 +337,7 @@ const Navbar = ({ onNavigate }) => {
                                         >
                                             <LogOut size={18} />
                                             <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                                                {language === 'kn' ? 'ಲಾಗಿನ್ ಅಂತ್ಯ (Logout)' : 'Logout'}
+                                                {language === 'kn' ? 'ನಿರ್ಗಮಿಸಿ (Logout)' : 'Logout'}
                                             </span>
                                         </button>
                                     </div>

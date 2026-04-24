@@ -197,7 +197,16 @@ const LandingPage = ({ onAuthSuccess }) => {
                             style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                         />
                     </div>
-                    <span className="desktop-only" style={{ fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.02em', fontSize: '1.2rem' }}>SIMPLISH</span>
+                    <span className="desktop-only" style={{
+                        fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
+                        textTransform: 'lowercase',
+                        fontSize: '1.8rem',
+                        fontWeight: 'bold',
+                        letterSpacing: '-0.5px'
+                    }}>
+                        <span style={{ color: '#007FFF' }}>sim</span>
+                        <span style={{ color: '#00A86B' }}>plish</span>
+                    </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -458,7 +467,16 @@ const LandingPage = ({ onAuthSuccess }) => {
                             style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                         />
                     </div>
-                    <span style={{ fontWeight: 900, color: 'var(--primary)', letterSpacing: '-0.02em', fontSize: '1.1rem' }}>SIMPLISH</span>
+                    <span style={{
+                        fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
+                        textTransform: 'lowercase',
+                        fontSize: '1.8rem',
+                        fontWeight: 'bold',
+                        letterSpacing: '-0.5px'
+                    }}>
+                        <span style={{ color: '#007FFF' }}>sim</span>
+                        <span style={{ color: '#00A86B' }}>plish</span>
+                    </span>
                 </div>
                 <p style={{ color: 'var(--text-muted)', fontWeight: 700, marginBottom: '1.5rem' }}>{t.footerMotto}</p>
                 <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', marginBottom: '2rem' }}>

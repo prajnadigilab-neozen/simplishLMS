@@ -97,18 +97,28 @@ const Dashboard = ({ onStartLesson }) => {
         return dispA - dispB;
     });
 
-    // Find the lesson the user is currently working on or the next logical one
-    const incompleteLesson =
-        sortedLessons.find(l => (l.status === 'started' || l.progress > 0) && l.progress < 100) || // Partially complete
-        sortedLessons.find(l => l.status !== 'completed'); // Next fully unstarted
+    // Expert Logic: Determine the most relevant lesson to show in "Continue"
+    // 1. First, find any lesson that is partially started (progress > 0) but not finished
+    let currentIncomplete = sortedLessons.find(l => 
+        (l.status === 'started' || (l.progress > 0 && l.progress < 100)) && 
+        l.status !== 'completed'
+    );
 
-    const isCourseCompleted = lessons.length > 0 && !incompleteLesson;
+    // 2. If no partially started lesson, find the first one that is NOT completed
+    if (!currentIncomplete) {
+        currentIncomplete = sortedLessons.find(l => 
+            l.status !== 'completed' && (l.progress === null || l.progress < 100)
+        );
+    }
 
-    const currentLesson = incompleteLesson || sortedLessons[sortedLessons.length - 1] || {
+    // 3. Fallback to the very last lesson if everything is completed
+    const currentLesson = currentIncomplete || sortedLessons[sortedLessons.length - 1] || {
         title: language === 'kn' ? "ಯಾವುದೇ ಪಾಠಗಳು ಲಭ್ಯವಿಲ್ಲ" : "No lessons available yet",
         progress: 0,
         level: "N/A"
     };
+
+    const isCourseCompleted = lessons.length > 0 && !currentIncomplete;
 
     if (loading) {
         return (
@@ -147,6 +157,7 @@ const Dashboard = ({ onStartLesson }) => {
                             <h1 style={{ fontSize: '1.4rem', margin: 0 }}>
                                 {language === 'kn' ? `ನಮಸ್ಕಾರ, ${user?.fullName?.split(' ')[0]}!` : `Hello, ${user?.fullName?.split(' ')[0]}!`}
                             </h1>
+                        {(user?.is_paid || isAdmin) && (
                             <span style={{
                                 background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                                 color: 'white',
@@ -160,6 +171,7 @@ const Dashboard = ({ onStartLesson }) => {
                             }}>
                                 PREMIUM
                             </span>
+                        )}
                         </div>
                         <p style={{ color: 'var(--text-muted)', margin: 0 }}>
                             {language === 'kn' ? 'ಬನ್ನಿ, ಇಂಗ್ಲಿಷ್ ಕಲಿಯೋಣ.' : "Come, let's learn English."}
@@ -416,12 +428,11 @@ const Dashboard = ({ onStartLesson }) => {
                                                         style={{
                                                             background: 'none',
                                                             border: 'none',
-                                                            color: isLocked ? 'var(--text-muted)' : 'var(--primary)',
-                                                            cursor: isLocked ? 'not-allowed' : 'pointer',
+                                                            color: 'var(--primary)',
+                                                            cursor: 'pointer',
                                                             fontSize: '0.85rem',
                                                             fontWeight: 'bold'
                                                         }}
-                                                        disabled={isLocked}
                                                         onClick={() => setExpandedLevel(isExpanded ? null : lvl)}
                                                     >
                                                         {isExpanded 
@@ -430,9 +441,17 @@ const Dashboard = ({ onStartLesson }) => {
                                                     </button>
                                                 </div>
 
-                                                {/* Expandable Lesson View */}
-                                                {isExpanded && !isLocked && (
-                                                    <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                                {/* Expandable Lesson View - Enable View even if locked */}
+                                                {isExpanded && (
+                                                    <div style={{ 
+                                                        marginTop: '1.5rem', 
+                                                        paddingTop: '1.5rem', 
+                                                        borderTop: '1px solid var(--border)', 
+                                                        display: 'flex', 
+                                                        flexDirection: 'column', 
+                                                        gap: '2rem',
+                                                        opacity: isLocked ? 0.8 : 1
+                                                    }}>
                                                         {modules.length === 0 ? (
                                                             <p style={{ fontSize: '0.8rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>
                                                                 {language === 'kn' ? 'ಇನ್ನೂ ಯಾವುದೇ ಪಾಠಗಳು ಲಭ್ಯವಿಲ್ಲ.' : 'No lessons available yet.'}

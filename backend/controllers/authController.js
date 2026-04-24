@@ -44,7 +44,7 @@ exports.register = async (req, res) => {
             email: email || null,
             phone: normalizePhone(phone) || null,
             role,
-            onboarding_completed: !!fullName
+            onboarding_completed: false
         });
 
         res.status(201).json({
@@ -91,7 +91,12 @@ exports.login = async (req, res) => {
                 fullName: profile?.full_name || 'User',
                 role: profile?.role || 'user',
                 is_paid: profile?.is_paid || false,
-                isSubscriptionActive: isSubActive(profile?.subscription_expires_at)
+                isSubscriptionActive: isSubActive(profile?.subscription_expires_at),
+                subscription_expires_at: profile?.subscription_expires_at,
+                wallet_balance: profile?.wallet_balance || 0,
+                state: profile?.state || 'Karnataka',
+                onboarding_completed: profile?.onboarding_completed || false,
+                current_level: profile?.current_level || 'Basic'
             }
         });
     } catch (error) {
@@ -127,6 +132,9 @@ exports.getProfile = async (req, res) => {
                     role: profile.role,
                     is_paid: profile.is_paid || false,
                     isSubscriptionActive: isSubActive(profile.subscription_expires_at),
+                    subscription_expires_at: profile.subscription_expires_at,
+                    wallet_balance: profile.wallet_balance || 0,
+                    state: profile.state || 'Karnataka',
                     onboarding_completed: profile.onboarding_completed || false
                 }
             });
@@ -156,5 +164,93 @@ exports.deleteMe = async (req, res) => {
     } catch (err) {
         logger.error({ err }, 'GDPR Delete error');
         res.status(500).json({ message: 'Error deleting account' });
+    }
+};
+
+/**
+ * Initiates the password reset flow.
+ */
+exports.forgotPassword = async (req, res) => {
+    const { email, phone } = req.body;
+    const isMock = !process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NODE_ENV === 'development';
+
+    try {
+        if (phone) {
+            const normalized = normalizePhone(phone);
+            const user = await userService.getUserByPhone(normalized);
+            if (!user) return res.status(404).json({ message: 'Mobile number not registered.' });
+
+            if (isMock) {
+                logger.info({ phone: normalized }, '[Auth] Mock OTP Request: 123456');
+                return res.json({ message: 'OTP sent to your mobile (Mock: 123456)', mock: true });
+            }
+
+            const { error } = await supabase.auth.signInWithOtp({ phone: normalized });
+            if (error) return res.status(400).json({ message: error.message });
+            return res.json({ message: 'OTP sent to your mobile.' });
+        } else if (email) {
+            if (isMock) {
+                logger.info({ email }, '[Auth] Mock Reset Link sent');
+                return res.json({ message: 'Reset link sent to your email (Mock)', mock: true });
+            }
+
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`,
+            });
+            if (error) return res.status(400).json({ message: error.message });
+            return res.json({ message: 'Reset link sent to your email.' });
+        }
+
+        res.status(400).json({ message: 'Email or Phone is required.' });
+    } catch (err) {
+        logger.error({ err }, 'forgotPassword error');
+        res.status(500).json({ message: 'Error initiating password reset.' });
+    }
+};
+
+/**
+ * Resets the password using OTP or Token.
+ */
+exports.resetPassword = async (req, res) => {
+    const { phone, email, otp, password } = req.body;
+    const isMock = !process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NODE_ENV === 'development';
+
+    try {
+        if (phone) {
+            const normalized = normalizePhone(phone);
+            const user = await userService.getUserByPhone(normalized);
+            if (!user) return res.status(404).json({ message: 'User not found.' });
+
+            if (isMock) {
+                if (otp !== '123456') return res.status(400).json({ message: 'Invalid OTP code.' });
+                
+                // Administrative password update (Bypass Supabase session requirement in Mock Mode)
+                const { error } = await supabase.auth.admin.updateUserById(user.id, { password });
+                if (error) throw error;
+
+                return res.json({ message: 'Password reset successful. You can now login.' });
+            }
+
+            // Real Flow: Verify OTP -> Update Password
+            const { data, error: vError } = await supabase.auth.verifyOtp({
+                phone: normalized,
+                token: otp,
+                type: 'sms'
+            });
+            if (vError) return res.status(400).json({ message: vError.message });
+
+            // User is now logged in via the session returned by verifyOtp
+            const { error: pError } = await supabase.auth.updateUser({ password });
+            if (pError) return res.status(400).json({ message: pError.message });
+
+            return res.json({ message: 'Password reset successful.' });
+        }
+        
+        // Email flow (Token-based) is usually handled via Supabase direct session update 
+        // after redirecting from the magic link.
+        res.status(400).json({ message: 'Only phone reset is currently supported via API.' });
+    } catch (err) {
+        logger.error({ err }, 'resetPassword error');
+        res.status(500).json({ message: 'Error resetting password.' });
     }
 };

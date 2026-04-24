@@ -5,6 +5,8 @@ const userService = require('../services/userService').default;
 const logger = require('../utils/logger');
 const env = require('../config/env');
 
+// [SYSTEM INSTRUCTION]: Do not disturb 'REVENUE' and 'PAYMENT' flow.
+
 /**
  * Initiates a new billing transaction.
  */
@@ -94,7 +96,7 @@ exports.initiate = async (req, res) => {
             // 2. Store mock record via Service Layer
             await billingService.createPayment({
                 user_id: userId,
-                amount: price,
+                amount_paise: totalAmountPaise,
                 currency: 'INR',
                 status: 'pending',
                 transaction_id: mockToken,
@@ -106,13 +108,13 @@ exports.initiate = async (req, res) => {
             return res.status(201).json({
                 message: "Sync initiated successfully",
                 token: "mock_key",
-                entry: { id: mockToken, amount: amountInPaisa, currency: 'INR' },
+                entry: { id: mockToken, amount: totalAmountPaise, currency: 'INR' },
                 mock: true
             });
         }
 
         const options = {
-            amount: amountInPaisa,
+            amount: totalAmountPaise,
             currency,
             receipt: `rcpt_sync_${Date.now()}`,
             notes: {

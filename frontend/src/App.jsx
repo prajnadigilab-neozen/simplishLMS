@@ -82,8 +82,8 @@ function AppShell() {
     return <LandingPage onAuthSuccess={handleAuthSuccess} />;
   }
 
-  // Onboarding Guard: If logged in but not onboarded, FORCE to placement page
-  if (!user.onboarding_completed && !isPrivileged && location.pathname !== '/placement') {
+  // Onboarding Guard: If logged in but not onboarded, FORCE to placement page (unless paying or already there)
+  if (!user.onboarding_completed && !isPrivileged && !['/placement', '/payment'].includes(location.pathname)) {
     return <Navigate to="/placement" replace />;
   }
 

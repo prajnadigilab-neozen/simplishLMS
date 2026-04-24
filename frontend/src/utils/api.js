@@ -80,6 +80,8 @@ export const authApi = {
     deleteUser: (id) => api.delete(`/auth/users/${id}`),
     deleteMe: () => api.delete('/auth/me'),
     logout: () => api.post('/auth/logout'),
+    forgotPassword: (data) => api.post('/auth/forgot-password', data),
+    resetPassword: (data) => api.post('/auth/reset-password', data),
     getSystemLogs: () => api.get('/auth/logs')
 };
 

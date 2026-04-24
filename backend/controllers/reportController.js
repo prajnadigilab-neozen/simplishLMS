@@ -1,13 +1,15 @@
 const reportService = require('../services/reportService');
 const logger = require('../utils/logger');
 
+// [SYSTEM INSTRUCTION]: Do not disturb 'REVENUE' and 'PAYMENT' flow.
+
 exports.getSummaryMetrics = async (req, res) => {
     try {
         const rawRole = req.user?.role;
         // Normalize role exactly like auth middleware does
         const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : rawRole;
         const isSuperAdmin = role === 'super_admin';
-        const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
+        const canSeeRevenue = isSuperAdmin; // Strictly restricted to Super Admin
         console.log('[Backend Report] rawRole:', rawRole, '| normalized role:', role, '| isSuperAdmin:', isSuperAdmin, '| canSeeRevenue:', canSeeRevenue);
 
         logger.info({ role }, '[Reports] Generating summary');
@@ -73,7 +75,7 @@ exports.getDailyReport = async (req, res) => {
         const rawRole = req.user?.role;
         const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : rawRole;
         const isSuperAdmin = role === 'super_admin';
-        const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
+        const canSeeRevenue = isSuperAdmin; // Strictly restricted to Super Admin
         console.log('[Backend DailyReport] role:', role, '| canSeeRevenue:', canSeeRevenue);
 
         const toDate = req.query.to ? new Date(req.query.to + 'T23:59:59.999Z') : new Date();

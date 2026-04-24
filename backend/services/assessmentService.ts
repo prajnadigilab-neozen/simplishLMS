@@ -19,6 +19,19 @@ const assessmentService = {
     },
 
     /**
+     * Fetch assessment by its ID.
+     */
+    getAssessmentById: async (assessmentId: string): Promise<Assessment | null> => {
+        const { data, error } = await supabase
+            .from('assessments')
+            .select('*')
+            .eq('id', assessmentId)
+            .maybeSingle();
+        if (error) throw error;
+        return data as Assessment | null;
+    },
+
+    /**
      * Fetch all questions for a given assessment.
      */
     getQuestionsByAssessment: async (assessmentId: string): Promise<Question[]> => {
