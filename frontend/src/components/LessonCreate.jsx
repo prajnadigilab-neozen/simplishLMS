@@ -909,7 +909,7 @@ const LessonCreate = ({ lesson, onBack }) => {
 
                             {(files.audio || lesson?.audio_url) && (
                                 <div className="glass-card" style={{ padding: '1.5rem', background: 'rgba(59, 130, 246, 0.05)', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                    <img src="https://img.icons8.com/clouds/100/microphone.png" alt="mic" style={{ width: '60px' }} />
+                                    <img src="/images/microphone.png" alt="mic" style={{ width: '60px' }} />
                                     <div>
                                         <p style={{ margin: 0, fontWeight: 600 }}>Audio Section Active</p>
                                         <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>A motivation poster and microphone GIF will be shown to the student.</p>

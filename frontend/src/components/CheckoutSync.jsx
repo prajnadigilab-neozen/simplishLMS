@@ -115,7 +115,7 @@ const CheckoutSync = () => {
                 description: type === 'TOPUP' 
                     ? `Top-up Wallet: ₹${amount}${settings.topup_duration_days > 0 ? ` + ${settings.topup_duration_days} Days Access` : ''}` 
                     : `Unlimited Access: ${settings.subscription_duration_days} Days`,
-                image: "https://your-logo-url.png",
+                image: "/logo.png",
                 order_id: entry.id,
                 handler: async function (response) {
                     setLoading(true);

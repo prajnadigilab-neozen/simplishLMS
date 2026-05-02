@@ -37,7 +37,7 @@ const AdminDashboard = ({ user: userProp }) => {
 
     const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
     const isSuperAdmin = role === 'super_admin';
-    const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
+    const canSeeRevenue = isSuperAdmin;
 
     useEffect(() => {
         console.log('[AdminDashboard] User:', user?.id, 'Role:', role, 'CanSeeRevenue:', canSeeRevenue);
@@ -71,8 +71,11 @@ const AdminDashboard = ({ user: userProp }) => {
             const dailyData = dailyRes.data.daily_breakdown || [];
             const avgActive = Math.round(dailyData.reduce((sum, day) => sum + (day.active || 0), 0) / (dailyData.length || 1));
 
+            // Derive totalRevenue from the daily breakdown so it matches Platform Reports exactly
+            const totalRevenueFromBreakdown = dailyData.reduce((sum, day) => sum + (day.revenue || 0), 0);
+
             setStats({
-                totalRevenue: summaryData.totalRevenueAllTime,
+                totalRevenue: totalRevenueFromBreakdown,
                 revenueMoM: summaryData.revenueMoM,
                 totalRegistrations: summaryData.totalUsers,
                 newRegistrations: summaryData.newRegistrationsCurrentMonth,
@@ -81,7 +84,7 @@ const AdminDashboard = ({ user: userProp }) => {
                 avgActive: summaryData.avgDailyActive30d || avgActive,
                 dailyData
             });
-            console.log('[AdminDashboard] REVENUE DATA RECEIVED:', summaryData.totalRevenueAllTime);
+            console.log('[AdminDashboard] REVENUE (from breakdown):', totalRevenueFromBreakdown);
 
             setActivity(activityRes.data || []);
 
@@ -273,7 +276,7 @@ const AdminDashboard = ({ user: userProp }) => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 {canSeeRevenue && (
                     <KPICard 
-                        title="TOTAL REVENUE (All-time)" 
+                        title="TOTAL REVENUE (Last 30 Days)" 
                         value={`₹${stats?.totalRevenue?.toLocaleString() || 0}`} 
                         icon={IndianRupee} 
                         color="59, 130, 246"

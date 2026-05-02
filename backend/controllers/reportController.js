@@ -9,7 +9,7 @@ exports.getSummaryMetrics = async (req, res) => {
         // Normalize role exactly like auth middleware does
         const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : rawRole;
         const isSuperAdmin = role === 'super_admin';
-        const canSeeRevenue = isSuperAdmin; // Strictly restricted to Super Admin
+        const canSeeRevenue = isSuperAdmin;
         console.log('[Backend Report] rawRole:', rawRole, '| normalized role:', role, '| isSuperAdmin:', isSuperAdmin, '| canSeeRevenue:', canSeeRevenue);
 
         logger.info({ role }, '[Reports] Generating summary');
@@ -75,7 +75,7 @@ exports.getDailyReport = async (req, res) => {
         const rawRole = req.user?.role;
         const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : rawRole;
         const isSuperAdmin = role === 'super_admin';
-        const canSeeRevenue = isSuperAdmin; // Strictly restricted to Super Admin
+        const canSeeRevenue = isSuperAdmin;
         console.log('[Backend DailyReport] role:', role, '| canSeeRevenue:', canSeeRevenue);
 
         const toDate = req.query.to ? new Date(req.query.to + 'T23:59:59.999Z') : new Date();
@@ -90,9 +90,9 @@ exports.getDailyReport = async (req, res) => {
         const breakdown = {};
         let current = new Date(fromDate);
         let iterations = 0;
-        while (current <= toDate && iterations < 31) {
+        while (current <= toDate && iterations < 366) {
             const dateStr = current.toISOString().split('T')[0];
-            breakdown[dateStr] = { date: dateStr, registrations: 0, active: 0, revenue: 0, deleted: 0, topUpRevenue: 0 };
+            breakdown[dateStr] = { date: dateStr, registrations: 0, active: 0, revenue: 0, deleted: 0, topUpRevenue: 0, membershipRevenue: 0 };
             current.setDate(current.getDate() + 1);
             iterations++;
         }
@@ -112,7 +112,11 @@ exports.getDailyReport = async (req, res) => {
             if (breakdown[d]) {
                 const amtRupees = (Number(p.amount_paise) || 0) / 100;
                 breakdown[d].revenue += amtRupees;
-                if (amtRupees < 499) breakdown[d].topUpRevenue += amtRupees;
+                if (p.payment_type === 'TOPUP') {
+                    breakdown[d].topUpRevenue += amtRupees;
+                } else {
+                    breakdown[d].membershipRevenue += amtRupees;
+                }
             }
         });
 

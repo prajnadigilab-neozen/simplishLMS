@@ -33,7 +33,7 @@ const toLocalDateStr = (d) => {
 };
 
 const todayStr = () => toLocalDateStr(new Date());
-const sevenDaysAgoStr = () => toLocalDateStr(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+const thirtyDaysAgoStr = () => toLocalDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
 
 // ── Component ─────────────────────────────────────────────────────────────────
 const Reports = ({ user: userProp, hideHeader = false }) => {
@@ -41,10 +41,10 @@ const Reports = ({ user: userProp, hideHeader = false }) => {
     const user = userProp || contextUser;
     const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
     const isSuperAdmin = role === 'super_admin';
-    const canSeeRevenue = isSuperAdmin || role === 'admin' || role === 'moderator';
+    const canSeeRevenue = isSuperAdmin;
 
     // Date filter state
-    const [fromDate, setFromDate] = useState(sevenDaysAgoStr());
+    const [fromDate, setFromDate] = useState(thirtyDaysAgoStr());
     const [toDate, setToDate] = useState(todayStr());
 
     useEffect(() => {
@@ -89,7 +89,7 @@ const Reports = ({ user: userProp, hideHeader = false }) => {
             'Date', 
             'Registered Users', 
             'Active Users', 
-            ...(canSeeRevenue ? ['Top-Up Revenue', 'Total Revenue'] : []),
+            ...(canSeeRevenue ? ['Top-Up Revenue', 'Membership Revenue', 'Total Revenue'] : []),
             'Deleted Users'
         ];
 
@@ -97,7 +97,7 @@ const Reports = ({ user: userProp, hideHeader = false }) => {
             row.date,
             row.registrations,
             row.active,
-            ...(canSeeRevenue ? [row.topUpRevenue, row.revenue] : []),
+            ...(canSeeRevenue ? [row.topUpRevenue, row.membershipRevenue, row.revenue] : []),
             row.deleted
         ]);
 
@@ -259,7 +259,7 @@ const Reports = ({ user: userProp, hideHeader = false }) => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                    {['DATE', 'REG. USERS', 'ACTIVE', ...(canSeeRevenue ? ['TOP-UP REV', 'TOTAL REVENUE'] : []), 'DELETED'].map(h => (
+                                    {['DATE', 'REG. USERS', 'ACTIVE', ...(canSeeRevenue ? ['TOP-UP REV', 'MEMBERSHIP REV', 'TOTAL REV'] : []), 'DELETED'].map(h => (
                                         <th key={h} style={{ padding: '1.25rem 1.5rem', fontSize: '0.75rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em' }}>
                                             {h}
                                         </th>
@@ -305,7 +305,10 @@ const Reports = ({ user: userProp, hideHeader = false }) => {
                                                         <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 700, color: '#059669' }}>
                                                             {formatCurrency(row.topUpRevenue)}
                                                         </td>
-                                                        <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 800, color: '#059669' }}>
+                                                        <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 700, color: '#3b82f6' }}>
+                                                            {formatCurrency(row.membershipRevenue)}
+                                                        </td>
+                                                        <td style={{ padding: '1.25rem 1.5rem', fontSize: '0.9rem', fontWeight: 800, color: '#1e293b' }}>
                                                             {formatCurrency(row.revenue)}
                                                         </td>
                                                     </>

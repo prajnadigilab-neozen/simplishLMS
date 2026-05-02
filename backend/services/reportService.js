@@ -71,7 +71,7 @@ const reportService = {
             // Deletions
             supabase.from('users').select('deleted_at').eq('status', 'deleted').gte('deleted_at', fromISO).lte('deleted_at', toISO),
             // Revenue
-            canSeeRevenue ? supabase.from('payments').select('created_at, amount_paise').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('payments').select('created_at, amount_paise, payment_type').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
             // Activity (Unique Active Users)
             supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO)
         ]);

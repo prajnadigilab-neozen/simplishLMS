@@ -297,7 +297,6 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                             <div key={lvl} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 {/* Level Header */}
                                 <div
-                                    className="glass-card"
                                     onClick={toggleLevel}
                                     style={{
                                         padding: window.innerWidth < 640 ? '1rem 1.25rem' : '1.5rem 2rem',
@@ -305,18 +304,20 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
                                         cursor: 'pointer',
-                                        background: isLevelExpanded ? 'linear-gradient(90deg, var(--bg-dark) 0%, rgba(255,255,255,0.02) 100%)' : 'rgba(255,255,255,0.02)',
-                                        borderLeft: isLevelExpanded ? '6px solid var(--primary)' : '1px solid var(--border)',
-                                        borderRadius: '1rem'
+                                        background: '#ffffff',
+                                        border: '1px solid #e2e8f0',
+                                        borderLeft: '6px solid #0052cc',
+                                        borderRadius: '12px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                                     }}
                                 >
                                     <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-muted)', letterSpacing: '0.1em', marginBottom: '0.25rem' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
                                             {language === 'kn' ? `ಹಂತ ${levelIndex + 1}` : `LEVEL ${levelIndex + 1}`}
                                         </div>
-                                        <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900, color: isLevelExpanded ? 'var(--primary)' : 'var(--text-main)' }}>{lvl} English</h2>
+                                        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#0052cc' }}>{lvl} English</h2>
                                     </div>
-                                    <ArrowRight size={24} style={{ transform: isLevelExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.3s', color: 'var(--text-muted)' }} />
+                                    <ArrowRight size={24} style={{ transform: isLevelExpanded ? 'rotate(-90deg)' : 'rotate(90deg)', transition: 'transform 0.3s', color: '#64748b' }} />
                                 </div>
 
                                 {isLevelExpanded && (
@@ -342,21 +343,19 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                         return (
                                                             <motion.div
                                                                 key={lesson.id}
-                                                                className="glass-card"
                                                                 style={{
-                                                                    padding: '0.75rem',
+                                                                    background: '#ffffff',
+                                                                    border: '1px solid #e2e8f0',
+                                                                    borderRadius: '12px',
                                                                     cursor: isLocked ? 'not-allowed' : 'pointer',
-                                                                    position: 'relative',
                                                                     display: 'flex',
                                                                     flexDirection: 'column',
-                                                                    gap: '0.75rem',
                                                                     opacity: isLocked ? 0.7 : 1,
                                                                     filter: isLocked ? 'grayscale(0.6)' : 'none',
-                                                                    border: isLocked ? '1px solid var(--border)' : '1px solid var(--primary-light)',
-                                                                    transform: isLocked ? 'none' : 'translateY(0)',
-                                                                    transition: 'all 0.2s ease'
+                                                                    transition: 'all 0.2s ease',
+                                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                                                                 }}
-                                                                whileHover={!isLocked ? { translateY: -4, borderColor: 'var(--primary)', boxShadow: '0 12px 24px rgba(var(--primary-rgb), 0.15)' } : {}}
+                                                                whileHover={!isLocked ? { translateY: -2, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } : {}}
                                                                 onClick={() => {
                                                                     if (isPaywallLocked) { navigate('/payment'); return; }
                                                                     if (isPrereqLocked) { 
@@ -366,82 +365,82 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                                     onSelectLesson(lesson);
                                                                 }}
                                                             >
-                                                                {isLocked && (
-                                                                    <div style={{ position: 'absolute', top: '1rem', right: '1rem', background: isPaywallLocked ? 'rgba(59, 130, 246, 0.2)' : 'rgba(100, 116, 139, 0.2)', color: isPaywallLocked ? '#3b82f6' : 'var(--text-muted)', padding: '0.3rem 0.75rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem', zIndex: 10 }}>
-                                                                        <Lock size={14} /> {isPaywallLocked ? 'PREMIUM' : (language === 'kn' ? 'ಲಾಕ್ ಆಗಿದೆ' : 'LOCKED')}
-                                                                    </div>
-                                                                )}
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                                        <div style={{ padding: '0.4rem', borderRadius: '0.5rem', background: lesson.content?.isExam ? 'rgba(234, 179, 8, 0.1)' : 'var(--primary-light)', color: lesson.content?.isExam ? '#eab308' : 'var(--primary)' }}>
-                                                                            {lesson.content?.isExam ? <Trophy size={16} /> : getIcon(lesson.media_type)}
+                                                                {/* Top Section */}
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                                        <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: lesson.content?.isExam ? '#fef3c7' : '#e0e7ff', color: lesson.content?.isExam ? '#d97706' : '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                            {lesson.content?.isExam ? <Trophy size={20} /> : getIcon(lesson.media_type)}
                                                                         </div>
-                                                                        <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 800, color: 'var(--text-main)' }}>{lesson.title}</h3>
+                                                                        <h3 style={{ fontSize: '1.1rem', margin: 0, fontWeight: 800, color: '#0f172a' }}>{lesson.title}</h3>
+                                                                        {isLocked && (
+                                                                            <span style={{ background: isPaywallLocked ? '#e0e7ff' : '#f1f5f9', color: isPaywallLocked ? '#4f46e5' : '#64748b', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                                                <Lock size={12} /> {isPaywallLocked ? 'PREMIUM' : 'LOCKED'}
+                                                                            </span>
+                                                                        )}
                                                                     </div>
                                                                     {isMod && (
                                                                         <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                                                            <button onClick={(e) => { e.stopPropagation(); onEditLesson(lesson); }} style={{ background: 'var(--bg-dark)', border: '1px solid var(--border)', color: 'var(--text-muted)', padding: '0.4rem', borderRadius: '8px' }}><Edit size={14} /></button>
-                                                                            <button onClick={(e) => handleDelete(e, lesson.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '0.4rem', borderRadius: '8px' }}><Trash2 size={14} /></button>
+                                                                            <button onClick={(e) => { e.stopPropagation(); onEditLesson(lesson); }} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit size={16} /></button>
+                                                                            <button onClick={(e) => handleDelete(e, lesson.id)} style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#ef4444', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={16} /></button>
                                                                         </div>
                                                                     )}
                                                                 </div>
 
-                                                                <div style={{ 
-                                                                    display: 'grid', 
-                                                                    gridTemplateColumns: window.innerWidth < 450 ? '1fr' : 'repeat(auto-fit, minmax(80px, 1fr))', 
-                                                                    gap: '0.75rem', 
-                                                                    background: 'rgba(0,0,0,0.1)', 
-                                                                    padding: '0.75rem 1rem', 
-                                                                    borderRadius: '12px' 
-                                                                }}>
-                                                                    {!lesson.content?.isFinal && (
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಹಂತ' : 'Level'}</span>
-                                                                            <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>{lesson.level}</span>
-                                                                        </div>
-                                                                    )}
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಮುಗಿದಿದೆ' : 'Done'}</span>
-                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: lesson.progress === 100 ? '#10b981' : 'var(--text-muted)' }}>
-                                                                            {lesson.progress === 100 
-                                                                                ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
-                                                                                : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ' : 'Not Completed')}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Score'}</span>
-                                                                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: lesson.score >= 80 ? '#10b981' : (lesson.score ? 'var(--primary)' : 'var(--text-muted)') }}>
-                                                                            {lesson.score !== null && lesson.score !== undefined 
-                                                                                ? `${lesson.score}%` 
-                                                                                : (language === 'kn' ? 'ಅಂಕಗಳಿಲ್ಲ' : 'No Score')}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
+                                                                {/* Divider */}
+                                                                <div style={{ height: '1px', background: '#e2e8f0', width: '100%' }} />
 
-                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Clock size={14} /> {lesson.estimated_time || '15'}m</span>
+                                                                {/* Bottom Section */}
+                                                                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                                                    {/* Info row */}
+                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', width: '100%' }}>
+                                                                        {!lesson.content?.isFinal && (
+                                                                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                                                                <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>LEVEL</span>
+                                                                                <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>{lesson.level}</span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                                                            <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>Status</span>
+                                                                            <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                                                                                {lesson.progress === 100 
+                                                                                    ? (language === 'kn' ? 'ಪೂರ್ಣಗೊಂಡಿದೆ' : 'Completed') 
+                                                                                    : (language === 'kn' ? 'ಬಾಕಿ ಇದೆ' : 'Not Completed')}
+                                                                            </span>
+                                                                        </div>
+                                                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                                                            <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>Score</span>
+                                                                            <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                                                                                {lesson.score !== null && lesson.score !== undefined 
+                                                                                    ? `${lesson.score}%` 
+                                                                                    : (language === 'kn' ? 'ಅಂಕಗಳಿಲ್ಲ' : 'No Score')}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+                                                                    {/* Footer row */}
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', color: '#64748b' }}>
+                                                                            <Clock size={16} /> {lesson.estimated_time || '15'}m
+                                                                        </div>
                                                                         <button 
                                                                             style={{ 
-                                                                                background: isLocked ? 'var(--bg-dark)' : (lesson.progress === 100 ? 'rgba(var(--primary-rgb), 0.1)' : 'var(--primary)'), 
-                                                                                color: isLocked ? 'var(--text-muted)' : (lesson.progress === 100 ? 'var(--primary)' : 'white'), 
-                                                                                border: lesson.progress === 100 ? '1px solid var(--primary)' : 'none', 
-                                                                                padding: '0.4rem 1.25rem', 
+                                                                                background: isLocked ? '#e2e8f0' : '#0052cc', 
+                                                                                color: isLocked ? '#94a3b8' : '#ffffff', 
+                                                                                border: 'none', 
+                                                                                padding: '0.6rem 1.25rem', 
                                                                                 borderRadius: '8px', 
-                                                                                fontSize: '0.75rem', 
-                                                                                fontWeight: 800, 
+                                                                                fontSize: '0.9rem', 
+                                                                                fontWeight: 700, 
                                                                                 display: 'flex', 
                                                                                 alignItems: 'center', 
-                                                                                gap: '0.3rem',
+                                                                                gap: '0.4rem',
                                                                                 cursor: isLocked ? 'not-allowed' : 'pointer'
                                                                             }}
                                                                             disabled={isLocked}
                                                                         >
-                                                                            {lesson.progress === 100 
-                                                                                ? <><RefreshCw size={14} /> {language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'}</> 
-                                                                                : <>{language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start'} <ArrowRight size={14} /></>}
+                                                                            {lesson.progress === 100 && !isLocked
+                                                                                ? <>{language === 'kn' ? 'ಮತ್ತೆ ಕಲಿಯಿರಿ' : 'Revise'} <ArrowRight size={16} /></> 
+                                                                                : <>{language === 'kn' ? 'ಪ್ರಾರಂಭಿಸಿ' : 'Start'} <ArrowRight size={16} /></>}
                                                                         </button>
                                                                     </div>
                                                                 </div>

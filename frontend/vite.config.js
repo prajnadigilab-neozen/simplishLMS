@@ -17,7 +17,7 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      includeAssets: ['logo.png', 'vite.svg'],
       manifest: {
         name: 'SIMPLISH - Learn English Simply',
         short_name: 'SIMPLISH',

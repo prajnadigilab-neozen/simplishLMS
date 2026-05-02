@@ -229,16 +229,46 @@ exports.updateProgress = async (req, res) => {
     }
 
     try {
-        const finalCompletion = (completionPercentage !== undefined && completionPercentage !== null)
+        // Fetch existing progress to prevent downgrading
+        const existingProgressList = await lessonService.getUserProgress(userId);
+        const existingProgress = existingProgressList.find(p => p.lesson_id === lessonId);
+
+        let finalCompletion = completionPercentage !== undefined && completionPercentage !== null 
             ? completionPercentage 
-            : ((req.body.progress !== undefined && req.body.progress !== null) ? req.body.progress : 0);
+            : (req.body.progress !== undefined && req.body.progress !== null ? req.body.progress : null);
+        let finalStatus = status;
+        let finalScore = score !== undefined && score !== null ? score : null;
+        let finalTime = spentTimeMs !== undefined ? spentTimeMs : null;
+
+        if (existingProgress) {
+            // Do not downgrade completion percentage
+            if (finalCompletion === null || finalCompletion < existingProgress.completion_percentage) {
+                finalCompletion = existingProgress.completion_percentage;
+            }
+            // Do not downgrade status
+            if (existingProgress.status === 'completed' && finalStatus !== 'completed') {
+                finalStatus = 'completed';
+            }
+            // Do not downgrade score
+            if (finalScore === null || (existingProgress.score !== null && finalScore < existingProgress.score)) {
+                finalScore = existingProgress.score;
+            }
+            // Fallback for time
+            if (finalTime === null) {
+                finalTime = existingProgress.spent_time_ms;
+            }
+        } else {
+            if (finalCompletion === null) finalCompletion = 0;
+            if (!finalStatus) finalStatus = 'started';
+            if (finalTime === null) finalTime = 0;
+        }
 
         const data = await lessonService.updateProgress(userId, lessonId, {
-            spent_time_ms: spentTimeMs || 0,
-            status: status || 'started',
+            spent_time_ms: finalTime,
+            status: finalStatus,
             completion_percentage: finalCompletion,
-            score: (score !== undefined && score !== null) ? score : undefined,
-            last_active_tab: lastActiveTab
+            score: finalScore,
+            last_active_tab: lastActiveTab || (existingProgress ? existingProgress.last_active_tab : null)
         });
 
         res.json(data);
