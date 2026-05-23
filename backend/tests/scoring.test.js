@@ -36,4 +36,19 @@ describe('Assessment Scoring Logic', () => {
 
         expect(result.score).toBe(50);
     });
+
+    test('should support robust MCQ prefix matching', () => {
+        const mcqQuestions = [
+            { id: 'q1', question_type: 'MCQ', correct_answer: 'B', points: 10 },
+            { id: 'q2', question_type: 'MCQ', correct_answer: 'A) Apple', points: 10 }
+        ];
+
+        // Case 1: user selected "B) An apple" for correct_answer "B"
+        // Case 2: user selected "Apple" for correct_answer "A) Apple"
+        const answers = { q1: 'B) An apple', q2: 'Apple' };
+        const result = scoring.calculateScore(mcqQuestions, answers);
+
+        expect(result.score).toBe(100);
+        expect(result.passed).toBe(true);
+    });
 });

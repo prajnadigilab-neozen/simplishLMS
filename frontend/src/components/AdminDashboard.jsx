@@ -15,7 +15,9 @@ import {
     RefreshCw,
     Zap,
     Clock,
-    CheckCircle2
+    CheckCircle2,
+    MessageSquare,
+    ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reportApi, authApi, settingsApi } from '../utils/api';
@@ -316,6 +318,7 @@ const AdminDashboard = ({ user: userProp }) => {
                     { id: 'stats', label: 'General Stats', icon: BarChart3 },
                     { id: 'users', label: 'Users', icon: Users },
                     { id: 'moderators', label: 'Moderators', icon: ShieldCheck },
+                    { id: 'feedback', label: 'Feedback', icon: MessageSquare },
                     ...(isSuperAdmin ? [{ id: 'settings', label: 'Global Settings', icon: Settings }] : [])
                 ].map(tab => (
                     <button
@@ -635,6 +638,86 @@ const AdminDashboard = ({ user: userProp }) => {
                                         SAVE GLOBAL SETTINGS
                                     </button>
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'feedback' && (
+                        <div className="feedback-tab" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                            <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                                        <Users size={24} />
+                                    </div>
+                                    <h3 style={{ margin: 0, fontWeight: 800 }}>User Feedback</h3>
+                                </div>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                    Standardized questionnaire for gathering insights from students about lesson quality, platform usability, and learning experience.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = '/feedback_templates/User_Feedback_Questionnaire.csv';
+                                        link.download = 'User_Feedback_Questionnaire.csv';
+                                        link.click();
+                                    }}
+                                    style={{ 
+                                        marginTop: 'auto',
+                                        padding: '0.8rem', 
+                                        borderRadius: '10px', 
+                                        background: 'rgba(59, 130, 246, 0.1)', 
+                                        color: '#3b82f6', 
+                                        border: '1px solid rgba(59, 130, 246, 0.2)', 
+                                        fontWeight: 700, 
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    <Download size={18} /> DOWNLOAD TEMPLATE
+                                </motion.button>
+                            </div>
+
+                            <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                                        <ShieldCheck size={24} />
+                                    </div>
+                                    <h3 style={{ margin: 0, fontWeight: 800 }}>Admin Feedback</h3>
+                                </div>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                    Questionnaire designed for internal staff and moderators to report on administrative efficiency, reporting accuracy, and feature requests.
+                                </p>
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = '/feedback_templates/Admin_Feedback_Questionnaire.csv';
+                                        link.download = 'Admin_Feedback_Questionnaire.csv';
+                                        link.click();
+                                    }}
+                                    style={{ 
+                                        marginTop: 'auto',
+                                        padding: '0.8rem', 
+                                        borderRadius: '10px', 
+                                        background: 'rgba(16, 185, 129, 0.1)', 
+                                        color: '#10b981', 
+                                        border: '1px solid rgba(16, 185, 129, 0.2)', 
+                                        fontWeight: 700, 
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    <Download size={18} /> DOWNLOAD TEMPLATE
+                                </motion.button>
                             </div>
                         </div>
                     )}

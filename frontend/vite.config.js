@@ -74,6 +74,21 @@ export default defineConfig({
                 maxAgeSeconds: 60 * 60 * 24 
               }
             }
+          },
+          {
+            urlPattern: /\/uploads\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'uploads-media-cache',
+              rangeRequests: true,
+              cacheableResponse: {
+                statuses: [0, 200, 206]
+              },
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+              }
+            }
           }
         ]
       },

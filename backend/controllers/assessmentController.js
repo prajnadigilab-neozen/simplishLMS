@@ -133,8 +133,7 @@ exports.upsertAssessment = async (req, res) => {
         // 1. Upsert Assessment via Service Layer
         const assessment = await assessmentService.upsertAssessment({ 
             lesson_id: lessonId, 
-            title: title || 'Assessment',
-            updated_at: new Date().toISOString()
+            title: title || 'Assessment'
         });
 
         const assessmentId = assessment.id;

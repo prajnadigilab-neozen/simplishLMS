@@ -1,4 +1,4 @@
-// 🚀 Incremental TS Migration: Register ts-node to allow requiring .ts files
+// 🚀 Incremental TS Migration: Register ts-node to allow requiring .ts files (Updated)
 require('ts-node/register');
 
 const express = require('express');

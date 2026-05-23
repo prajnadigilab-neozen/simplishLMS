@@ -1,4 +1,14 @@
+const { createClient } = require('@supabase/supabase-js');
 const supabase = require('../config/supabase');
+
+// Isolated client specifically for user-facing auth sessions to prevent polluting the main shared client
+const supabaseAuth = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+        persistSession: false,
+        autoRefreshToken: false
+    }
+});
+
 const userService = require('../services/userService').default;
 const lessonService = require('../services/lessonService');
 const logger = require('../utils/logger');
@@ -35,7 +45,7 @@ exports.register = async (req, res) => {
             signUpData.email = email;
         }
 
-        const { data, error } = await supabase.auth.signUp({ ...signUpData, options });
+        const { data, error } = await supabaseAuth.auth.signUp({ ...signUpData, options });
         if (error) return res.status(400).json({ message: error.message });
 
         await userService.upsertUser({
@@ -68,7 +78,7 @@ exports.login = async (req, res) => {
         if (phone) loginOptions.phone = normalizePhone(phone);
         else loginOptions.email = email;
         
-        const { data, error } = await supabase.auth.signInWithPassword(loginOptions);
+        const { data, error } = await supabaseAuth.auth.signInWithPassword(loginOptions);
         if (error) return res.status(401).json({ message: error.message });
 
         const profile = await userService.getUserById(data.user.id);
@@ -89,6 +99,8 @@ exports.login = async (req, res) => {
             user: {
                 id: data.user.id,
                 fullName: profile?.full_name || 'User',
+                email: profile?.email,
+                phone: profile?.phone,
                 role: profile?.role || 'user',
                 is_paid: profile?.is_paid || false,
                 isSubscriptionActive: isSubActive(profile?.subscription_expires_at),
@@ -185,7 +197,7 @@ exports.forgotPassword = async (req, res) => {
                 return res.json({ message: 'OTP sent to your mobile (Mock: 123456)', mock: true });
             }
 
-            const { error } = await supabase.auth.signInWithOtp({ phone: normalized });
+            const { error } = await supabaseAuth.auth.signInWithOtp({ phone: normalized });
             if (error) return res.status(400).json({ message: error.message });
             return res.json({ message: 'OTP sent to your mobile.' });
         } else if (email) {
@@ -194,7 +206,7 @@ exports.forgotPassword = async (req, res) => {
                 return res.json({ message: 'Reset link sent to your email (Mock)', mock: true });
             }
 
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            const { error } = await supabaseAuth.auth.resetPasswordForEmail(email, {
                 redirectTo: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password`,
             });
             if (error) return res.status(400).json({ message: error.message });
@@ -232,7 +244,7 @@ exports.resetPassword = async (req, res) => {
             }
 
             // Real Flow: Verify OTP -> Update Password
-            const { data, error: vError } = await supabase.auth.verifyOtp({
+            const { data, error: vError } = await supabaseAuth.auth.verifyOtp({
                 phone: normalized,
                 token: otp,
                 type: 'sms'
@@ -240,7 +252,7 @@ exports.resetPassword = async (req, res) => {
             if (vError) return res.status(400).json({ message: vError.message });
 
             // User is now logged in via the session returned by verifyOtp
-            const { error: pError } = await supabase.auth.updateUser({ password });
+            const { error: pError } = await supabaseAuth.auth.updateUser({ password });
             if (pError) return res.status(400).json({ message: pError.message });
 
             return res.json({ message: 'Password reset successful.' });

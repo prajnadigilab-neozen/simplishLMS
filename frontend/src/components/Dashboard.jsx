@@ -195,7 +195,7 @@ const Dashboard = ({ onStartLesson }) => {
                             </h3>
                             <div style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', display: 'grid', gap: '1.5rem' }}>
                                 {levels.map((lvl) => {
-                                    const lessonsInLevel = lessons.filter(l => l.level === lvl).length;
+                                    const lessonsInLevel = lessons.filter(l => l.level === lvl && !l.content?.isFinal).length;
                                     return (
                                         <motion.div
                                             key={lvl}
@@ -311,13 +311,18 @@ const Dashboard = ({ onStartLesson }) => {
                                 </h3>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                                     {levels.map((lvl, index) => {
-                                        const lessonsInLevel = lessons.filter(l => l.level === lvl);
+                                        const lessonsInLevel = lessons.filter(l => l.level === lvl && !l.content?.isFinal);
 
-                                        // Robust locking: Module is locked if any lesson in any previous level is incomplete
-                                        // Robust locking: Module is locked if any lesson in any previous level is incomplete
-                                        const prevLevels = levels.slice(0, index);
-                                        const lessonsInPrevLevels = lessons.filter(l => prevLevels.includes(l.level));
-                                        const isLocked = !isAdmin && index > 0 && (lessonsInPrevLevels.length === 0 || lessonsInPrevLevels.some(l => (l.progress || 0) < 100));
+                                        // Robust locking: Module is locked if it's beyond placement AND they haven't completed previous levels organically
+                                        const userLevelIdx = levels.indexOf(user?.current_level || 'Basic');
+                                        let isLocked = false;
+                                        if (!isAdmin && index > userLevelIdx) {
+                                            const prevLevels = levels.slice(0, index);
+                                            const lessonsInPrevLevels = lessons.filter(l => prevLevels.includes(l.level));
+                                            if (lessonsInPrevLevels.length === 0 || lessonsInPrevLevels.some(l => (l.progress || 0) < 100)) {
+                                                isLocked = true;
+                                            }
+                                        }
 
                                         const isExpanded = expandedLevel === lvl;
 
@@ -574,6 +579,73 @@ const Dashboard = ({ onStartLesson }) => {
                                                 >
                                                     {language === 'kn' ? 'ಅಂತಿಮ ಪರೀಕ್ಷೆಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ' : 'Upload Final Graduation Exam'}
                                                 </button>
+                                            );
+                                        }
+
+                                        if (finalExam && finalExam.progress === 100) {
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', width: '100%' }}>
+                                                    <div style={{
+                                                        background: 'rgba(234, 179, 8, 0.1)',
+                                                        border: '2px dashed #eab308',
+                                                        borderRadius: '20px',
+                                                        padding: '1.5rem',
+                                                        width: '100%',
+                                                        maxWidth: '500px',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '1rem'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                                            <Trophy size={48} color="#eab308" className="animate-bounce" />
+                                                            <div style={{ textAlign: 'left' }}>
+                                                                <h4 style={{ margin: 0, fontSize: '1.25rem', color: '#eab308', fontWeight: 800 }}>
+                                                                    {language === 'kn' ? 'ಅಭಿನಂದನೆಗಳು!' : 'Congratulations!'}
+                                                                </h4>
+                                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                                    {language === 'kn' ? 'ನೀವು ಪದವಿ ಪರೀಕ್ಷೆಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಮುಗಿಸಿದ್ದೀರಿ!' : 'You have successfully graduated from SIMPLISH!'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '2rem', width: '100%', justifyContent: 'center', borderTop: '1px solid rgba(234, 179, 8, 0.2)', paddingTop: '1rem' }}>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>{language === 'kn' ? 'ಅಂಕಗಳು' : 'Score'}</span>
+                                                                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)' }}>{finalExam.score}%</span>
+                                                            </div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>{language === 'kn' ? 'ದರ್ಜೆ' : 'Grade'}</span>
+                                                                <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#eab308' }}>{getGrade(finalExam.score)}</span>
+                                                            </div>
+                                                        </div>
+                                                        {finalExam.content?.graduation_retention_block?.encouragement_kannada && (
+                                                            <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontStyle: 'italic', margin: 0, textAlign: 'center', lineHeight: '1.5', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '12px' }}>
+                                                                {finalExam.content.graduation_retention_block.encouragement_kannada}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <button 
+                                                        onClick={() => finalExam && onStartLesson(finalExam)}
+                                                        className="btn" 
+                                                        style={{ 
+                                                            padding: '1rem 3rem', 
+                                                            fontSize: '1.1rem', 
+                                                            display: 'flex', 
+                                                            alignItems: 'center', 
+                                                            gap: '0.75rem',
+                                                            background: 'rgba(234, 179, 8, 0.2)',
+                                                            color: '#eab308',
+                                                            border: '2px solid #eab308',
+                                                            borderRadius: '12px',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 800
+                                                        }}
+                                                    >
+                                                        <Trophy size={20} />
+                                                        {language === 'kn' ? 'ಮತ್ತೆ ಪರೀಕ್ಷೆ ತೆಗೆದುಕೊಳ್ಳಿ / ವಿಶ್ಲೇಷಿಸಿ' : 'Retake / Review Exam'}
+                                                    </button>
+                                                </div>
                                             );
                                         }
 

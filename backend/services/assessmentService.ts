@@ -47,13 +47,35 @@ const assessmentService = {
      * Create or update an assessment record (upsert).
      */
     upsertAssessment: async (assessmentData: Partial<Assessment>): Promise<Assessment> => {
-        const { data, error } = await supabase
+        // Find existing by lesson_id
+        const { data: existing, error: findError } = await supabase
             .from('assessments')
-            .upsert(assessmentData)
-            .select()
-            .single();
-        if (error) throw error;
-        return data as Assessment;
+            .select('*')
+            .eq('lesson_id', assessmentData.lesson_id)
+            .maybeSingle();
+            
+        if (findError) throw findError;
+        
+        if (existing) {
+            // Update
+            const { data, error } = await supabase
+                .from('assessments')
+                .update({ title: assessmentData.title })
+                .eq('id', existing.id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data as Assessment;
+        } else {
+            // Insert
+            const { data, error } = await supabase
+                .from('assessments')
+                .insert([assessmentData])
+                .select()
+                .single();
+            if (error) throw error;
+            return data as Assessment;
+        }
     },
 
     /**

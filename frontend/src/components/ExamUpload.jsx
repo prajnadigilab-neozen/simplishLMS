@@ -26,24 +26,29 @@ const ExamUpload = ({ onBack }) => {
         }
 
         // Validate basic structure
-        if (!parsedData.module_header || !parsedData.test_metadata || !parsedData.test_content) {
-            showToast('JSON required fields missing: module_header, test_metadata, test_content.', 'error');
+        if ((!parsedData.module_header && !parsedData.test_header) || !parsedData.test_metadata || !parsedData.test_content) {
+            showToast('JSON required fields missing: module_header (or test_header), test_metadata, test_content.', 'error');
             return;
         }
 
         setStatus('loading');
         try {
+            const isFinalExam = level === 'Final' || parsedData.isFinal === true;
             // Transform to lesson format
             const contentPayload = {
                 ...parsedData,
-                isExam: true // CRITICAL FLAG
+                isExam: true, // CRITICAL FLAG
+                isFinal: isFinalExam
             };
 
             const data = new FormData();
-            data.append('title', parsedData.module_header);
-            data.append('level', level);
-            data.append('description', `Graduation Test: ${parsedData.test_metadata?.test_id || 'Exam'}`);
-            data.append('display_order', displayOrder);
+            data.append('title', parsedData.module_header || parsedData.test_header);
+            data.append('level', level === 'Final' ? 'Expert' : level);
+            data.append('description', level === 'Final' ? 'SIMPLISH Ultimate Graduation Exam (Level 1 to 4)' : `Graduation Test: ${parsedData.test_metadata?.test_id || 'Exam'}`);
+            
+            const resolvedDisplayOrder = level === 'Final' ? 1 : displayOrder;
+            data.append('display_order', resolvedDisplayOrder);
+            data.append('displayOrder', resolvedDisplayOrder);
             data.append('content', JSON.stringify(contentPayload));
 
             await lessonApi.upload(data);
@@ -85,10 +90,11 @@ const ExamUpload = ({ onBack }) => {
                             onChange={(e) => setLevel(e.target.value)}
                             style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
                         >
-                            <option value="Basic">Basic (ಬುನಾಡಿ)</option>
+                            <option value="Basic">Basic (ಬುನಾದಿ)</option>
                             <option value="Intermediate">Intermediate (ಮಧ್ಯಮ)</option>
                             <option value="Advanced">Advanced (ಮುಂದುವರಿದ)</option>
                             <option value="Expert">Expert (ಪರಿಣತ)</option>
+                            <option value="Final">🏆 Final Graduation Exam (ಅಂತಿಮ ಪದವಿ ಪರೀಕ್ಷೆ)</option>
                         </select>
                     </div>
 
@@ -96,11 +102,16 @@ const ExamUpload = ({ onBack }) => {
                         <label>ಕ್ರಮ ಸಂಖ್ಯೆ (Display Order):</label>
                         <input
                             type="number"
-                            value={displayOrder}
+                            value={level === 'Final' ? 1 : displayOrder}
+                            disabled={level === 'Final'}
                             onChange={(e) => setDisplayOrder(e.target.value)}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: 'var(--bg-dark)', color: 'var(--text-main)', border: '1px solid var(--border)' }}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: level === 'Final' ? 'rgba(255,255,255,0.05)' : 'var(--bg-dark)', color: level === 'Final' ? 'var(--text-muted)' : 'var(--text-main)', border: '1px solid var(--border)', cursor: level === 'Final' ? 'not-allowed' : 'text' }}
                         />
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Exams usually have high numbers (e.g., 100) to appear last in the module.</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {level === 'Final' 
+                                ? 'Final Graduation Exam has a fixed display order of 1 (placed separately outside modules).'
+                                : 'Exams usually have high numbers (e.g., 100) to appear last in the module.'}
+                        </span>
                     </div>
                 </div>
 

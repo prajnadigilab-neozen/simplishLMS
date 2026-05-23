@@ -302,7 +302,7 @@ const LessonCreate = ({ lesson, onBack }) => {
 
         // 1. Basic Details
         const rawLevel = metadata.level || json.level || 'Basic';
-        // Normalize level (e.g. "Basic (ಬುನಾಡಿ)" -> "Basic")
+        // Normalize level (e.g. "Basic (ಬುನಾದಿ)" -> "Basic")
         let normalizedLevel = 'Basic';
         if (typeof rawLevel === 'string') {
             const match = rawLevel.match(/(Basic|Intermediate|Advanced|Expert)/i);
@@ -388,13 +388,29 @@ const LessonCreate = ({ lesson, onBack }) => {
         const retention = content.retention_block_m_srs || content.retention_block;
         if (retention?.gold_list) {
             const bridge = retention.mnemonic_bridge;
-            const vocabData = retention.gold_list.map((item, idx) => ({
-                word: item.word,
-                translation: item.meaning || item.kn || item.kannada || '',
-                pronunciation: item.pronunciation || '',
-                mnemonic: (idx === 0 && bridge) ? `${bridge.word || bridge.concept || ''}: ${bridge.trick || bridge.logic || ''}` : '',
-                category: 'The Gold List'
-            }));
+            let matchedAny = false;
+            let vocabData = retention.gold_list.map((item, idx) => {
+                let hasMnemonic = false;
+                if (bridge) {
+                    const bridgeWord = (bridge.word || bridge.concept || '').toLowerCase().trim();
+                    const itemWord = (item.word || '').toLowerCase().trim();
+                    if (bridgeWord && itemWord && (itemWord.includes(bridgeWord) || bridgeWord.includes(itemWord))) {
+                        hasMnemonic = true;
+                        matchedAny = true;
+                    }
+                }
+                return {
+                    word: item.word,
+                    translation: item.meaning || item.kn || item.kannada || '',
+                    pronunciation: item.pronunciation || '',
+                    mnemonic: hasMnemonic ? `${bridge.word || bridge.concept || ''}: ${bridge.trick || bridge.logic || ''}` : '',
+                    category: 'The Gold List'
+                };
+            });
+            
+            if (bridge && !matchedAny && vocabData.length > 0) {
+                vocabData[0].mnemonic = `${bridge.word || bridge.concept || ''}: ${bridge.trick || bridge.logic || ''}`;
+            }
             setVocabularyContentRaw(JSON.stringify(vocabData, null, 2));
         } else if (json.vocabularyContent) {
             setVocabularyContentRaw(formatAsArrayContent(json.vocabularyContent));

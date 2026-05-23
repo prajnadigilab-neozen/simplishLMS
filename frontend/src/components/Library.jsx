@@ -535,7 +535,39 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                     <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>{language === 'kn' ? 'ಸಮಯ' : 'Time'}</span>
                                                     <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-main)' }}>{lesson.estimated_time || '30'}m</span>
                                                 </div>
+                                                {lesson.progress === 100 && lesson.score !== null && lesson.score !== undefined && (
+                                                    <div style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px dashed rgba(234, 179, 8, 0.3)', padding: '0.6rem 1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '120px' }}>
+                                                        <span style={{ fontSize: '0.6rem', color: '#eab308', fontWeight: 800, textTransform: 'uppercase' }}>{language === 'kn' ? 'ಗಳಿಸಿದ ಅಂಕಗಳು' : 'Score'}</span>
+                                                        <span style={{ fontSize: '1rem', fontWeight: 800, color: '#eab308' }}>
+                                                            {lesson.score}% ({(() => {
+                                                                const score = lesson.score;
+                                                                if (score >= 90) return 'A+';
+                                                                if (score >= 80) return 'A';
+                                                                if (score >= 70) return 'B';
+                                                                if (score >= 60) return 'C';
+                                                                return 'D';
+                                                            })()})
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
+
+                                            {lesson.progress === 100 && lesson.content?.graduation_retention_block?.encouragement_kannada && (
+                                                <div style={{
+                                                    background: 'rgba(234, 179, 8, 0.05)',
+                                                    borderLeft: '4px solid #eab308',
+                                                    padding: '1rem',
+                                                    borderRadius: '8px',
+                                                    marginTop: '0.75rem',
+                                                    fontSize: '0.9rem',
+                                                    color: 'var(--text-main)',
+                                                    lineHeight: '1.6',
+                                                    fontStyle: 'italic',
+                                                    width: '100%'
+                                                }}>
+                                                    {language === 'kn' ? lesson.content.graduation_retention_block.encouragement_kannada : (lesson.content.graduation_retention_block.encouragement_english || lesson.content.graduation_retention_block.encouragement_kannada)}
+                                                </div>
+                                            )}
 
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
                                                 <button 

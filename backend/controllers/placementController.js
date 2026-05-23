@@ -66,8 +66,7 @@ exports.submitTest = async (req, res) => {
 
         // Record Placement Result via Service Layer
         try {
-            await placementService.saveResult({
-                user_id: userId,
+            await placementService.saveResult(userId, {
                 score_percentage: parseFloat(scorePercentage.toFixed(2)),
                 assigned_level: assignedLevel
             });

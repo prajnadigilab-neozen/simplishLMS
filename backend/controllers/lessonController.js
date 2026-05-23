@@ -32,7 +32,8 @@ exports.preWarmCache = async () => {
 };
 
 exports.uploadLesson = async (req, res) => {
-    const { title, description, level, displayOrder, content } = req.body;
+    const { title, description, level, content } = req.body;
+    const displayOrderVal = req.body.displayOrder !== undefined ? req.body.displayOrder : req.body.display_order;
 
     const pdfUrl = req.files?.pdf ? `/uploads/${req.files.pdf[0].filename}` : req.body.pdfUrl || null;
     const audioUrl = req.files?.audio ? `/uploads/${req.files.audio[0].filename}` : req.body.audioUrl || null;
@@ -44,7 +45,43 @@ exports.uploadLesson = async (req, res) => {
     }
 
     try {
-        const data = await lessonService.upsertLesson({
+        const parsedContent = content ? (typeof content === 'string' ? JSON.parse(content) : content) : {};
+        
+        let existingId = null;
+        if (parsedContent.isExam || (title && (title.toLowerCase().includes('graduation') || title.toLowerCase().includes('exam')))) {
+            const allLessons = await lessonService.getAllLessons();
+            let matchedLesson;
+            
+            // STRICT MATCHING: If the incoming exam is explicitly marked as Final
+            if (parsedContent.isFinal) {
+                // Find existing Ultimate Final Exam (isFinal === true)
+                matchedLesson = allLessons.find(l => l.content && l.content.isFinal === true);
+            } else if (parsedContent.isExam) {
+                // Find existing Module Graduation Test for this specific level (isExam === true, but NOT isFinal)
+                matchedLesson = allLessons.find(l => 
+                    l.level === level && 
+                    l.content && 
+                    l.content.isExam === true && 
+                    !l.content.isFinal
+                );
+            } else {
+                // Fallback for older formats or manual uploads without proper flags
+                if (title && title.toLowerCase().includes('ultimate')) {
+                    matchedLesson = allLessons.find(l => l.content && l.content.isFinal === true);
+                } else {
+                    matchedLesson = allLessons.find(l => 
+                        l.level === level && 
+                        (l.title && l.title.toLowerCase().includes('graduation test') && !l.title.toLowerCase().includes('ultimate'))
+                    );
+                }
+            }
+            
+            if (matchedLesson) {
+                existingId = matchedLesson.id;
+            }
+        }
+
+        const upsertPayload = {
             title,
             description,
             level,
@@ -54,11 +91,17 @@ exports.uploadLesson = async (req, res) => {
             audio_url: audioUrl,
             video_url: videoUrl,
             transcription: transcription,
-            content: content ? (typeof content === 'string' ? JSON.parse(content) : content) : {},
-            display_order: parseInt(req.body.displayOrder) || 0,
+            content: parsedContent,
+            display_order: parseInt(displayOrderVal) || 0,
             module_title: (req.body.moduleTitle && req.body.moduleTitle.toLowerCase() !== 'general') ? req.body.moduleTitle : null,
             unit_number: parseInt(req.body.unitNumber) || 1
-        });
+        };
+
+        if (existingId) {
+            upsertPayload.id = existingId;
+        }
+
+        const data = await lessonService.upsertLesson(upsertPayload);
 
         res.status(201).json({
             message: 'Lesson created successfully',

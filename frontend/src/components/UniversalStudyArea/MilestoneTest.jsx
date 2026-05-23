@@ -4,6 +4,43 @@ import { Target, CheckCircle2, AlertCircle, RefreshCw, BookOpen, ArrowRight } fr
 import { useToast } from '../Toast';
 import { lessonApi } from '../../utils/api';
 
+const checkIsCorrect = (q, userAnswer) => {
+    if (!userAnswer) return false;
+    
+    const isMCQ = q.options && q.options.length > 0;
+    const clean = (text) => (text || "").toString().trim().toLowerCase().replace(/[^a-z0-9\u0C80-\u0CFF\s]/gi, "");
+    const userClean = clean(userAnswer);
+
+    // Support alternative answers split by "/" or " or "
+    const correctAnswers = (q.correct_answer || "").toString().split(/\s*[\/]\s*|\s+or\s+/i);
+
+    let isCorrect = correctAnswers.some(ans => {
+        const correctClean = clean(ans);
+        return userClean === correctClean && userClean !== "";
+    });
+
+    // Robust fallback for MCQ / letter prefixes
+    if (!isCorrect && isMCQ) {
+        isCorrect = correctAnswers.some(correctAns => {
+            const matchLetterUser = String(userAnswer).trim().match(/^([A-D])\)/i);
+            const matchLetterCorrect = String(correctAns).trim().match(/^([A-D])(?:$|\))/i);
+            if (matchLetterUser && matchLetterCorrect) {
+                return matchLetterUser[1].toLowerCase() === matchLetterCorrect[1].toLowerCase();
+            } else if (matchLetterUser) {
+                return matchLetterUser[1].toLowerCase() === String(correctAns).trim().toLowerCase();
+            } else if (matchLetterCorrect) {
+                return String(userAnswer).trim().toLowerCase() === String(correctAns).replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+            } else {
+                const cleanUserNoPrefix = String(userAnswer).replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+                const cleanCorrectNoPrefix = String(correctAns).replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+                return clean(cleanUserNoPrefix) === clean(cleanCorrectNoPrefix);
+            }
+        });
+    }
+
+    return isCorrect;
+};
+
 const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, onNext }) => {
     const showToast = useToast();
     const [userAnswers, setUserAnswers] = useState({});
@@ -107,15 +144,9 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                     if (isAllCorrect && Object.keys(matches).length === pairs.length && pairs.length > 0) {
                         correctCount++;
                     }
-                } else if (q.options && q.options.length > 0) {
-                    // MCQ
-                    const actualAnswer = userAnswers[idx]; 
-                    if (actualAnswer === q.correct_answer) correctCount++;
                 } else {
-                    // Text Translation - case insensitive
-                    const userAnswer = (userAnswers[idx] || '').toString().trim().toLowerCase();
-                    const correctAnswer = (q.correct_answer || '').toString().trim().toLowerCase();
-                    if (userAnswer === correctAnswer && correctAnswer !== '') {
+                    const actualAnswer = userAnswers[idx];
+                    if (checkIsCorrect(q, actualAnswer)) {
                         correctCount++;
                     }
                 }
@@ -338,9 +369,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
 
                 const isMCQ = q.options && q.options.length > 0;
                 const userAnswer = userAnswers[idx] || '';
-                const isCorrect = isMCQ
-                    ? userAnswer === q.correct_answer
-                    : (userAnswer.toString().trim().toLowerCase() === (q.correct_answer || '').toString().trim().toLowerCase());
+                const isCorrect = checkIsCorrect(q, userAnswer);
 
                 let cardStyle = { padding: '1.5rem', border: '1px solid var(--border)' };
                 if (submitted) {
@@ -358,7 +387,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 {(Array.isArray(q.options) ? q.options : (typeof q.options === 'string' ? q.options.split(',').map(o => o.trim()) : [])).map((option, optIdx) => {
                                     const isSelected = userAnswer === option;
-                                    const isCorrectOption = option === q.correct_answer;
+                                    const isCorrectOption = checkIsCorrect(q, option);
 
                                     let optionStyle = {
                                         display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem',

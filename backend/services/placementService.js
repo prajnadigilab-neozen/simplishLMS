@@ -33,15 +33,34 @@ const placementService = {
      * Save placement test results for a user.
      */
     saveResult: async (userId, resultData) => {
-        const { data, error } = await supabase
+        const { data: existing, error: fetchError } = await supabase
             .from('placement_results')
-            .upsert({
-                user_id: userId,
-                ...resultData,
-                updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+            .select('id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        let query;
+        if (existing) {
+            query = supabase
+                .from('placement_results')
+                .update({
+                    ...resultData,
+                    completed_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+        } else {
+            query = supabase
+                .from('placement_results')
+                .insert({
+                    user_id: userId,
+                    ...resultData,
+                    completed_at: new Date().toISOString()
+                });
+        }
+
+        const { data, error } = await query.select().single();
         if (error) throw error;
         return data;
     },

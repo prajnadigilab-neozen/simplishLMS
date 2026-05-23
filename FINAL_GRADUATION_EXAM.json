@@ -1,0 +1,326 @@
+{
+  "isExam": true,
+  "isFinal": true,
+  "module_header": "Final Graduation Exam",
+  "test_metadata": {
+    "level": "Graduation Exam",
+    "test_id": "GRAD-FINAL",
+    "total_questions": 20,
+    "passing_score": "16/20",
+    "difficulty_split": {
+      "Basic": "Q1-Q5",
+      "Intermediate": "Q6-Q10",
+      "Advanced": "Q11-Q15",
+      "Expert": "Q16-Q20"
+    }
+  },
+  "test_content": [
+    {
+      "question_number": 1,
+      "level": "Basic",
+      "topic": "SVO Structure",
+      "question_english": "Choose the correct English order for 'ನಾನು ಹಾಲು ಕುಡಿಯುತ್ತೇನೆ':",
+      "question_kannada": "'ನಾನು ಹಾಲು ಕುಡಿಯುತ್ತೇನೆ' ಎಂಬುದಕ್ಕೆ ಸರಿಯಾದ ಇಂಗ್ಲಿಷ್ ಕ್ರಮವನ್ನು ಆರಿಸಿ:",
+      "options": [
+        "A) I milk drink.",
+        "B) I drink milk.",
+        "C) Drink I milk."
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಇಂಗ್ಲಿಷ್ನಲ್ಲಿ ವಾಕ್ಯಗಳು Subject + Verb + Object ಕ್ರಮವನ್ನು ಅನುಸರಿಸುತ್ತವೆ."
+    },
+    {
+      "question_number": 2,
+      "level": "Basic",
+      "topic": "Glue Words",
+      "question_english": "Fill in the blank: 'They ____ farmers.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'They ____ farmers.'",
+      "options": [
+        "A) is",
+        "B) am",
+        "C) are"
+      ],
+      "correct_answer": "C",
+      "rationale_kannada": "ಬಹುವಚನ ಕರ್ತೃಗಳಿಗೆ (Plural Subjects) 'Are' ಬಳಸಬೇಕು."
+    },
+    {
+      "question_number": 3,
+      "level": "Basic",
+      "topic": "Articles",
+      "question_english": "Fill in the blank: 'I have ____ umbrella.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'I have ____ umbrella.'",
+      "options": [
+        "A) a",
+        "B) an",
+        "C) is"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಸ್ವರಾಕ್ಷರ ಧ್ವನಿಗಳ (A, E, I, O, U) ಮುಂದೆ 'An' ಬಳಸಬೇಕು."
+    },
+    {
+      "question_number": 4,
+      "level": "Basic",
+      "topic": "Action Verbs",
+      "question_english": "What is the English word for 'ನೋಡಿ'?",
+      "question_kannada": "'ನೋಡಿ' ಎಂಬುದಕ್ಕೆ ಇಂಗ್ಲಿಷ್ ಪದ ಯಾವುದು?",
+      "options": [
+        "A) Look",
+        "B) Listen",
+        "C) Run"
+      ],
+      "correct_answer": "A",
+      "rationale_kannada": "ನೋಡುವುದಕ್ಕೆ ಇಂಗ್ಲಿಷ್ನಲ್ಲಿ 'Look' ಎನ್ನಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 5,
+      "level": "Basic",
+      "topic": "Questions",
+      "question_english": "What is the correct English question for 'ನೀವು ಯಾರು?'?",
+      "question_kannada": "'ನೀವು ಯಾರು?' ಎಂಬುದಕ್ಕೆ ಸರಿಯಾದ ಇಂಗ್ಲಿಷ್ ಪ್ರಶ್ನೆ ಯಾವುದು?",
+      "options": [
+        "A) What are you?",
+        "B) Who are you?",
+        "C) Where are you?"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ವ್ಯಕ್ತಿಗಳ ಬಗ್ಗೆ ಕೇಳಲು 'Who' ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 6,
+      "level": "Intermediate",
+      "topic": "Simple Past",
+      "question_english": "Fill in the blank: 'Yesterday, I ____ to the market.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ನಿನ್ನೆ ನಾನು ಮಾರುಕಟ್ಟೆಗೆ ಹೋದೆ.'",
+      "options": [
+        "A) go",
+        "B) went",
+        "C) will go"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "'Go' ನ ಭೂತಕಾಲದ ರೂಪ (V2) 'Went' ಆಗಿದೆ."
+    },
+    {
+      "question_number": 7,
+      "level": "Intermediate",
+      "topic": "Future Tense",
+      "question_english": "Fill in the blank: 'I ____ help you tomorrow.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ನಾನು ನಾಳೆ ನಿಮಗೆ ಸಹಾಯ ಮಾಡುತ್ತೇನೆ.'",
+      "options": [
+        "A) will",
+        "B) did",
+        "C) am"
+      ],
+      "correct_answer": "A",
+      "rationale_kannada": "ಭವಿಷ್ಯದಲ್ಲಿ ನಡೆಯುವ ಕ್ರಿಯೆಗೆ 'Will' ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 8,
+      "level": "Intermediate",
+      "topic": "Conjunctions",
+      "question_english": "Fill in the blank: 'I am hungry ____ I have no food.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ನನಗೆ ಹಸಿವಾಗಿದೆ ಆದರೆ ನನ್ನ ಬಳಿ ಆಹಾರವಿಲ್ಲ.'",
+      "options": [
+        "A) because",
+        "B) but",
+        "C) and"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ವೈರುಧ್ಯವನ್ನು (Contrast - ಆದರೆ) ತೋರಿಸಲು 'But' ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 9,
+      "level": "Intermediate",
+      "topic": "Prepositions",
+      "question_english": "Fill in the blank: 'The keys are ____ the bag.' (ಒಳಗೆ)",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ಕೀಗಳು ಬ್ಯಾಗ್ ಒಳಗಡೆ ಇವೆ.'",
+      "options": [
+        "A) on",
+        "B) under",
+        "C) in"
+      ],
+      "correct_answer": "C",
+      "rationale_kannada": "ಯಾವುದಾದರೂ ವಸ್ತುವಿನ ಒಳಗಡೆ ಇರುವುದನ್ನು ಸೂಚಿಸಲು 'In' ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 10,
+      "level": "Intermediate",
+      "topic": "Needs",
+      "question_english": "How do you say 'ನನಗೆ ವಿಶ್ರಾಂತಿ ಬೇಕು' in English?",
+      "question_kannada": "'ನನಗೆ ವಿಶ್ರಾಂತಿ ಬೇಕು' - ಇದನ್ನು ಇಂಗ್ಲಿಷ್ನಲ್ಲಿ ಹೇಗೆ ಹೇಳುತ್ತೀರಿ?",
+      "options": [
+        "A) I feel rest.",
+        "B) I want rest.",
+        "C) Me want rest."
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ನಮಗೆ ಏನಾದರೂ ಬೇಕು ಎಂದು ಹೇಳಲು 'I want' ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 11,
+      "level": "Advanced",
+      "topic": "Present Perfect",
+      "question_english": "Fill in the blank: 'I ____ my work just now.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ನಾನು ಈಗಷ್ಟೇ ನನ್ನ ಕೆಲಸವನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದೇನೆ.'",
+      "options": [
+        "A) finished",
+        "B) have finished",
+        "C) has finished"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಈಗಷ್ಟೇ ಪೂರ್ಣಗೊಂಡ ಕ್ರಿಯೆಗಳನ್ನು ತಿಳಿಸಲು Have + V3 ಬಳಸಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 12,
+      "level": "Advanced",
+      "topic": "Passive Voice",
+      "question_english": "Translate: 'ಕನ್ನಡ ಕರ್ನಾಟಕದಲ್ಲಿ ಮಾತನಾಡಲ್ಪಡುತ್ತದೆ.'",
+      "question_kannada": "'ಕನ್ನಡ ಕರ್ನಾಟಕದಲ್ಲಿ ಮಾತನಾಡಲ್ಪಡುತ್ತದೆ' - ಸರಿಯಾದ ಇಂಗ್ಲಿಷ್ ರೂಪ ಯಾವುದು?",
+      "options": [
+        "A) Kannada speaks in Karnataka.",
+        "B) Kannada is spoken in Karnataka.",
+        "C) Karnataka speaks Kannada."
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಕರ್ಮಣಿ ಪ್ರಯೋಗ (Passive voice): Object + Is + V3 (Spoken)."
+    },
+    {
+      "question_number": 13,
+      "level": "Advanced",
+      "topic": "Conditionals",
+      "question_english": "Fill in the blank: 'If it ____, the match will stop.'",
+      "question_kannada": "ಖಾಲಿ ಜಾಗವನ್ನು ತುಂಬಿ: 'ಮಳೆಯಾದರೆ ಪಂದ್ಯ ನಿಲ್ಲುತ್ತದೆ.'",
+      "options": [
+        "A) rains",
+        "B) will rain",
+        "C) rained"
+      ],
+      "correct_answer": "A",
+      "rationale_kannada": "'If' ಶರತ್ತಿನ ಭಾಗದಲ್ಲಿ Simple Present ಕಾಲ ಇರಬೇಕು."
+    },
+    {
+      "question_number": 14,
+      "level": "Advanced",
+      "topic": "Reported Speech",
+      "question_english": "Change to Reported Speech: He said, 'I am happy.'",
+      "question_kannada": "ರವಿ ಹೇಳಿದನು, 'ನಾನು ಸಂತೋಷವಾಗಿದ್ದೇನೆ' - ಇದನ್ನು ಪರೋಕ್ಷ ನುಡಿಗೆ ಬದಲಿಸಿ:",
+      "options": [
+        "A) He said that he is happy.",
+        "B) He said that he was happy.",
+        "C) He said that I was happy."
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಪರೋಕ್ಷ ನುಡಿಯಲ್ಲಿ ವರ್ತಮಾನ ಕಾಲದ 'Am' ಭೂತಕಾಲದ 'Was' ಆಗಿ ಬದಲಾಗುತ್ತದೆ."
+    },
+    {
+      "question_number": 15,
+      "level": "Advanced",
+      "topic": "Formal Speech",
+      "question_english": "Which option is the most polite way to request a leave?",
+      "question_kannada": "ರಜೆ ಕೇಳಲು ಅತ್ಯಂತ ವಿನಮ್ರವಾದ ಮಾರ್ಗ ಯಾವುದು?",
+      "options": [
+        "A) I want leave.",
+        "B) Give me leave.",
+        "C) I would like to request a leave."
+      ],
+      "correct_answer": "C",
+      "rationale_kannada": "'I would like to request' ಎನ್ನುವುದು ವೃತ್ತಿಪರ ಮತ್ತು ಗೌರವಯುತವಾಗಿದೆ."
+    },
+    {
+      "question_number": 16,
+      "level": "Expert",
+      "topic": "Idioms",
+      "question_english": "What does the idiom 'Once in a blue moon' mean?",
+      "question_kannada": "'Once in a blue moon' ಎಂಬ ನುಡಿಗಟ್ಟಿನ ಅರ್ಥವೇನು?",
+      "options": [
+        "A) Every night",
+        "B) Very rarely",
+        "C) During a full moon"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "'Once in a blue moon' ಎಂದರೆ ಅಪರೂಪವಾಗಿ ಅಥವಾ ಎಂದೋ ಒಂದು ಬಾರಿ ಎಂದರ್ಥ."
+    },
+    {
+      "question_number": 17,
+      "level": "Expert",
+      "topic": "Phrasal Verbs",
+      "question_english": "To continue doing something is to ____.",
+      "question_kannada": "ಒಂದು ಕೆಲಸವನ್ನು ಮುಂದುವರಿಸಿಕೊಂಡು ಹೋಗುವುದಕ್ಕೆ ಯಾವ phrasal verb ಬಳಸಬೇಕು?",
+      "options": [
+        "A) carry on",
+        "B) give up",
+        "C) take off"
+      ],
+      "correct_answer": "A",
+      "rationale_kannada": "'Carry on' ಎಂದರೆ ಒಂದು ಕ್ರಿಯೆಯನ್ನು ನಿಲ್ಲಿಸದೆ ಮುಂದುವರಿಸುವುದು."
+    },
+    {
+      "question_number": 18,
+      "level": "Expert",
+      "topic": "Rhetoric",
+      "question_english": "Which word adds a logical 'result' to a supporting point?",
+      "question_kannada": "ಒಂದು ವಾದಕ್ಕೆ ತಾರ್ಕಿಕ ಪರಿಣಾಮ ಅಥವಾ ಮುಕ್ತಾಯವನ್ನು ನೀಡಲು ಯಾವ ಪದ ಸೂಕ್ತ?",
+      "options": [
+        "A) However",
+        "B) Furthermore",
+        "C) Consequently"
+      ],
+      "correct_answer": "C",
+      "rationale_kannada": "'Consequently' ಎಂದರೆ 'ಆದಕಾರಣ' ಅಥವಾ 'ಪರಿಣಾಮವಾಗಿ' ಎಂದರ್ಥ."
+    },
+    {
+      "question_number": 19,
+      "level": "Expert",
+      "topic": "Nuance",
+      "question_english": "How to disagree politely in a professional meeting?",
+      "question_kannada": "ವೃತ್ತಿಪರ ಸಭೆಯಲ್ಲಿ ಭಿನ್ನಾಭಿಪ್ರಾಯವನ್ನು ವಿನಮ್ರವಾಗಿ ಹೇಗೆ ವ್ಯಕ್ತಪಡಿಸಬೇಕು?",
+      "options": [
+        "A) You are wrong.",
+        "B) I beg to differ.",
+        "C) That is a bad idea."
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "'I beg to differ' ಎಂದರೆ 'ನನ್ನ ಅಭಿಪ್ರಾಯ ಸ್ವಲ್ಪ ಭಿನ್ನವಾಗಿದೆ' ಎಂದು ವಿನಯದಿಂದ ಒಪ್ಪದಿರುವುದು."
+    },
+    {
+      "question_number": 20,
+      "level": "Expert",
+      "topic": "Empathy",
+      "question_english": "What does global communication require the most?",
+      "question_kannada": "ಜಾಗತಿಕ ಸಂವಹನಕ್ಕೆ ಅತ್ಯಂತ ಮುಖ್ಯವಾಗಿ ಏನು ಬೇಕು?",
+      "options": [
+        "A) Loud voice",
+        "B) Empathy and Etiquette",
+        "C) Only Grammar"
+      ],
+      "correct_answer": "B",
+      "rationale_kannada": "ಕೇವಲ ವ್ಯಾಕರಣವಲ್ಲ, ಪರಸ್ಪರ ಸಹಾನುಭೂತಿ (Empathy) ಮತ್ತು ಸೌಜನ್ಯ (Etiquette) ಅತ್ಯಗತ್ಯ."
+    }
+  ],
+  "answer_key": {
+    "1": "B",
+    "2": "C",
+    "3": "B",
+    "4": "A",
+    "5": "B",
+    "6": "B",
+    "7": "A",
+    "8": "B",
+    "9": "C",
+    "10": "B",
+    "11": "B",
+    "12": "B",
+    "13": "A",
+    "14": "B",
+    "15": "C",
+    "16": "B",
+    "17": "A",
+    "18": "C",
+    "19": "B",
+    "20": "B"
+  },
+  "graduation_retention_block": {
+    "final_mnemonic": "Basic to Expert: SVO (Structure), Past/Future (Time), Have/Be+V3 (Professionalism), Idioms/Etiquette (Mastery).",
+    "review_instructions": "Review this ultimate test once every six months to retain peak fluency.",
+    "encouragement_kannada": "ಅದ್ಭುತ ಸಾಧನೆ! ನೀವು SIMPLISH ನ ಎಲ್ಲಾ ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ದಾಟಿ ಅಂತಿಮ ಪದವಿಯನ್ನು ಪಡೆದಿದ್ದೀರಿ. ಈಗ ನೀವು ಜಾಗತಿಕ ಮಟ್ಟದಲ್ಲಿ ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಸಂವಹನ ನಡೆಸಲು ಸಿದ್ಧರಾಗಿದ್ದೀರಿ!"
+  }
+}

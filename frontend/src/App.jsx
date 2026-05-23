@@ -120,7 +120,19 @@ function AppShell() {
                 }} />
             } />
 
-            <Route path="/" element={<Dashboard onStartLesson={startLesson} />} />
+            <Route path="/" element={
+              <Dashboard 
+                onStartLesson={startLesson} 
+                onEditLesson={(lesson) => {
+                  if (!isPrivileged) {
+                    showToast('Access Denied: Admin access required', 'error');
+                    return;
+                  }
+                  setSelectedLesson(lesson);
+                  navigate('/edit_lesson');
+                }}
+              />
+            } />
 
             <Route path="/library" element={
               <Library

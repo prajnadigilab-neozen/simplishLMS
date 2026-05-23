@@ -18,7 +18,10 @@ import { safeSetItem } from '../../utils/storageUtils';
 const UniversalStudyArea = ({ lesson, onBack }) => {
     const { user, language } = useUser();
     const { courseCompleted, handleNextLesson: onNextLesson } = useCurriculum();
-    const [activeTab, setActiveTab] = useState('study'); // study, reading, listening, vocabulary, test
+    const isBasicGraduationTest = lesson?.title?.includes("Basic (Level 1) – Graduation Test");
+    const [activeTab, setActiveTab] = useState(() => {
+        return lesson?.title?.includes("Basic (Level 1) – Graduation Test") ? 'test' : 'study';
+    });
     const [loading, setLoading] = useState(true);
     const tabsContainerRef = React.useRef(null);
     const sessionStartTimeRef = React.useRef(Date.now());
@@ -49,7 +52,11 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
 
         // Reset to study tab for new lesson unless course is completed
         if (!courseCompleted) {
-            setActiveTab('study');
+            if (lesson?.title?.includes("Basic (Level 1) – Graduation Test")) {
+                setActiveTab('test');
+            } else {
+                setActiveTab('study');
+            }
         }
         setLoading(false);
     }, [lesson, courseCompleted]);
@@ -175,7 +182,7 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
             </header>
 
             {/* Custom Tab Navigation - Reliable & Snappy */}
-            {!lesson?.content?.isExam && (
+            {(!lesson?.content?.isExam || isBasicGraduationTest) && (
                 <div style={{
                     position: 'sticky',
                     top: 0,
@@ -206,21 +213,24 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
                             { id: 'reading', label: language === 'kn' ? 'ಓದುವಿಕೆ' : 'Reading', icon: Glasses, show: true },
                             { id: 'listening', label: language === 'kn' ? 'ಶ್ರವಣ' : 'Listening', icon: Headphones, show: true },
                             { id: 'vocabulary', label: language === 'kn' ? 'ಶಬ್ದಕೋಶ' : 'Vocabulary', isLogo: true, show: true },
-                            { id: 'test', label: language === 'kn' ? 'ಮೌಲಿಮಾಪನ' : 'Test', icon: Target, show: true },
+                            { id: 'test', label: language === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ' : 'Test', icon: Target, show: true },
                         ].filter(t => t.show).map(tab => {
+                            const isDisabled = isBasicGraduationTest && tab.id !== 'test';
                             const isActive = activeTab === tab.id;
                             
                             return (
                                 <button
                                     key={tab.id}
+                                    disabled={isDisabled}
                                     data-active={isActive}
-                                    onClick={() => handleTabChange(tab.id)}
+                                    onClick={() => !isDisabled && handleTabChange(tab.id)}
                                     style={{
                                         background: isActive ? 'var(--primary)' : 'rgba(var(--text-main-rgb), 0.05)',
                                         border: '1px solid ' + (isActive ? 'var(--primary)' : 'var(--border)'),
                                         padding: '0.6rem 1.15rem',
                                         borderRadius: '16px',
-                                        cursor: 'pointer',
+                                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                                        opacity: isDisabled ? 0.4 : 1,
                                         fontSize: '0.85rem',
                                         fontWeight: 800,
                                         display: 'flex',
@@ -249,7 +259,7 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
             )}
 
             {/* Check for Exam Mode */}
-            {lesson?.content?.isExam ? (
+            {(lesson?.content?.isExam && !isBasicGraduationTest) ? (
                 <div style={{ padding: '1rem 0' }}>
                     <ExamInterface
                         examData={lesson.content}
@@ -316,17 +326,32 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
                         )}
                         {activeTab === 'test' && (
                             <div>
-                                <MilestoneTest
-                                    testContent={lesson?.content?.milestoneTest}
-                                    lessonId={lesson?.id}
-                                    onRevise={() => handleTabChange('study')}
-                                    onBack={onBack}
-                                    onNext={onNextLesson}
-                                    onComplete={() => {
-                                        // Still allow tracking if needed, but primary UI is now internal to MilestoneTest
-                                        showToast("Progress Saved! (ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ!)", 'success');
-                                    }}
-                                />
+                                {isBasicGraduationTest ? (
+                                    <ExamInterface
+                                        examData={lesson.content}
+                                        lessonId={lesson.id}
+                                        onComplete={(target) => {
+                                            if (target === 'library') {
+                                                onBack();
+                                            } else {
+                                                showToast("ಪರೀಕ್ಷೆ ಪೂರ್ಣಗೊಂಡಿದೆ! (Exam Complete!)", 'success');
+                                                if (onNextLesson) onNextLesson();
+                                            }
+                                        }}
+                                    />
+                                ) : (
+                                    <MilestoneTest
+                                        testContent={lesson?.content?.milestoneTest}
+                                        lessonId={lesson?.id}
+                                        onRevise={() => handleTabChange('study')}
+                                        onBack={onBack}
+                                        onNext={onNextLesson}
+                                        onComplete={() => {
+                                            // Still allow tracking if needed, but primary UI is now internal to MilestoneTest
+                                            showToast("Progress Saved! (ಪ್ರಗತಿಯನ್ನು ಉಳಿಸಲಾಗಿದೆ!)", 'success');
+                                        }}
+                                    />
+                                )}
                             </div>
                         )}
                     </motion.div>
@@ -334,7 +359,7 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
             )}
 
             {/* Navigation Footer */}
-            {!lesson?.content?.isExam && (
+            {(!lesson?.content?.isExam && !isBasicGraduationTest) && (
                 <div style={{
                     marginTop: '3rem',
                     padding: '1.5rem',
@@ -377,7 +402,7 @@ const UniversalStudyArea = ({ lesson, onBack }) => {
                                     activeTab === 'video' ? (language === 'kn' ? 'ಅಧ್ಯಯನ' : 'Study') :
                                     activeTab === 'study' ? (language === 'kn' ? 'ಓದುವಿಕೆ' : 'Reading') :
                                         activeTab === 'reading' ? (language === 'kn' ? 'ಶ್ರವಣ' : 'Listening') :
-                                            activeTab === 'listening' ? (language === 'kn' ? 'ಶಬ್ದಕೋಶ' : 'Vocabulary') : (language === 'kn' ? 'ಮೌಲಿಮಾಪನ' : 'Test')
+                                            activeTab === 'listening' ? (language === 'kn' ? 'ಶಬ್ದಕೋಶ' : 'Vocabulary') : (language === 'kn' ? 'ಮೌಲ್ಯಮಾಪನ' : 'Test')
                                 } →
                             </button>
                         )}

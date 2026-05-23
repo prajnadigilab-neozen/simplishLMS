@@ -96,6 +96,24 @@ const userService = {
             throw error;
         }
         return true;
+    },
+
+    /**
+     * Record XP action and points for a user.
+     */
+    addXP: async (userId: string, points: number, action: string): Promise<boolean> => {
+        const { error } = await supabase
+            .from('user_xp_log')
+            .insert({
+                user_id: userId,
+                points,
+                action
+            });
+        if (error) {
+            logger.error({ error, userId, points, action }, 'Failed to record XP');
+            throw error;
+        }
+        return true;
     }
 };
 

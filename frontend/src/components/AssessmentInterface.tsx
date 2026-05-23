@@ -65,7 +65,18 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
             try {
                 const response = await assessmentApi.getByLesson(lessonId);
                 setAssessment(response.data.assessment);
-                setQuestions(response.data.questions);
+                
+                const normalizedQuestions = (response.data.questions || []).map((q: any) => {
+                    let type = q.type;
+                    const parsedOpts = Array.isArray(q.options) ? q.options : (q.options ? [q.options] : []);
+                    if (parsedOpts.length > 0) {
+                        type = 'MCQ';
+                    } else if (type !== 'Matching' && type !== 'Voice' && type !== 'Image') {
+                        type = 'Text';
+                    }
+                    return { ...q, type, options: parsedOpts };
+                });
+                setQuestions(normalizedQuestions);
             } catch (err) {
                 console.error("Error fetching assessment:", err);
             } finally {
@@ -153,8 +164,33 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
             } else {
                 const cleanText = (text: string) => (text || "").toString().trim().toLowerCase().replace(/[^a-z0-9\u0C80-\u0CFF\s]/gi, "");
                 const userClean = cleanText(userResultText);
-                const correctClean = cleanText(q.correct_answer);
-                isCorrect = userClean === correctClean && userClean !== "";
+                
+                // Support alternative answers split by "/" or " or "
+                const correctAnswers = (q.correct_answer || "").toString().split(/\s*[\/]\s*|\s+or\s+/i);
+
+                isCorrect = correctAnswers.some(ans => {
+                    const correctClean = cleanText(ans);
+                    return userClean === correctClean && userClean !== "";
+                });
+
+                // Robust fallback for MCQ / letter prefixes
+                if (!isCorrect && q.type === 'MCQ') {
+                    isCorrect = correctAnswers.some(correctAns => {
+                        const matchLetterUser = userResultText.trim().match(/^([A-D])\)/i);
+                        const matchLetterCorrect = correctAns.trim().match(/^([A-D])(?:$|\))/i);
+                        if (matchLetterUser && matchLetterCorrect) {
+                            return matchLetterUser[1].toLowerCase() === matchLetterCorrect[1].toLowerCase();
+                        } else if (matchLetterUser) {
+                            return matchLetterUser[1].toLowerCase() === correctAns.trim().toLowerCase();
+                        } else if (matchLetterCorrect) {
+                            return userResultText.trim().toLowerCase() === correctAns.replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+                        } else {
+                            const cleanUserNoPrefix = userResultText.replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+                            const cleanCorrectNoPrefix = correctAns.replace(/^([A-D])\)\s*/i, "").trim().toLowerCase();
+                            return cleanText(cleanUserNoPrefix) === cleanText(cleanCorrectNoPrefix);
+                        }
+                    });
+                }
             }
 
             setAnswers({ ...answers, [q.id]: userResultText });
