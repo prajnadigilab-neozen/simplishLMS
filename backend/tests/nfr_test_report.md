@@ -26,17 +26,17 @@ This report documents the verification of system-wide quality characteristics fo
 *   **Findings**: Navbar correctly adapts to a mobile-friendly layout. Interactive elements remain within the 360px viewport boundaries with no horizontal overflow.
 
 ### 3. NFR-03: Security (RLS)
-*   **Methodology**: Verified via [migration_v5_rls.sql](file:///d:/Prajna/Projects/simplishLab/backend/database/migration_v5_rls.sql).
+*   **Methodology**: Verified via [migration_v5_rls.sql](file:///d:/Prajna/Projects/simplishLMS/backend/database/migration_v5_rls.sql).
 *   **Status**: Active. Policies ensure `user_progress` and `payments` are strictly pinned to the authenticated `user_id`.
 
 ### 4. NFR-04: Encryption (TLS 1.2+)
 *   **Infrastructure**: All external API calls use `https://`. Transport encryption is handled at the gateway level by Supabase.
 
 ### 5. NFR-05: Availability
-*   **Enhancement**: Injected global process-level listeners in [server.js](file:///d:/Prajna/Projects/simplishLab/backend/server.js) to catch and log `uncaughtException` and `unhandledRejection`, preventing service termination during unexpected state changes.
+*   **Enhancement**: Injected global process-level listeners in [server.js](file:///d:/Prajna/Projects/simplishLMS/backend/server.js) to catch and log `uncaughtException` and `unhandledRejection`, preventing service termination during unexpected state changes.
 
 ### 6. NFR-06: Localization (EN/KN)
-*   **Implementation**: Logic verified in [Navbar.jsx](file:///d:/Prajna/Projects/simplishLab/frontend/src/components/Navbar.jsx) using React state.
+*   **Implementation**: Logic verified in [Navbar.jsx](file:///d:/Prajna/Projects/simplishLMS/frontend/src/components/Navbar.jsx) using React state.
 *   **Confirmation**: Switching language updates all navigation items and UI labels instantly without triggering a browser refresh.
 
 ---
