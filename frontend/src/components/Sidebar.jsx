@@ -14,7 +14,7 @@ import {
     X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import simplishTalksLogo from '../assets/logo_final.jpg';
+import simplishTalksLogo from '../assets/logo_final.png';
 
 const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) => {
     const role = user?.role?.toLowerCase();
@@ -63,30 +63,30 @@ const Sidebar = ({ onNavigate, currentView, user, onLogout, isOpen, onClose }) =
         }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{
-                        height: '32px',
-                        width: '32px',
-                        borderRadius: '6px',
-                        background: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '2px',
-                        overflow: 'hidden',
-                        border: '1px solid var(--border)'
-                    }}>
-                        <img src={simplishTalksLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                    </div>
+                    <img
+                        src={simplishTalksLogo}
+                        alt="Logo"
+                        style={{
+                            width: '40px',
+                            height: '40px',
+                            objectFit: 'contain',
+                            flexShrink: 0
+                        }}
+                    />
                     <h2 style={{
                         margin: 0,
                         fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
-                        textTransform: 'lowercase',
-                        fontSize: '1.5rem',
+                        fontSize: '1.7rem',
                         fontWeight: 'bold',
-                        letterSpacing: '-0.5px'
+                        letterSpacing: '-0.5px',
+                        display: 'inline-flex',
+                        alignItems: 'baseline',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                     }}>
-                        <span style={{ color: '#007FFF' }}>sim</span>
-                        <span style={{ color: '#00A86B' }}>plish</span>
+                        <span style={{ color: '#007FFF', textTransform: 'lowercase' }}>sim</span>
+                        <span style={{ color: '#00A86B', textTransform: 'lowercase' }}>plish</span>
+                        <span style={{ color: 'var(--text-main)', marginLeft: '6px', fontWeight: '600', fontSize: '1.2rem', textTransform: 'uppercase' }}>LMS</span>
                     </h2>
                 </div>
                 <button

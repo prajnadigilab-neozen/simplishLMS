@@ -18,7 +18,7 @@ import {
 import { useTheme } from './ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserProvider, useUser } from '../context/UserContext';
-import logoImg from '../assets/logo_final.jpg';
+import logoImg from '../assets/logo_final.png';
 
 const Navbar = ({ onNavigate }) => {
     const { user, handleLogout, language, setLanguage } = useUser();
@@ -68,27 +68,30 @@ const Navbar = ({ onNavigate }) => {
                     onClick={() => onNavigate('dashboard')}
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 >
-                    <div style={{
-                        background: 'white', // High contrast background for the logo
-                        padding: '2px',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px'
+                    <img
+                        src={logoImg}
+                        alt="Simplish"
+                        style={{
+                            height: '40px',
+                            width: '40px',
+                            objectFit: 'contain',
+                            flexShrink: 0
+                        }}
+                    />
+                    <span style={{
+                        fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
+                        fontSize: '1.7rem',
+                        fontWeight: 'bold',
+                        letterSpacing: '-0.5px',
+                        display: 'inline-flex',
+                        alignItems: 'baseline',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
                     }}>
-                        <img src={logoImg} alt="Simplish" style={{ height: '32px', width: 'auto', objectFit: 'contain' }} />
-                        <span style={{
-                            fontFamily: '"Arial Rounded MT Bold", Arial, sans-serif',
-                            textTransform: 'lowercase',
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold',
-                            letterSpacing: '-0.5px'
-                        }}>
-                            <span style={{ color: '#007FFF' }}>sim</span>
-                            <span style={{ color: '#00A86B' }}>plish</span>
-                        </span>
-                    </div>
+                        <span style={{ color: '#007FFF', textTransform: 'lowercase' }}>sim</span>
+                        <span style={{ color: '#00A86B', textTransform: 'lowercase' }}>plish</span>
+                        <span style={{ color: 'var(--text-main)', marginLeft: '6px', fontWeight: '600', fontSize: '1.2rem', textTransform: 'uppercase' }}>LMS</span>
+                    </span>
                 </div>
             </div>
 

@@ -8,5 +8,6 @@ const isSuperAdmin = require('../middleware/isSuperAdmin');
 router.get('/summary', authMiddleware, isAdmin, reportController.getSummaryMetrics);
 router.get('/activity', authMiddleware, isAdmin, reportController.getActivityDetails);
 router.get('/daily', authMiddleware, isAdmin, reportController.getDailyReport);
+router.get('/refunds', authMiddleware, isSuperAdmin, reportController.getRefundReport);
 
 module.exports = router;

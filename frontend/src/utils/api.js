@@ -95,6 +95,7 @@ export const reportApi = {
     getSummary: () => api.get('/reports/summary'),
     getActivity: () => api.get('/reports/activity'),
     getDailyReport: (params = {}) => api.get('/reports/daily', { params }),
+    getRefundReport: (params = {}) => api.get('/reports/refunds', { params }),
 };
 
 
@@ -103,6 +104,7 @@ export const billingApi = {
     initiate: (data) => api.post('/billing/initiate', data),
     confirm: (data) => api.post('/billing/confirm', data),
     getHistory: () => api.get('/billing/history'),
+    refund: (data) => api.post('/billing/refund', data),
 };
 
 export const settingsApi = {

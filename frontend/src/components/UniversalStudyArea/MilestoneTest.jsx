@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Target, CheckCircle2, AlertCircle, RefreshCw, BookOpen, ArrowRight } from 'lucide-react';
 import { useToast } from '../Toast';
 import { lessonApi } from '../../utils/api';
+import { useUser } from '../../context/UserContext';
 
 const checkIsCorrect = (q, userAnswer) => {
     if (!userAnswer) return false;
@@ -42,6 +43,7 @@ const checkIsCorrect = (q, userAnswer) => {
 };
 
 const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, onNext }) => {
+    const { user, language } = useUser();
     const showToast = useToast();
     const [userAnswers, setUserAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
@@ -234,7 +236,7 @@ const MilestoneTest = ({ testContent, lessonId, onComplete, onRevise, onBack, on
                         <>
                             <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎉</div>
                             <h2 style={{ fontSize: '2.5rem', margin: '0 0 1rem 0', color: '#10b981', fontWeight: 800 }}>
-                                ಅಭಿನಂದನೆಗಳು! (Congratulations!)
+                                {language === 'kn' ? `ಅಭಿನಂದನೆಗಳು, ${user?.fullName || user?.full_name || ''}!` : `Congratulations, ${user?.fullName || user?.full_name || ''}!`}
                             </h2>
                             <p style={{ fontSize: '1.25rem', color: 'var(--text-main)', marginBottom: '2rem', maxWidth: '500px', margin: '0 auto 2.5rem auto' }}>
                                 Mastered with a score of <strong>{score}%</strong>. You've successfully conquered this lesson's milestones!

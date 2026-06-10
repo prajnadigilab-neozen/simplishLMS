@@ -10,6 +10,7 @@ const CurriculumContext = createContext();
 export const CurriculumProvider = ({ children }) => {
     const { user, isPrivileged, language } = useUser();
     const [selectedLesson, setSelectedLesson] = useState(() => safeGetItem('simplish_active_lesson', true));
+    const [isReviewMode, setIsReviewMode] = useState(() => !!safeGetItem('simplish_review_mode', true));
     const [courseCompleted, setCourseCompleted] = useState(false);
     const navigate = useNavigate();
     const showToast = useToast();
@@ -71,7 +72,7 @@ export const CurriculumProvider = ({ children }) => {
         return true;
     }, [user, isPrivileged]);
 
-    const startLesson = useCallback((lesson) => {
+    const startLesson = useCallback((lesson, options = {}) => {
         if (checkIsPaywallLocked(lesson)) {
             showToast(
                 language === 'kn' 
@@ -83,7 +84,9 @@ export const CurriculumProvider = ({ children }) => {
             return;
         }
         setSelectedLesson(lesson);
+        setIsReviewMode(!!options.reviewMode);
         safeSetItem('simplish_active_lesson', lesson);
+        safeSetItem('simplish_review_mode', !!options.reviewMode);
         navigate('/study_area');
     }, [navigate, checkIsPaywallLocked, showToast, language]);
 
@@ -157,7 +160,9 @@ export const CurriculumProvider = ({ children }) => {
 
     const clearActiveLesson = useCallback(() => {
         safeRemoveItem('simplish_active_lesson');
+        safeRemoveItem('simplish_review_mode');
         setSelectedLesson(null);
+        setIsReviewMode(false);
     }, []);
 
     const value = {
@@ -166,6 +171,8 @@ export const CurriculumProvider = ({ children }) => {
         courseCompleted,
         setCourseCompleted,
         startLesson,
+        isReviewMode,
+        setIsReviewMode,
         handleNavigateToStudyArea,
         handleNextLesson,
         clearActiveLesson

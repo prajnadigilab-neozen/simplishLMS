@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Loader2, CheckCircle2, Lock, Trophy } from 'lucide-react';
+import { Play, Loader2, CheckCircle2, Lock, Trophy, RefreshCw } from 'lucide-react';
 import { lessonApi, placementApi, reportApi } from '../utils/api';
 import { useUser } from '../context/UserContext';
 
@@ -601,7 +601,7 @@ const Dashboard = ({ onStartLesson }) => {
                                                             <Trophy size={48} color="#eab308" className="animate-bounce" />
                                                             <div style={{ textAlign: 'left' }}>
                                                                 <h4 style={{ margin: 0, fontSize: '1.25rem', color: '#eab308', fontWeight: 800 }}>
-                                                                    {language === 'kn' ? 'ಅಭಿನಂದನೆಗಳು!' : 'Congratulations!'}
+                                                                    {language === 'kn' ? `ಅಭಿನಂದನೆಗಳು, ${user?.fullName || user?.full_name || ''}!` : `Congratulations, ${user?.fullName || user?.full_name || ''}!`}
                                                                 </h4>
                                                                 <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                                                                     {language === 'kn' ? 'ನೀವು ಪದವಿ ಪರೀಕ್ಷೆಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಮುಗಿಸಿದ್ದೀರಿ!' : 'You have successfully graduated from SIMPLISH!'}
@@ -618,33 +618,58 @@ const Dashboard = ({ onStartLesson }) => {
                                                                 <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#eab308' }}>{getGrade(finalExam.score)}</span>
                                                             </div>
                                                         </div>
-                                                        {finalExam.content?.graduation_retention_block?.encouragement_kannada && (
+                                                        {(finalExam.content?.graduation_retention_block?.encouragement_kannada || finalExam.content?.graduation_retention_block?.encouragement_english) && (
                                                             <p style={{ fontSize: '0.9rem', color: 'var(--text-main)', fontStyle: 'italic', margin: 0, textAlign: 'center', lineHeight: '1.5', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '12px' }}>
-                                                                {finalExam.content.graduation_retention_block.encouragement_kannada}
+                                                                {language === 'kn' 
+                                                                    ? finalExam.content.graduation_retention_block.encouragement_kannada 
+                                                                    : (finalExam.content.graduation_retention_block.encouragement_english || finalExam.content.graduation_retention_block.encouragement_kannada)
+                                                                }
                                                             </p>
                                                         )}
                                                     </div>
 
-                                                    <button 
-                                                        onClick={() => finalExam && onStartLesson(finalExam)}
-                                                        className="btn" 
-                                                        style={{ 
-                                                            padding: '1rem 3rem', 
-                                                            fontSize: '1.1rem', 
-                                                            display: 'flex', 
-                                                            alignItems: 'center', 
-                                                            gap: '0.75rem',
-                                                            background: 'rgba(234, 179, 8, 0.2)',
-                                                            color: '#eab308',
-                                                            border: '2px solid #eab308',
-                                                            borderRadius: '12px',
-                                                            cursor: 'pointer',
-                                                            fontWeight: 800
-                                                        }}
-                                                    >
-                                                        <Trophy size={20} />
-                                                        {language === 'kn' ? 'ಮತ್ತೆ ಪರೀಕ್ಷೆ ತೆಗೆದುಕೊಳ್ಳಿ / ವಿಶ್ಲೇಷಿಸಿ' : 'Retake / Review Exam'}
-                                                    </button>
+                                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                                        <button 
+                                                            onClick={() => finalExam && onStartLesson(finalExam)}
+                                                            className="btn" 
+                                                            style={{ 
+                                                                padding: '1rem 2.5rem', 
+                                                                fontSize: '1.05rem', 
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                gap: '0.75rem',
+                                                                background: '#eab308',
+                                                                color: '#000',
+                                                                border: '2px solid #eab308',
+                                                                borderRadius: '12px',
+                                                                cursor: 'pointer',
+                                                                fontWeight: 800
+                                                            }}
+                                                        >
+                                                            <RefreshCw size={20} />
+                                                            {language === 'kn' ? 'ಮತ್ತೆ ಪರೀಕ್ಷೆ ತೆಗೆದುಕೊಳ್ಳಿ' : 'Retake Exam'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => finalExam && onStartLesson(finalExam, { reviewMode: true })}
+                                                            className="btn" 
+                                                            style={{ 
+                                                                padding: '1rem 2.5rem', 
+                                                                fontSize: '1.05rem', 
+                                                                display: 'flex', 
+                                                                alignItems: 'center', 
+                                                                gap: '0.75rem',
+                                                                background: 'rgba(234, 179, 8, 0.2)',
+                                                                color: '#eab308',
+                                                                border: '2px solid #eab308',
+                                                                borderRadius: '12px',
+                                                                cursor: 'pointer',
+                                                                fontWeight: 800
+                                                            }}
+                                                        >
+                                                            <Trophy size={20} />
+                                                            {language === 'kn' ? 'ಪರೀಕ್ಷೆ ವಿಶ್ಲೇಷಿಸಿ' : 'Review Exam'}
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             );
                                         }

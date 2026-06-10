@@ -318,9 +318,10 @@
     "19": "B",
     "20": "B"
   },
-  "graduation_retention_block": {
-    "final_mnemonic": "Basic to Expert: SVO (Structure), Past/Future (Time), Have/Be+V3 (Professionalism), Idioms/Etiquette (Mastery).",
-    "review_instructions": "Review this ultimate test once every six months to retain peak fluency.",
-    "encouragement_kannada": "ಅದ್ಭುತ ಸಾಧನೆ! ನೀವು SIMPLISH ನ ಎಲ್ಲಾ ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ದಾಟಿ ಅಂತಿಮ ಪದವಿಯನ್ನು ಪಡೆದಿದ್ದೀರಿ. ಈಗ ನೀವು ಜಾಗತಿಕ ಮಟ್ಟದಲ್ಲಿ ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಸಂವಹನ ನಡೆಸಲು ಸಿದ್ಧರಾಗಿದ್ದೀರಿ!"
+    "graduation_retention_block": {
+      "final_mnemonic": "Basic to Expert: SVO (Structure), Past/Future (Time), Have/Be+V3 (Professionalism), Idioms/Etiquette (Mastery).",
+      "review_instructions": "Review this ultimate test once every six months to retain peak fluency.",
+      "encouragement_kannada": "ಅದ್ಭುತ ಸಾಧನೆ! ನೀವು SIMPLISH ನ ಎಲ್ಲಾ ಮೈಲಿಗಲ್ಲುಗಳನ್ನು ದಾಟಿ ಅಂತಿಮ ಪದವಿಯನ್ನು ಪಡೆದಿದ್ದೀರಿ. ಈಗ ನೀವು ಜಾಗತಿಕ ಮಟ್ಟದಲ್ಲಿ ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಸಂವಹನ ನಡೆಸಲು ಸಿದ್ಧರಾಗಿದ್ದೀರಿ!",
+      "encouragement_english": "Amazing achievement! You have passed all the milestones of SIMPLISH and earned your final graduation. Now you are ready to communicate with confidence on a global level!"
+    }
   }
-}

@@ -1,0 +1,11 @@
+Question,Response Type,Options (if applicable)
+"How would you rate the efficiency of the User Management system?","Rating","1-5"
+"Is the revenue reporting data easy to interpret?","Boolean","Yes/No"
+"How satisfied are you with the dashboard's loading performance?","Rating","1-5"
+"Are the role-based permissions (Admin/Moderator/Super Admin) clearly defined?","Boolean","Yes/No"
+"Which analytics metric is most valuable to your decision-making?","Multiple Choice","Daily Registrations, Active Users, Revenue Breakdown, User Activity Logs"
+"How easy is it to perform administrative tasks like user role updates?","Rating","1-5"
+"Have you noticed any discrepancies in the reporting data?","Text","Please describe if any"
+"What additional reporting features would you like to see?","Text","N/A"
+"Rate the overall administrative experience on the platform.","Rating","1-5"
+"Any other suggestions for improving the Admin UI/UX?","Text","N/A"

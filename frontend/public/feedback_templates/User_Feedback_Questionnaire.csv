@@ -1,0 +1,10 @@
+Question,Response Type,Options (if applicable)
+"Overall, how satisfied are you with the platform?","Rating","1-5"
+"Was the lesson content clear and easy to understand?","Multiple Choice","Very Clear, Clear, Neutral, Unclear, Very Unclear"
+"How would you rate the ease of navigation?","Rating","1-5"
+"Were the practice exercises helpful for your learning?","Multiple Choice","Very Helpful, Helpful, Neutral, Not Helpful, Waste of Time"
+"Did you encounter any technical issues?","Boolean","Yes/No"
+"If yes, please describe the issue briefly.","Text","N/A"
+"What feature do you use most frequently?","Multiple Choice","Lessons, Milestone Tests, Library, Profile"
+"What is one thing we could do to improve your experience?","Text","N/A"
+"Would you recommend this platform to others?","Boolean","Yes/No"

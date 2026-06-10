@@ -104,6 +104,32 @@ const billingService = {
             .upsert(updates, { onConflict: 'key' });
         if (error) throw error;
         return true;
+    },
+
+    /**
+     * Create a new refund record in the database.
+     */
+    createRefund: async (refundData) => {
+        const { data, error } = await supabase
+            .from('refunds')
+            .insert([refundData])
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+
+    /**
+     * Fetch all completed or pending refunds for a given payment (transaction_id).
+     */
+    getRefundsByPaymentId: async (paymentId) => {
+        const { data, error } = await supabase
+            .from('refunds')
+            .select('*')
+            .eq('payment_id', paymentId)
+            .neq('status', 'failed');
+        if (error) throw error;
+        return data || [];
     }
 };
 

@@ -17,7 +17,8 @@ import {
     Clock,
     CheckCircle2,
     MessageSquare,
-    ClipboardList
+    ClipboardList,
+    Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reportApi, authApi, settingsApi } from '../utils/api';
@@ -78,6 +79,8 @@ const AdminDashboard = ({ user: userProp }) => {
 
             setStats({
                 totalRevenue: totalRevenueFromBreakdown,
+                totalRevenueAllTime: summaryData.totalRevenueAllTime || 0,
+                revenueCurrentMonth: summaryData.revenueCurrentMonth || 0,
                 revenueMoM: summaryData.revenueMoM,
                 totalRegistrations: summaryData.totalUsers,
                 newRegistrations: summaryData.newRegistrationsCurrentMonth,
@@ -101,13 +104,13 @@ const AdminDashboard = ({ user: userProp }) => {
         }
     };
 
-    const Sparkline = ({ data, color, height = 40 }) => {
+    const Sparkline = ({ data, color, height = 40, marginTop = '1rem' }) => {
         if (!data || data.length === 0) return null;
         const max = Math.max(...data, 1);
         const points = data.map((v, i) => `${(i / (data.length - 1)) * 100},${height - (v / max) * height}`).join(' ');
         
         return (
-            <svg viewBox={`0 0 100 ${height}`} style={{ width: '100%', height: `${height}px`, marginTop: '1rem', overflow: 'visible' }}>
+            <svg viewBox={`0 0 100 ${height}`} style={{ width: '100%', height: `${height}px`, marginTop, overflow: 'visible' }}>
                 <polyline
                     fill="none"
                     stroke={`rgb(${color})`}
@@ -241,6 +244,116 @@ const AdminDashboard = ({ user: userProp }) => {
             </div>
         </motion.div>
     );
+    const NewKPICard = ({ type, title, allTimeValue, thisMonthValue, trend, data, currentMonthName }) => {
+        const isRevenue = type === 'revenue';
+        const trendColor = trend >= 0 ? '#10b981' : '#ef4444';
+        
+        return (
+            <motion.div 
+                whileHover={{ y: -5 }}
+                className="glass-card"
+                style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '20px',
+                    padding: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1.2rem',
+                    flex: 1,
+                    minWidth: '320px',
+                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                    color: 'var(--text-main)',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)'
+                }}
+            >
+                {/* Top Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    {/* Left Title */}
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.02em', color: 'var(--text-main)' }}>
+                        {title}
+                    </div>
+                    
+                    {/* Center All-Time info */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>All-Time</span>
+                        <span style={{ fontSize: '1.6rem', fontWeight: 900, marginTop: '-0.1rem', color: 'var(--text-main)' }}>
+                            {isRevenue ? `₹${allTimeValue?.toLocaleString() || 0}` : allTimeValue?.toLocaleString() || 0}
+                        </span>
+                    </div>
+                    
+                    {/* Right Icon Box */}
+                    <div style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: isRevenue ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.12)',
+                        border: '1px solid ' + (isRevenue ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'),
+                    }}>
+                        {isRevenue ? (
+                            <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: '#10b981' }}>₹</span>
+                        ) : (
+                            <ShieldCheck size={22} color="#f43f5e" />
+                        )}
+                    </div>
+                </div>
+                
+                {/* Bottom Container */}
+                <div style={{
+                    background: 'rgba(var(--primary-rgb), 0.03)',
+                    borderRadius: '16px',
+                    border: '1px solid var(--border)',
+                    padding: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem'
+                }}>
+                    {/* Bottom Left: Month stats */}
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>This Month ({currentMonthName})</span>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.05em', textTransform: 'uppercase', marginTop: '0.1rem' }}>{title}</span>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 900, marginTop: '0.1rem', color: 'var(--text-main)' }}>
+                            {isRevenue ? `₹${thisMonthValue?.toLocaleString() || 0}` : thisMonthValue?.toLocaleString() || 0}
+                        </span>
+                    </div>
+                    
+                    {/* Bottom Right: Trend Card */}
+                    <div style={{
+                        background: 'var(--bg-dark)',
+                        borderRadius: '12px',
+                        padding: '0.5rem',
+                        width: '170px',
+                        height: '75px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        border: '1px solid var(--border)'
+                    }}>
+                        {/* Trend Percentage */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.2rem',
+                            color: trendColor,
+                            fontSize: '0.75rem',
+                            fontWeight: 700
+                        }}>
+                            <ArrowUpRight size={14} strokeWidth={3} />
+                            <span>{trend > 0 ? `+${trend}` : trend}% vs last month</span>
+                        </div>
+                        {/* Sparkline Plot */}
+                        <div style={{ height: '35px', width: '100%', overflow: 'hidden' }}>
+                            <Sparkline data={data} color="var(--primary-rgb)" height={30} marginTop="0" />
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    };
 
     if (loading && !stats) {
         return (
@@ -275,34 +388,31 @@ const AdminDashboard = ({ user: userProp }) => {
                 </button>
             </header>
             {/* KPI GRID */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', 
+                gap: '2rem', 
+                marginBottom: '3rem' 
+            }}>
                 {canSeeRevenue && (
-                    <KPICard 
-                        title="TOTAL REVENUE (Last 30 Days)" 
-                        value={`₹${stats?.totalRevenue?.toLocaleString() || 0}`} 
-                        icon={IndianRupee} 
-                        color="59, 130, 246"
-                        trend={stats?.revenueMoM ? `${stats.revenueMoM > 0 ? '+' : ''}${stats.revenueMoM}%` : null}
+                    <NewKPICard
+                        type="revenue"
+                        title="REVENUE"
+                        allTimeValue={stats?.totalRevenueAllTime || 0}
+                        thisMonthValue={stats?.revenueCurrentMonth || 0}
+                        trend={stats?.revenueMoM || 0}
+                        data={stats?.dailyData ? [...stats.dailyData].reverse().map(d => d.revenue) : []}
+                        currentMonthName={stats?.currentMonthName || new Date().toLocaleString('default', { month: 'long' })}
                     />
                 )}
-                <KPICard 
-                    title="TOTAL REGISTRATIONS (All-time)" 
-                    value={stats?.totalRegistrations?.toLocaleString() || 0} 
-                    icon={ShieldCheck} 
-                    color="236, 72, 153"
-                />
-                <KPICard 
-                    title={`NEW REGISTRATIONS (${(stats?.currentMonthName || new Date().toLocaleString('default', { month: 'long' })).toUpperCase()}) (Current Month only)`} 
-                    value={stats?.newRegistrations?.toLocaleString() || 0} 
-                    icon={UserPlus} 
-                    color="139, 92, 246"
-                    trend={stats?.registrationMoM ? `${stats.registrationMoM > 0 ? '+' : ''}${stats.registrationMoM}%` : null}
-                />
-                <KPICard 
-                    title="AVG DAILY ACTIVE (30-day average)" 
-                    value={stats?.avgActive || 0} 
-                    icon={TrendingUp} 
-                    color="16, 185, 129"
+                <NewKPICard
+                    type="registrations"
+                    title="REGISTRATIONS"
+                    allTimeValue={stats?.totalRegistrations || 0}
+                    thisMonthValue={stats?.newRegistrations || 0}
+                    trend={stats?.registrationMoM || 0}
+                    data={stats?.dailyData ? [...stats.dailyData].reverse().map(d => d.registrations) : []}
+                    currentMonthName={stats?.currentMonthName || new Date().toLocaleString('default', { month: 'long' })}
                 />
             </div>
 

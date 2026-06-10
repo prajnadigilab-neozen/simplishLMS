@@ -19,6 +19,11 @@ router.post('/confirm', authMiddleware, billingController.confirm);
 router.get('/history', authMiddleware, billingController.getHistory);
 
 /**
+ * [POST] /api/v1/billing/refund
+ */
+router.post('/refund', authMiddleware, billingController.processRefund);
+
+/**
  * [POST] /api/v1/billing/internal-webhook
  */
 router.post('/internal-webhook', express.raw({ type: 'application/json' }), billingController.processInternal);

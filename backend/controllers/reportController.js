@@ -22,17 +22,26 @@ exports.getSummaryMetrics = async (req, res) => {
             return parseFloat(((current - previous) / previous * 100).toFixed(1));
         };
 
-        const totalRevenueAllTime = canSeeRevenue 
+        const totalRefundsAllTime = canSeeRevenue
+            ? metrics.refunds.allTime.reduce((sum, r) => sum + (Number(r.refund_amount_paise) || 0) / 100, 0)
+            : 0;
+        const totalRevenueAllTime = Math.max(0, (canSeeRevenue 
             ? metrics.revenue.allTime.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
-            : 0;
+            : 0) - totalRefundsAllTime);
 
-        const revCurrent = canSeeRevenue
+        const currentRefunds = canSeeRevenue
+            ? metrics.refunds.currentMonth.reduce((sum, r) => sum + (Number(r.refund_amount_paise) || 0) / 100, 0)
+            : 0;
+        const revCurrent = Math.max(0, (canSeeRevenue
             ? metrics.revenue.currentMonth.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
-            : 0;
+            : 0) - currentRefunds);
 
-        const revLast = canSeeRevenue
-            ? metrics.revenue.lastMonth.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
+        const lastRefunds = canSeeRevenue
+            ? metrics.refunds.lastMonth.reduce((sum, r) => sum + (Number(r.refund_amount_paise) || 0) / 100, 0)
             : 0;
+        const revLast = Math.max(0, (canSeeRevenue
+            ? metrics.revenue.lastMonth.reduce((sum, p) => sum + (Number(p.amount_paise) || 0) / 100, 0)
+            : 0) - lastRefunds);
 
         const revenueMoM = canSeeRevenue ? calculateGrowth(revCurrent, revLast) : 0;
         console.log('[Backend Report] totalRevenueAllTime:', totalRevenueAllTime, '| revCurrent:', revCurrent, '| revenueMoM:', revenueMoM);
@@ -59,6 +68,7 @@ exports.getSummaryMetrics = async (req, res) => {
             newRegistrationsCurrentMonth: metrics.registrationsCurrentMonth,
             registrationMoM,
             totalRevenueAllTime,
+            revenueCurrentMonth: revCurrent,
             revenueMoM,
             currentMonthName: new Date().toLocaleString('default', { month: 'long' }),
             activeToday: metrics.activeToday,
@@ -120,6 +130,22 @@ exports.getDailyReport = async (req, res) => {
             }
         });
 
+        (data.refunds || []).forEach(r => {
+            const d = r.created_at.toString().split('T')[0];
+            if (breakdown[d]) {
+                const refundRupees = (Number(r.refund_amount_paise) || 0) / 100;
+                breakdown[d].revenue = Math.max(0, breakdown[d].revenue - refundRupees);
+                
+                // Read nested payments relation for payment_type
+                const refundType = r.payments?.payment_type;
+                if (refundType === 'TOPUP') {
+                    breakdown[d].topUpRevenue = Math.max(0, breakdown[d].topUpRevenue - refundRupees);
+                } else {
+                    breakdown[d].membershipRevenue = Math.max(0, breakdown[d].membershipRevenue - refundRupees);
+                }
+            }
+        });
+
         const dailyActiveUsers = {};
         (data.activity || []).forEach(a => {
             const d = a.last_accessed_at.toString().split('T')[0];
@@ -173,5 +199,61 @@ exports.getActivityDetails = async (req, res) => {
     } catch (error) {
         logger.error({ error }, 'getActivityDetails error');
         res.status(500).json({ message: 'Error fetching activity details' });
+    }
+};
+
+exports.getRefundReport = async (req, res) => {
+    try {
+        const rawRole = req.user?.role;
+        const role = typeof rawRole === 'string' ? rawRole.toLowerCase().replace(/\s+|_/g, '_') : rawRole;
+        const isSuperAdmin = role === 'super_admin';
+
+        if (!isSuperAdmin) {
+            return res.status(403).json({ message: 'Refund reports are restricted to Super Admins.' });
+        }
+
+        const fromDate = req.query.from ? new Date(req.query.from + 'T00:00:00.000Z').toISOString() : null;
+        const toDate = req.query.to ? new Date(req.query.to + 'T23:59:59.999Z').toISOString() : null;
+
+        const refunds = await reportService.getRefundReport(fromDate, toDate);
+
+        const formattedRefunds = refunds.map(r => {
+            const providerMap = {
+                'mock': 'Mock Gateway',
+                'secure_provider': 'Razorpay',
+                'mock_gateway': 'Mock Gateway'
+            };
+            const provider = r.payments?.provider || 'Unknown';
+            const paymentMode = providerMap[provider] || provider;
+
+            return {
+                id: r.id,
+                refund_date: r.created_at,
+                user_name: r.users?.full_name || 'N/A',
+                user_phone: r.users?.phone || 'N/A',
+                user_email: r.users?.email || 'N/A',
+                payment_id: r.payment_id,
+                payment_type: r.payments?.payment_type || 'N/A',
+                payment_mode: paymentMode,
+                original_amount: r.payments?.amount_paise ? (Number(r.payments.amount_paise) / 100) : 0,
+                refund_amount: r.refund_amount_paise ? (Number(r.refund_amount_paise) / 100) : 0,
+                refund_type: r.refund_type,
+                reason_category: r.reason_category,
+                reason_notes: r.reason_notes || '',
+                status: r.status,
+                razorpay_refund_id: r.razorpay_refund_id || 'N/A'
+            };
+        });
+
+        res.json({
+            total: formattedRefunds.length,
+            total_refunded: formattedRefunds
+                .filter(r => r.status === 'completed')
+                .reduce((sum, r) => sum + r.refund_amount, 0),
+            refunds: formattedRefunds
+        });
+    } catch (error) {
+        logger.error({ error }, '[Reports] Refund report failure');
+        res.status(500).json({ message: 'Internal server error generating refund report' });
     }
 };

@@ -31,22 +31,21 @@ const reportService = {
             // 6. Revenue
             canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed') : Promise.resolve({ data: [] }),
             canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed').gte('created_at', startOfMonth) : Promise.resolve({ data: [] }),
-            canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] })
+            canSeeRevenue ? supabase.from('payments').select('amount_paise').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] }),
+            // 7. Refunds
+            canSeeRevenue ? supabase.from('refunds').select('refund_amount_paise').eq('status', 'completed') : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('refunds').select('refund_amount_paise').eq('status', 'completed').gte('created_at', startOfMonth) : Promise.resolve({ data: [] }),
+            canSeeRevenue ? supabase.from('refunds').select('refund_amount_paise').eq('status', 'completed').gte('created_at', startOfLastMonth).lte('created_at', endOfLastMonth) : Promise.resolve({ data: [] })
         ]);
         
         results.forEach((r, i) => {
             if (r.status === 'rejected') {
                 console.error(`[Backend Service] Query ${i} REJECTED:`, r.reason);
             } else if (r.value?.error) {
-                // Supabase errors resolve (not reject) with { data: null, error: {...} }
                 console.error(`[Backend Service] Query ${i} SUPABASE ERROR:`, r.value.error.message || r.value.error);
             }
         });
         
-        console.log('[Backend Service] Revenue Rows (allTime):', results[5].value?.data?.length ?? 'NULL (error!)');
-        console.log('[Backend Service] Revenue Rows (currentMonth):', results[6].value?.data?.length ?? 'NULL (error!)');
-        console.log('[Backend Service] Revenue Rows (lastMonth):', results[7].value?.data?.length ?? 'NULL (error!)');
-
         return {
             totalUsers: results[0].value?.count || 0,
             registrationsCurrentMonth: results[1].value?.count || 0,
@@ -57,6 +56,11 @@ const reportService = {
                 allTime: results[5].value?.data || [],
                 currentMonth: results[6].value?.data || [],
                 lastMonth: results[7].value?.data || []
+            },
+            refunds: {
+                allTime: results[8].value?.data || [],
+                currentMonth: results[9].value?.data || [],
+                lastMonth: results[10].value?.data || []
             }
         };
     },
@@ -73,14 +77,17 @@ const reportService = {
             // Revenue
             canSeeRevenue ? supabase.from('payments').select('created_at, amount_paise, payment_type').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] }),
             // Activity (Unique Active Users)
-            supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO)
+            supabase.from('user_progress').select('user_id, last_accessed_at').gte('last_accessed_at', fromISO).lte('last_accessed_at', toISO),
+            // Refunds
+            canSeeRevenue ? supabase.from('refunds').select('created_at, refund_amount_paise, payment_id, payments(payment_type)').eq('status', 'completed').gte('created_at', fromISO).lte('created_at', toISO) : Promise.resolve({ data: [] })
         ]);
 
         return {
             registrations: results[0].value?.data || [],
             deletions: results[1].value?.data || [],
             payments: results[2].value?.data || [],
-            activity: results[3].value?.data || []
+            activity: results[3].value?.data || [],
+            refunds: results[4].value?.data || []
         };
     },
 
@@ -120,6 +127,36 @@ const reportService = {
         if (resultsError) console.warn('Non-fatal: Could not fetch results for activity report.');
 
         return { progressData, resultsData };
+    },
+
+    /**
+     * Fetch detailed refund report data joined with users and payments.
+     */
+    getRefundReport: async (fromISO, toISO) => {
+        let query = supabase
+            .from('refunds')
+            .select(`
+                id,
+                user_id,
+                payment_id,
+                razorpay_refund_id,
+                refund_amount_paise,
+                refund_type,
+                reason_category,
+                reason_notes,
+                status,
+                created_at,
+                users ( full_name, phone, email ),
+                payments ( provider, payment_type, amount_paise, transaction_id )
+            `)
+            .order('created_at', { ascending: false });
+
+        if (fromISO) query = query.gte('created_at', fromISO);
+        if (toISO) query = query.lte('created_at', toISO);
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
     },
 
     /**

@@ -552,7 +552,7 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                 )}
                                             </div>
 
-                                            {lesson.progress === 100 && lesson.content?.graduation_retention_block?.encouragement_kannada && (
+                                            {lesson.progress === 100 && (lesson.content?.graduation_retention_block?.encouragement_kannada || lesson.content?.graduation_retention_block?.encouragement_english) && (
                                                 <div style={{
                                                     background: 'rgba(234, 179, 8, 0.05)',
                                                     borderLeft: '4px solid #eab308',
@@ -569,26 +569,95 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                 </div>
                                             )}
 
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                                                <button 
-                                                    className="btn" 
-                                                    style={{ 
-                                                        background: isLocked ? 'var(--bg-dark)' : '#eab308', 
-                                                        color: isLocked ? 'var(--text-muted)' : '#000', 
-                                                        padding: '0.8rem 2.5rem', 
-                                                        borderRadius: '12px', 
-                                                        fontWeight: 800, 
-                                                        fontSize: '1rem',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '0.5rem',
-                                                        opacity: isLocked ? 0.6 : 1
-                                                    }}
-                                                    disabled={isLocked}
-                                                >
-                                                    {lesson.progress === 100 ? (language === 'kn' ? 'ಮತ್ತೆ ನೋಡಿ' : 'Review Result') : (language === 'kn' ? 'ಪರೀಕ್ಷೆ ಆರಂಭಿಸಿ' : 'Take Exam Now')}
-                                                    <ArrowRight size={20} />
-                                                </button>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                                                {lesson.progress === 100 ? (
+                                                    <>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (isPaywallLocked) { navigate('/payment'); return; }
+                                                                if (isPrereqLocked) { 
+                                                                    showToast(`ದಯವಿಟ್ಟು ಮೊದಲು ಹಿಂದಿನ ಪಾಠವನ್ನು ಮುಗಿಸಿ: "${prevLesson?.title || ''}" (Please finish the previous lesson first)`, 'info');
+                                                                    return; 
+                                                                }
+                                                                onSelectLesson(lesson);
+                                                            }}
+                                                            className="btn" 
+                                                            style={{ 
+                                                                background: '#eab308', 
+                                                                color: '#000', 
+                                                                padding: '0.8rem 2rem', 
+                                                                borderRadius: '12px', 
+                                                                fontWeight: 800, 
+                                                                fontSize: '1rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '0.5rem',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <RefreshCw size={18} />
+                                                            {language === 'kn' ? 'ಮತ್ತೆ ಪರೀಕ್ಷೆ ತೆಗೆದುಕೊಳ್ಳಿ' : 'Retake Exam'}
+                                                        </button>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                if (isPaywallLocked) { navigate('/payment'); return; }
+                                                                if (isPrereqLocked) { 
+                                                                    showToast(`ದಯವಿಟ್ಟು ಮೊದಲು ಹಿಂದಿನ ಪಾಠವನ್ನು ಮುಗಿಸಿ: "${prevLesson?.title || ''}" (Please finish the previous lesson first)`, 'info');
+                                                                    return; 
+                                                                }
+                                                                onSelectLesson(lesson, { reviewMode: true });
+                                                            }}
+                                                            className="btn" 
+                                                            style={{ 
+                                                                background: 'rgba(234, 179, 8, 0.2)', 
+                                                                color: '#eab308', 
+                                                                border: '2px solid #eab308',
+                                                                padding: '0.8rem 2rem', 
+                                                                borderRadius: '12px', 
+                                                                fontWeight: 800, 
+                                                                fontSize: '1rem',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '0.5rem',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <Trophy size={18} />
+                                                            {language === 'kn' ? 'ಪರೀಕ್ಷೆ ವಿಶ್ಲೇಷಿಸಿ' : 'Review Exam'}
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (isPaywallLocked) { navigate('/payment'); return; }
+                                                            if (isPrereqLocked) { 
+                                                                showToast(`ದಯವಿಟ್ಟು ಮೊದಲು ಹಿಂದಿನ ಪಾಠವನ್ನು ಮುಗಿಸಿ: "${prevLesson?.title || ''}" (Please finish the previous lesson first)`, 'info');
+                                                                return; 
+                                                            }
+                                                            onSelectLesson(lesson);
+                                                        }}
+                                                        className="btn" 
+                                                        style={{ 
+                                                            background: isLocked ? 'var(--bg-dark)' : '#eab308', 
+                                                            color: isLocked ? 'var(--text-muted)' : '#000', 
+                                                            padding: '0.8rem 2.5rem', 
+                                                            borderRadius: '12px', 
+                                                            fontWeight: 800, 
+                                                            fontSize: '1rem',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.5rem',
+                                                            opacity: isLocked ? 0.6 : 1
+                                                        }}
+                                                        disabled={isLocked}
+                                                    >
+                                                        {language === 'kn' ? 'ಪರೀಕ್ಷೆ ಆರಂಭಿಸಿ' : 'Take Exam Now'}
+                                                        <ArrowRight size={20} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </motion.div>
                                     );

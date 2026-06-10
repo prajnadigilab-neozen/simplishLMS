@@ -9,10 +9,19 @@ import {
     Loader2,
     Zap,
     Clock,
-    RefreshCw
+    RefreshCw,
+    AlertTriangle,
+    X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
+
+const isWithinRefundPeriod = (createdAt) => {
+    if (!createdAt) return false;
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    return ageMs <= thirtyDaysMs;
+};
 
 const CheckoutSync = () => {
     const { user, refreshUserContext } = useUser();
@@ -23,6 +32,48 @@ const CheckoutSync = () => {
     const [settings, setSettings] = useState({ subscription_price: '99', subscription_duration_days: '30' });
     const [loadingSettings, setLoadingSettings] = useState(true);
     const showToast = useToast();
+
+    // Refund flow states
+    const [selectedPayment, setSelectedPayment] = useState(null);
+    const [reasonCategory, setReasonCategory] = useState('Duplicate payment / Charged twice');
+    const [reasonNotes, setReasonNotes] = useState('');
+    const [refundSubmitting, setRefundSubmitting] = useState(false);
+
+    const handleRefundSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedPayment) return;
+
+        if (reasonCategory === 'Other' && (!reasonNotes || reasonNotes.trim().length < 10)) {
+            showToast('Detailed explanation (min 10 characters) is required for "Other" reason.', 'error');
+            return;
+        }
+
+        setRefundSubmitting(true);
+        try {
+            const res = await billingApi.refund({
+                payment_id: selectedPayment.transaction_id,
+                refund_type: 'full',
+                reason_category: reasonCategory,
+                reason_notes: reasonCategory === 'Other' ? reasonNotes : undefined
+            });
+
+            if (res.data && res.data.success) {
+                showToast(`Refund processed successfully: ₹${res.data.refund.refund_amount_rupees}`, 'success');
+                setSelectedPayment(null);
+                setReasonNotes('');
+                setReasonCategory('Duplicate payment / Charged twice');
+                await fetchSyncHistory();
+                await refreshUserContext();
+            } else {
+                showToast(res.data?.message || 'Refund failed.', 'error');
+            }
+        } catch (err) {
+            console.error('Refund submission error:', err);
+            showToast(err.response?.data?.message || 'Failed to process refund request.', 'error');
+        } finally {
+            setRefundSubmitting(false);
+        }
+    };
 
     // ── Load metadata on mount (script loaded lazily only for real mode) ──
     useEffect(() => {
@@ -115,7 +166,6 @@ const CheckoutSync = () => {
                 description: type === 'TOPUP' 
                     ? `Top-up Wallet: ₹${amount}${settings.topup_duration_days > 0 ? ` + ${settings.topup_duration_days} Days Access` : ''}` 
                     : `Unlimited Access: ${settings.subscription_duration_days} Days`,
-                image: "/logo.png",
                 order_id: entry.id,
                 handler: async function (response) {
                     setLoading(true);
@@ -222,20 +272,71 @@ const CheckoutSync = () => {
                             </h3>
                             <button 
                                 onClick={() => setShowRecords(!showRecords)}
-                                style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                style={{
+                                    padding: '0.35rem 0.75rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    color: '#b91c1c',
+                                    background: '#fee2e2',
+                                    border: '1px solid #fecaca',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.background = '#fecaca';
+                                    e.target.style.borderColor = '#fca5a5';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.background = '#fee2e2';
+                                    e.target.style.borderColor = '#fecaca';
+                                }}
                             >
-                                {showRecords ? 'HIDE' : 'VIEW ALL'}
+                                {showRecords ? 'Hide' : 'Refund'}
                             </button>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {records.slice(0, 3).map((record, i) => (
-                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '12px', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>
-                                        ₹{(Number(record.amount) || 0) / 100} <span style={{ opacity: 0.5, fontWeight: 500 }}>({record.type})</span>
+                            {records.slice(0, 3).map((record, i) => {
+                                const refundedAmount = record.refunded_amount_paise || 0;
+                                const isFullyRefunded = refundedAmount >= record.amount_paise;
+                                return (
+                                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '12px', background: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e293b' }}>
+                                                ₹{(Number(record.amount_paise) || 0) / 100} <span style={{ opacity: 0.5, fontWeight: 500 }}>({record.payment_type})</span>
+                                            </div>
+                                            {refundedAmount > 0 && (
+                                                <div style={{ fontSize: '0.7rem', color: '#f97316', fontWeight: 600 }}>
+                                                    ₹{(refundedAmount / 100).toFixed(2)} refunded
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span style={{ 
+                                                fontSize: '0.75rem', 
+                                                color: isFullyRefunded 
+                                                    ? '#94a3b8' 
+                                                    : record.status === 'completed' 
+                                                        ? '#10b981' 
+                                                        : '#ef4444', 
+                                                fontWeight: 800 
+                                            }}>
+                                                {isFullyRefunded ? 'REFUNDED' : record.status.toUpperCase()}
+                                            </span>
+                                             {record.status === 'completed' && record.payment_type === 'TOPUP' && !isFullyRefunded && (
+                                                 isWithinRefundPeriod(record.created_at) ? (
+                                                     <button onClick={() => setSelectedPayment(record)} style={{ fontSize: '0.7rem', border: 'none', background: '#fee2e2', color: '#b91c1c', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}>REFUND</button>
+                                                 ) : (
+                                                     <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>Expired</span>
+                                                 )
+                                             )}
+                                        </div>
                                     </div>
-                                    <div style={{ fontSize: '0.7rem', color: record.status === 'completed' ? '#10b981' : '#ef4444', fontWeight: 800 }}>{record.status.toUpperCase()}</div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
@@ -245,9 +346,44 @@ const CheckoutSync = () => {
                     
                     {/* OPTION 1: MEMBERSHIP */}
                     <motion.div 
-                        whileHover={{ y: -5 }}
-                        style={{ background: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' }}
+                        whileHover={!isSubscribed ? { y: -5 } : {}}
+                        style={{ 
+                            background: 'white', 
+                            borderRadius: '24px', 
+                            border: '1px solid #e2e8f0', 
+                            overflow: 'hidden', 
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
+                            position: 'relative',
+                            opacity: isSubscribed ? 0.7 : 1,
+                            cursor: isSubscribed ? 'not-allowed' : 'default'
+                        }}
                     >
+                        {isSubscribed && (
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'rgba(255,255,255,0.4)',
+                                backdropFilter: 'blur(1px)',
+                                zIndex: 10,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                gap: '0.5rem',
+                                padding: '1rem'
+                            }}>
+                                <div style={{ background: '#d1fae5', padding: '0.75rem', borderRadius: '50%', color: '#059669' }}>
+                                    <CheckCircle2 size={24} />
+                                </div>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 900, color: '#065f46', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Access Active
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: '#047857', margin: 0, textAlign: 'center', fontWeight: 600 }}>
+                                    Access is active. Wallet top-up is available below.
+                                </p>
+                            </div>
+                        )}
+
                         <div style={{ padding: '1.5rem', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Clock size={18} color="#2563eb" /> ACCESS EXTENSION
@@ -261,13 +397,13 @@ const CheckoutSync = () => {
                             </div>
                             <button
                                 onClick={() => handleSyncInitiate('MEMBERSHIP')}
-                                disabled={loading}
+                                disabled={loading || isSubscribed}
                                 style={{ 
-                                    width: '100%', padding: '1rem', borderRadius: '12px', background: '#2563eb', 
-                                    color: 'white', fontWeight: 800, border: 'none', cursor: loading ? 'not-allowed' : 'pointer'
+                                    width: '100%', padding: '1rem', borderRadius: '12px', background: isSubscribed ? '#d1d5db' : '#2563eb', 
+                                    color: 'white', fontWeight: 800, border: 'none', cursor: (loading || isSubscribed) ? 'not-allowed' : 'pointer'
                                 }}
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : 'RENEW ACCESS'}
+                                {loading ? <Loader2 className="animate-spin" /> : isSubscribed ? 'ACCESS ACTIVE' : 'RENEW ACCESS'}
                             </button>
                         </div>
                     </motion.div>
@@ -360,24 +496,270 @@ const CheckoutSync = () => {
                                     <th style={{ padding: '1.25rem', fontSize: '0.75rem', color: '#64748b' }}>VALUE</th>
                                     <th style={{ padding: '1.25rem', fontSize: '0.75rem', color: '#64748b' }}>TIMESTAMP</th>
                                     <th style={{ padding: '1.25rem', fontSize: '0.75rem', color: '#64748b' }}>STATE</th>
+                                    <th style={{ padding: '1.25rem', fontSize: '0.75rem', color: '#64748b' }}>ACTION</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {records.map((record, idx) => (
-                                    <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                        <td style={{ padding: '1.25rem', fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>{record.transaction_id}</td>
-                                        <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: 700 }}>₹{(Number(record.amount) || 0) / 100}</td>
-                                        <td style={{ padding: '1.25rem', fontSize: '0.85rem' }}>{new Date(record.created_at).toLocaleDateString()}</td>
-                                        <td style={{ padding: '1.25rem' }}>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: record.status === 'completed' ? '#10b981' : '#ef4444' }}>
-                                                {record.status.toUpperCase()}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {records.map((record, idx) => {
+                                    const refundedAmount = record.refunded_amount_paise || 0;
+                                    const isFullyRefunded = refundedAmount >= record.amount_paise;
+                                    return (
+                                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                            <td style={{ padding: '1.25rem', fontSize: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>{record.transaction_id}</td>
+                                            <td style={{ padding: '1.25rem', fontSize: '0.85rem', fontWeight: 700 }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span>₹{(Number(record.amount_paise) || 0) / 100}</span>
+                                                    {refundedAmount > 0 && (
+                                                        <span style={{ fontSize: '0.7rem', color: '#f97316', fontWeight: 600 }}>
+                                                            ₹{(refundedAmount / 100).toFixed(2)} refunded
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1.25rem', fontSize: '0.85rem' }}>{new Date(record.created_at).toLocaleDateString()}</td>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                <span style={{ 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 800, 
+                                                    color: isFullyRefunded 
+                                                        ? '#94a3b8' 
+                                                        : record.status === 'completed' 
+                                                            ? '#10b981' 
+                                                            : '#ef4444' 
+                                                }}>
+                                                    {isFullyRefunded ? 'REFUNDED' : record.status.toUpperCase()}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1.25rem' }}>
+                                                {record.status === 'completed' && record.payment_type === 'TOPUP' && !isFullyRefunded ? (
+                                                    isWithinRefundPeriod(record.created_at) ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedPayment(record);
+                                                                setReasonCategory('Duplicate payment / Charged twice');
+                                                                setReasonNotes('');
+                                                            }}
+                                                            style={{
+                                                                padding: '0.4rem 0.8rem',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 700,
+                                                                color: '#dc2626',
+                                                                background: '#fef2f2',
+                                                                border: '1px solid #fecaca',
+                                                                borderRadius: '8px',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.2s ease-in-out'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                e.target.style.background = '#fee2e2';
+                                                                e.target.style.borderColor = '#fca5a5';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.target.style.background = '#fef2f2';
+                                                                e.target.style.borderColor = '#fecaca';
+                                                            }}
+                                                        >
+                                                            Request Refund
+                                                        </button>
+                                                    ) : (
+                                                        <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>Refund expired</span>
+                                                    )
+                                                ) : (
+                                                    <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>—</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── Refund Request Modal ── */}
+            <AnimatePresence>
+                {selectedPayment && (
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                        backdropFilter: 'blur(4px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        padding: '1rem'
+                    }}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                                width: '100%',
+                                maxWidth: '500px',
+                                backgroundColor: 'white',
+                                borderRadius: '24px',
+                                padding: '2rem',
+                                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                                border: '1px solid #e2e8f0',
+                                position: 'relative'
+                            }}
+                        >
+                            <button
+                                onClick={() => setSelectedPayment(null)}
+                                style={{
+                                    position: 'absolute',
+                                    top: '1.5rem',
+                                    right: '1.5rem',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#64748b',
+                                    cursor: 'pointer',
+                                    padding: '0.25rem',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'background-color 0.2s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                            >
+                                <X size={20} />
+                            </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: '#dc2626' }}>
+                                <AlertTriangle size={24} />
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>Request Full Refund</h2>
+                            </div>
+
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                                <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 600 }}>Transaction ID</div>
+                                <div style={{ fontSize: '0.9rem', fontFamily: 'monospace', fontWeight: 700, color: '#1e293b', marginBottom: '0.75rem', wordBreak: 'break-all' }}>{selectedPayment.transaction_id}</div>
+                                
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 600 }}>Refund Amount</div>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>₹{((selectedPayment.amount_paise - (selectedPayment.refunded_amount_paise || 0)) / 100).toFixed(2)}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '0.25rem', textTransform: 'uppercase', fontWeight: 600 }}>Type</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginTop: '0.15rem' }}>{selectedPayment.payment_type}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleRefundSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Reason for Refund</label>
+                                    <select
+                                        value={reasonCategory}
+                                        onChange={(e) => setReasonCategory(e.target.value)}
+                                        style={{
+                                            padding: '0.75rem',
+                                            borderRadius: '10px',
+                                            border: '1px solid #cbd5e1',
+                                            fontSize: '0.9rem',
+                                            outline: 'none',
+                                            background: '#ffffff',
+                                            color: '#0f172a',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <option value="Duplicate payment / Charged twice" style={{ color: '#0f172a', background: '#ffffff' }}>Duplicate payment / Charged twice</option>
+                                        <option value="Order cancelled by customer" style={{ color: '#0f172a', background: '#ffffff' }}>Order cancelled by customer</option>
+                                        <option value="Other" style={{ color: '#0f172a', background: '#ffffff' }}>Other (requires explanation)</option>
+                                    </select>
+                                </div>
+
+                                {reasonCategory === 'Other' && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>Detailed Explanation</label>
+                                        <textarea
+                                            value={reasonNotes}
+                                            onChange={(e) => setReasonNotes(e.target.value)}
+                                            placeholder="Explain why you are requesting a refund (minimum 10 characters)..."
+                                            rows={3}
+                                            style={{
+                                                padding: '0.75rem',
+                                                borderRadius: '10px',
+                                                border: '1px solid #cbd5e1',
+                                                fontSize: '0.9rem',
+                                                outline: 'none',
+                                                resize: 'none',
+                                                fontFamily: 'inherit',
+                                                background: '#ffffff',
+                                                color: '#0f172a'
+                                            }}
+                                        />
+                                        <span style={{ fontSize: '0.75rem', color: reasonNotes.trim().length >= 10 ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                                            {reasonNotes.trim().length} / 10 characters minimum
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '0.75rem 1rem', fontSize: '0.75rem', color: '#b91c1c', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                    <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: '1px' }} />
+                                    <span>
+                                        <strong>Refund Notice:</strong> This action initiates a full refund of the remaining balance. Once submitted, it cannot be undone. 
+                                        {selectedPayment.payment_type === 'TOPUP' && " Decrementing wallet balance will occur automatically upon refund completion."}
+                                    </span>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedPayment(null)}
+                                        disabled={refundSubmitting}
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.85rem',
+                                            borderRadius: '12px',
+                                            border: '1px solid #e2e8f0',
+                                            background: '#f8fafc',
+                                            color: '#64748b',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => { if(!refundSubmitting) e.target.style.backgroundColor = '#f1f5f9'; }}
+                                        onMouseLeave={(e) => { if(!refundSubmitting) e.target.style.backgroundColor = '#f8fafc'; }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={refundSubmitting || (reasonCategory === 'Other' && reasonNotes.trim().length < 10)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.85rem',
+                                            borderRadius: '12px',
+                                            border: 'none',
+                                            background: (refundSubmitting || (reasonCategory === 'Other' && reasonNotes.trim().length < 10)) ? '#cbd5e1' : '#dc2626',
+                                            color: 'white',
+                                            fontWeight: 700,
+                                            cursor: (refundSubmitting || (reasonCategory === 'Other' && reasonNotes.trim().length < 10)) ? 'not-allowed' : 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            transition: 'background-color 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => { if(!refundSubmitting && !(reasonCategory === 'Other' && reasonNotes.trim().length < 10)) e.target.style.backgroundColor = '#b91c1c'; }}
+                                        onMouseLeave={(e) => { if(!refundSubmitting && !(reasonCategory === 'Other' && reasonNotes.trim().length < 10)) e.target.style.backgroundColor = '#dc2626'; }}
+                                    >
+                                        {refundSubmitting ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" /> Processing...
+                                            </>
+                                        ) : 'Confirm Refund'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
