@@ -1,5 +1,12 @@
-// 🚀 Incremental TS Migration: Register ts-node to allow requiring .ts files (Updated)
-require('ts-node/register');
+// 🚀 Incremental TS Migration: Register ts-node with transpileOnly to allow requiring .ts files during incremental migration
+require('ts-node').register({
+    transpileOnly: true,
+    compilerOptions: {
+        module: "commonjs",
+        moduleResolution: "node",
+        ignoreDeprecations: "6.0"
+    }
+});
 
 const express = require('express');
 const cors = require('cors');
@@ -169,6 +176,21 @@ app.use('/uploads', (req, res, next) => {
     etag: true,
     lastModified: true
 }));
+
+// Serve Frontend Static Assets in Production
+if (env.NODE_ENV === 'production') {
+    const frontendDistPath = path.join(__dirname, '../frontend/dist');
+    app.use(express.static(frontendDistPath));
+    
+    // Redirect all other requests to React Router (SPA)
+    app.get('*splat', (req, res, next) => {
+        // If request is for an API route or uploads, forward to API/404 handling
+        if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+            return next();
+        }
+        res.sendFile(path.join(frontendDistPath, 'index.html'));
+    });
+}
 
 // ==========================================
 // 4. ERROR HANDLING
