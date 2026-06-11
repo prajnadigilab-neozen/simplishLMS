@@ -9,7 +9,8 @@
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleResolution": "Node10",
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "."
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]
