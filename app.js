@@ -26,8 +26,29 @@ if (fs.existsSync(builtCommitPath)) {
 if (!fs.existsSync(distPath) || !currentCommit || currentCommit !== builtCommit) {
     console.log('[Hostinger Boot] New commit or missing dist folder detected. Running build...');
     try {
-        execSync('npm run build', { stdio: 'inherit' });
+        const { spawnSync } = require('child_process');
+        const viteJs = path.join(__dirname, 'node_modules/vite/bin/vite.js');
+        const frontendDir = path.join(__dirname, 'frontend');
+        
+        console.log(`[Hostinger Boot] Spawning Vite build from ${frontendDir}...`);
+        const buildResult = spawnSync(process.execPath, [viteJs, 'build'], {
+            cwd: frontendDir,
+            stdio: 'inherit'
+        });
+
+        if (buildResult.error || buildResult.status !== 0) {
+            throw buildResult.error || new Error(`Vite build exited with status ${buildResult.status}`);
+        }
+        
         console.log('[Hostinger Boot] Build completed successfully.');
+        
+        // Touch tmp/restart.txt to let Passenger know
+        const tmpDir = path.join(__dirname, 'tmp');
+        if (!fs.existsSync(tmpDir)) {
+            fs.mkdirSync(tmpDir, { recursive: true });
+        }
+        fs.writeFileSync(path.join(tmpDir, 'restart.txt'), String(Date.now()));
+
         if (currentCommit) {
             if (!fs.existsSync(distPath)) {
                 fs.mkdirSync(distPath, { recursive: true });
