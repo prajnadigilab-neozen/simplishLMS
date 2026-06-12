@@ -219,34 +219,56 @@ app.use((err, req, res, next) => {
 // 6. EXPORT & LISTEN (Clustered)
 // ==========================================
 const numCPUs = Math.min(os.cpus().length, 6); // Rule 18: Tuned to 6 workers for max OS 'Headroom' during Stress
+const isPassenger = !!(process.env.PASSENGER_APP_ENV || process.env.PASSENGER_BASE_URI);
+const shouldCluster = !isPassenger && env.NODE_ENV === 'production';
 
-if (cluster.isMaster) {
-    logger.info(`[SRE] Master ${process.pid} is running. Scaling to ${numCPUs} workers...`);
-
-    // Fork workers
-    for (let i = 0; i < numCPUs; i++) {
-        cluster.fork();
-    }
-
-    cluster.on('exit', (worker, code, signal) => {
-        logger.warn(`[SRE] Worker ${worker.process.pid} died. Reviving...`);
-        cluster.fork();
-    });
-
-    // Master logic for cron jobs (ensure only one master handles these)
-    cron.schedule('0 0 * * *', () => {
-        logger.info('--- Triggering daily system cleanup cron job (Master) ---');
-        dailyCleanup();
-    });
-} else {
-    // Workers share the same TCP connection on port 5000
-    if (env.NODE_ENV !== 'test') {
-        app.listen(PORT, async () => {
+async function startServer() {
+    app.listen(PORT, async () => {
+        try {
             // Rule 19: Pre-warm memory caches for sub-1s interactivity
             const lessonController = require('./controllers/lessonController');
             await lessonController.preWarmCache();
-            
-            logger.info(`[SRE] Worker ${process.pid} active on port ${PORT}`);
+        } catch (err) {
+            logger.error(`[SRE] Cache pre-warming error: ${err.message}`);
+        }
+        
+        logger.info(`[SRE] Server active on port ${PORT} (PID: ${process.pid})`);
+    });
+}
+
+if (shouldCluster) {
+    if (cluster.isMaster) {
+        logger.info(`[SRE] Master ${process.pid} is running. Scaling to ${numCPUs} workers...`);
+
+        // Fork workers
+        for (let i = 0; i < numCPUs; i++) {
+            cluster.fork();
+        }
+
+        cluster.on('exit', (worker, code, signal) => {
+            logger.warn(`[SRE] Worker ${worker.process.pid} died. Reviving...`);
+            cluster.fork();
+        });
+
+        // Master logic for cron jobs (ensure only one master handles these)
+        cron.schedule('0 0 * * *', () => {
+            logger.info('--- Triggering daily system cleanup cron job (Master) ---');
+            dailyCleanup();
+        });
+    } else {
+        if (env.NODE_ENV !== 'test') {
+            startServer();
+        }
+    }
+} else {
+    // Single process mode (e.g. Passenger, Dev, Test)
+    if (env.NODE_ENV !== 'test') {
+        startServer();
+        
+        // Start cron jobs in the single process
+        cron.schedule('0 0 * * *', () => {
+            logger.info('--- Triggering daily system cleanup cron job (Single Process) ---');
+            dailyCleanup();
         });
     }
 }
