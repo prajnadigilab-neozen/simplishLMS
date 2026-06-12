@@ -55,11 +55,14 @@ try {
         logEmergency(`Spawning Vite build from ${frontendDir} using Node path: ${process.execPath}...`);
         const buildResult = spawnSync(process.execPath, [viteJs, 'build'], {
             cwd: frontendDir,
-            stdio: 'inherit'
+            stdio: 'pipe',
+            encoding: 'utf8'
         });
 
         if (buildResult.error || buildResult.status !== 0) {
-            throw buildResult.error || new Error(`Vite build exited with status ${buildResult.status}`);
+            const stdoutStr = buildResult.stdout ? `\n--- VITE BUILD STDOUT ---\n${buildResult.stdout}` : '';
+            const stderrStr = buildResult.stderr ? `\n--- VITE BUILD STDERR ---\n${buildResult.stderr}` : '';
+            throw buildResult.error || new Error(`Vite build exited with status ${buildResult.status}.${stdoutStr}${stderrStr}`);
         }
         
         logEmergency('Vite build completed successfully.');
