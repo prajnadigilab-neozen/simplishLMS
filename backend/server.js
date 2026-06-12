@@ -179,7 +179,7 @@ app.use('/uploads', (req, res, next) => {
 
 // Serve Frontend Static Assets in Production
 if (env.NODE_ENV === 'production') {
-    const frontendDistPath = path.join(__dirname, '../frontend/dist');
+    const frontendDistPath = path.join(__dirname, '../dist');
     app.use(express.static(frontendDistPath));
     
     // Redirect all other requests to React Router (SPA)
