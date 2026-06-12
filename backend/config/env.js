@@ -40,7 +40,17 @@ const envSchema = z.object({
 const result = envSchema.safeParse(process.env);
 
 if (!result.success) {
-    console.error('❌ Invalid environment variables:', JSON.stringify(result.error.format(), null, 2));
+    const errorDetails = JSON.stringify(result.error.format(), null, 2);
+    console.error('❌ Invalid environment variables:', errorDetails);
+    
+    try {
+        const fs = require('fs');
+        const logPath = path.join(__dirname, '../../debug-crash.txt');
+        fs.appendFileSync(logPath, `[${new Date().toISOString()}] ZOD VALIDATION FAILED:\n${errorDetails}\n\n`);
+    } catch (e) {
+        // Safe fallback
+    }
+    
     process.exit(1);
 }
 
