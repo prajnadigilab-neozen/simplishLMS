@@ -151,7 +151,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/assessments', assessmentRoutes);
 
-app.get('/', (req, res) => {
+app.get('/', (req, res, next) => {
+    if (env.NODE_ENV === 'production') {
+        return next();
+    }
     res.setHeader('X-Simplish-Shield', 'active');
     res.json({ message: 'SIMPLISH LMS API is running', version: 'v1' });
 });
