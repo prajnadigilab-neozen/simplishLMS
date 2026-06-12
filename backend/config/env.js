@@ -3,7 +3,13 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const envSchema = z.object({
-    PORT: z.coerce.number().default(5000),
+    PORT: z.preprocess(
+        (val) => {
+            if (val === undefined || val === '') return 5000;
+            return /^\d+$/.test(String(val)) ? Number(val) : val;
+        },
+        z.union([z.number(), z.string()])
+    ),
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
     
     // Supabase
