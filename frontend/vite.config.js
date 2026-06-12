@@ -5,15 +5,20 @@ import viteCompression from 'vite-plugin-compression';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true
+  },
   plugins: [
     react(),
     viteCompression({
-      algoritms: 'brotliCompress',
+      algorithm: 'brotliCompress',
       ext: '.br',
     }),
     viteCompression({
       algorithm: 'gzip',
       ext: '.gz',
+      deleteOriginFile: false
     }),
     VitePWA({
       registerType: 'autoUpdate',
