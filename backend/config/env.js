@@ -21,8 +21,17 @@ const envSchema = z.object({
     // AI
     GEMINI_API_KEY: emptyToUndefined(z.string().optional()),
     
-    // Auth & CORS
-    FRONTEND_URL: emptyToUndefined(z.string().url().default('http://localhost:5173')),
+    FRONTEND_URL: emptyToUndefined(
+        z.preprocess((val) => {
+            if (typeof val !== 'string') return val;
+            let url = val.trim();
+            if (url === '/' || url === '') return 'https://simplish.in';
+            if (!/^https?:\/\//i.test(url)) {
+                url = 'https://' + url;
+            }
+            return url;
+        }, z.string().url().default('http://localhost:5173'))
+    ),
     
     // Razorpay
     RAZORPAY_KEY_ID: emptyToUndefined(z.string().optional()),
