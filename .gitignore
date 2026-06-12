@@ -16,6 +16,7 @@ dist-ssr/
 build/
 .next/
 out/
+tmp/
 
 # Environment variables
 .env
