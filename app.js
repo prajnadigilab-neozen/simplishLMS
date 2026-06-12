@@ -52,6 +52,22 @@ try {
         const viteJs = path.join(__dirname, 'node_modules/vite/bin/vite.js');
         const frontendDir = path.join(__dirname, 'frontend');
         
+        // Grant execute permissions to esbuild binaries on Linux (Passenger environment)
+        try {
+            const esbuildBinPaths = [
+                path.join(__dirname, 'node_modules/@esbuild/linux-x64/bin/esbuild'),
+                path.join(__dirname, 'node_modules/esbuild/bin/esbuild')
+            ];
+            for (const binPath of esbuildBinPaths) {
+                if (fs.existsSync(binPath)) {
+                    logEmergency(`Setting execute permissions (+x) on esbuild: ${binPath}`);
+                    fs.chmodSync(binPath, 0o755);
+                }
+            }
+        } catch (chmodErr) {
+            logEmergency('Warning: Failed to set execute permissions on esbuild: ' + chmodErr.message);
+        }
+
         logEmergency(`Spawning Vite build from ${frontendDir} using Node path: ${process.execPath}...`);
         const buildResult = spawnSync(process.execPath, [viteJs, 'build'], {
             cwd: frontendDir,
