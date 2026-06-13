@@ -169,10 +169,12 @@ exports.confirm = async (req, res) => {
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
         return res.status(400).json({ message: 'Missing sync data' });
     }
-
     try {
         // --- MOCK VERIFICATION ---
-        if (!razorpay_order_id.startsWith('token_sync_') || env.NODE_ENV === 'production') {
+        const isMockMode = env.RAZORPAY_KEY_ID === 'rzp_test_your_key_id' || !env.RAZORPAY_KEY_ID;
+        const isMockTxn = razorpay_order_id.startsWith('token_sync_');
+
+        if (!isMockTxn || !isMockMode) {
             // 1. Verify Signature
             const sign = razorpay_order_id + "|" + razorpay_payment_id;
             const expectedSign = crypto
