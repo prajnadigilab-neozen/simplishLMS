@@ -110,6 +110,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                 placeholder={language === 'kn' ? "ಹೆಸರು" : "John Doe"}
                                 value={formData.fullName}
                                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                autoComplete="name"
                             />
                         </div>
                     </div>
@@ -129,6 +130,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                 placeholder="9876543210"
                                 value={formData.identifier}
                                 onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
+                                autoComplete="username"
                             />
                         </div>
                     </div>
@@ -148,6 +150,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                 placeholder="••••••••"
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
                             />
                         </div>
                         {mode === 'signin' && (
@@ -179,6 +182,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                     placeholder="123456"
                                     value={formData.otp}
                                     onChange={(e) => setFormData({ ...formData, otp: e.target.value })}
+                                    autoComplete="one-time-code"
                                 />
                             </div>
                         </div>
@@ -195,6 +199,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                     placeholder="••••••••"
                                     value={formData.newPassword}
                                     onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                                    autoComplete="new-password"
                                 />
                             </div>
                         </div>
