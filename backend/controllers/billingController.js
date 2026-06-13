@@ -19,14 +19,13 @@ exports.initiate = async (req, res) => {
     const { amount, currency = 'INR' } = req.body;
     const userId = req.user.id;
 
-    if (!amount || amount <= 0) {
-        return res.status(400).json({ message: 'Invalid amount' });
-    }
-    
     try {
-        const config = await billingService.getSettings();
+        const settings = await billingService.getSettings();
         
         if (type === 'TOPUP') {
+            if (!amount || amount <= 0) {
+                return res.status(400).json({ message: 'Invalid amount' });
+            }
             const profile = await userService.getUserById(userId);
             const isPremium = profile?.is_paid && profile?.subscription_expires_at && new Date(profile.subscription_expires_at) > new Date();
             
@@ -38,7 +37,6 @@ exports.initiate = async (req, res) => {
         }
 
         // 1. Fetch Dynamic Financial Settings
-        const settings = await billingService.getSettings();
         const gstRate = parseFloat(settings.gst_rate || 18);
         const baseState = settings.base_state || 'Karnataka';
         const invoiceEnabled = settings.invoice_enabled === 'true';
@@ -48,7 +46,7 @@ exports.initiate = async (req, res) => {
         const userState = userProfile?.state || 'Unknown'; // Fallback triggers IGST
         
         // Use provided amount for TOPUP, otherwise default to subscription_price from settings
-        let priceRupees = (type === 'TOPUP') ? Number(amount) : Number(settings.subscription_price || 99);
+        let priceRupees = (type === 'TOPUP') ? Number(amount) : Number(amount || settings.subscription_price || 99);
         if (isNaN(priceRupees) || priceRupees <= 0) priceRupees = 99;
         
         // 3. SECURE INTEGER MATH: Convert to Paise immediately

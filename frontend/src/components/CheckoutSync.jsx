@@ -94,7 +94,7 @@ const CheckoutSync = () => {
     const fetchLocalMetadata = async () => {
         try {
             const res = await settingsApi.get();
-            if (res.data) setSettings(res.data);
+            if (res.data) setSettings(prev => ({ ...prev, ...res.data }));
         } catch (err) {
             console.error('Fetch error:', err);
         } finally {
@@ -118,7 +118,7 @@ const CheckoutSync = () => {
     const handleSyncInitiate = async (type = 'MEMBERSHIP', customAmount = null) => {
         setLoading(true);
         try {
-            const amount = customAmount || settings.subscription_price;
+            const amount = customAmount || settings.subscription_price || '99';
             
             // 1. Initiate Sync with Backend
             const syncRes = await billingApi.initiate({

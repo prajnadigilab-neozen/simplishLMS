@@ -94,7 +94,7 @@ const AdminDashboard = ({ user: userProp }) => {
             setActivity(activityRes.data || []);
 
             if (settingsRes && settingsRes.data) {
-                setSettings(settingsRes.data);
+                setSettings(prev => ({ ...prev, ...settingsRes.data }));
             }
         } catch (err) {
             console.error('Failed to load dashboard data:', err);
