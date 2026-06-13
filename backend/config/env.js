@@ -44,6 +44,14 @@ const envSchema = z.object({
     // Sentry
     SENTRY_DSN: emptyToUndefined(z.string().url().optional()),
     SENTRY_ENVIRONMENT: z.string().default('development'),
+
+    // Clustering
+    DISABLE_CLUSTERING: emptyToUndefined(
+        z.preprocess(
+            (val) => val === 'true' || val === '1' || val === true,
+            z.boolean().default(false)
+        )
+    ),
 });
 
 const result = envSchema.safeParse(process.env);

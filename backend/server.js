@@ -222,8 +222,15 @@ app.use((err, req, res, next) => {
 // 6. EXPORT & LISTEN (Clustered)
 // ==========================================
 const numCPUs = Math.min(os.cpus().length, 6); // Rule 18: Tuned to 6 workers for max OS 'Headroom' during Stress
-const isPassenger = !!(process.env.PASSENGER_APP_ENV || process.env.PASSENGER_BASE_URI);
-const shouldCluster = !isPassenger && env.NODE_ENV === 'production';
+const isPassenger = !!(
+    process.env.PASSENGER_APP_ENV || 
+    process.env.PASSENGER_BASE_URI ||
+    process.execPath.includes('/opt/alt/') || // CloudLinux Node.js Selector path
+    __dirname.includes('/domains/') ||        // Hostinger domain path
+    __dirname.includes('/cpanel/')            // cPanel path
+);
+const shouldCluster = !isPassenger && env.NODE_ENV === 'production' && !env.DISABLE_CLUSTERING;
+
 
 async function startServer() {
     app.listen(PORT, async () => {
