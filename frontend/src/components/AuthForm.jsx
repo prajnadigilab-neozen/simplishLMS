@@ -136,20 +136,9 @@ const AuthForm = ({ onLoginSuccess, language }) => {
 
                 {(mode === 'signin' || mode === 'signup') && (
                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 600 }}>
-                                {language === 'kn' ? 'ಪಾಸ್ವರ್ಡ್' : 'Password'}
-                            </label>
-                            {mode === 'signin' && (
-                                <button
-                                    type="button"
-                                    onClick={() => { setMode('forgot'); setError(''); setMessage(''); }}
-                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
-                                >
-                                    {language === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರುವಿರಾ?' : 'Forgot Password?'}
-                                </button>
-                            )}
-                        </div>
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 600 }}>
+                            {language === 'kn' ? 'ಪಾಸ್ವರ್ಡ್' : 'Password'}
+                        </label>
                         <div style={{ position: 'relative' }}>
                             <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                             <input
@@ -161,6 +150,17 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                             />
                         </div>
+                        {mode === 'signin' && (
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.4rem' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => { setMode('forgot'); setError(''); setMessage(''); }}
+                                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 600 }}
+                                >
+                                    {language === 'kn' ? 'ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರುವಿರಾ?' : 'Forgot Password?'}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 
