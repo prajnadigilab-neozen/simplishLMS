@@ -19,7 +19,7 @@
   "scripts": {
     "build": "npm run build --prefix frontend && node -e \"const fs = require('fs'); if (!fs.existsSync('tmp')) fs.mkdirSync('tmp'); fs.writeFileSync('tmp/restart.txt', String(Date.now()));\"",
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "start": "node backend/server.js",
+    "start": "node app.js",
     "test:e2e": "npm run test:e2e --prefix frontend"
   },
   "workspaces": [
