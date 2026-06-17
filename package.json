@@ -21,9 +21,5 @@
     "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
     "start": "node app.js",
     "test:e2e": "npm run test:e2e --prefix frontend"
-  },
-  "workspaces": [
-    "backend",
-    "frontend"
-  ]
+  }
 }
