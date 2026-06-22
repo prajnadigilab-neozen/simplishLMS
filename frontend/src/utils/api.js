@@ -62,7 +62,10 @@ export const assessmentApi = {
     processMedia: (formData) => api.post('/assessments/process-media', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    submitFeedback: (examId, data) => api.post(`/exams/${examId}/feedback`, data),
+    getAllFeedback: () => api.get('/exams/feedback')
 };
+
 
 export const authApi = {
     login: (credentials) => api.post('/auth/login', credentials),

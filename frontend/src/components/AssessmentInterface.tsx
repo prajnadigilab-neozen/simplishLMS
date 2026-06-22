@@ -12,6 +12,7 @@ import AssessmentHeader from './Assessment/AssessmentHeader';
 import MCQQuestion from './Assessment/MCQQuestion';
 import MatchingQuestion from './Assessment/MatchingQuestion';
 import FeedbackBlock from './Assessment/FeedbackBlock';
+import PostExamFeedbackModal from './Assessment/PostExamFeedbackModal';
 
 interface AssessmentInterfaceProps {
     user?: User;
@@ -47,6 +48,9 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
     const [isFinished, setIsFinished] = useState(false);
     const [resultData, setResultData] = useState<any>(null);
     const [answers, setAnswers] = useState<Record<string, string>>({});
+    const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+    const [feedbackTriggered, setFeedbackTriggered] = useState(false);
+    const [abVariant, setAbVariant] = useState<'A' | 'B' | 'C'>('A');
     
     // Matching State
     const [shuffledOptions, setShuffledOptions] = useState<Record<number, string[]>>({});
@@ -148,6 +152,29 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
         }
     }, [isFinished, resultData, lessonId]);
 
+    // Assign A/B test variant on component mount
+    useEffect(() => {
+        const variants: ('A' | 'B' | 'C')[] = ['A', 'B', 'C'];
+        const randomVariant = variants[Math.floor(Math.random() * variants.length)];
+        setAbVariant(randomVariant);
+    }, []);
+
+    // Trigger post-exam feedback modal after a successful graduation exam
+    useEffect(() => {
+        if (isFinished && resultData?.passed && !feedbackTriggered) {
+            const isGraduationExam = assessment?.title?.toLowerCase().includes('graduation') || 
+                                     assessment?.title?.toLowerCase().includes('final') ||
+                                     lessonId === 'final';
+            if (isGraduationExam) {
+                const timer = setTimeout(() => {
+                    setShowFeedbackModal(true);
+                    setFeedbackTriggered(true);
+                }, 1500); // 1.5s delay to ease post-exam cognitive load
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [isFinished, resultData, assessment, feedbackTriggered, lessonId]);
+
     const handleCheck = async () => {
         const q = questions[currentQuestion];
         setChecking(true);
@@ -244,6 +271,12 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
                 zIndex: 1000,
                 overflowY: 'auto'
             }}>
+                <PostExamFeedbackModal
+                    isOpen={showFeedbackModal}
+                    examId={assessment?.id || ''}
+                    onClose={() => setShowFeedbackModal(false)}
+                    variant={abVariant}
+                />
                 <motion.div
                     initial={{ scale: 0, rotate: -10 }}
                     animate={{ scale: 1, rotate: 0 }}
@@ -343,6 +376,26 @@ const AssessmentInterface: React.FC<AssessmentInterfaceProps> = ({ user: propUse
                             Library
                         </button>
                     </div>
+
+                    <button
+                        type="button"
+                        className="btn"
+                        onClick={() => setShowFeedbackModal(true)}
+                        style={{
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            color: '#a5b4fc',
+                            border: '1px dashed rgba(99, 102, 241, 0.4)',
+                            width: '100%',
+                            padding: '0.75rem',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            marginTop: '0.5rem',
+                            borderRadius: '12px'
+                        }}
+                    >
+                        🛠️ Test: Open Feedback Modal
+                    </button>
+
                 </div>
             </div>
         );

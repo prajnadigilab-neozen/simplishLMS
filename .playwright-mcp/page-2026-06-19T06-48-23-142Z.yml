@@ -1,0 +1,62 @@
+- generic [ref=e1]:
+  - generic:
+    - img "SIMPLISH Talks Hero"
+  - generic [ref=e3]:
+    - banner [ref=e16]:
+      - generic [ref=e19] [cursor=pointer]:
+        - generic [ref=e20]: SIMPLISH
+        - generic [ref=e21]: Talks
+      - generic [ref=e22]:
+        - navigation [ref=e23]:
+          - button "ಮುಖಪುಟ" [ref=e24] [cursor=pointer]
+        - generic [ref=e25]:
+          - button "🌙" [ref=e26] [cursor=pointer]
+          - button "En" [ref=e27] [cursor=pointer]
+        - generic [ref=e29]:
+          - button "ಲಾಗಿನ್" [active] [ref=e30] [cursor=pointer]
+          - button "ಸೇರಿ" [ref=e31] [cursor=pointer]
+    - main [ref=e32]:
+      - generic [ref=e125]:
+        - generic [ref=e126]:
+          - generic [ref=e130]:
+            - img "SIMPLISH Symbol" [ref=e132]
+            - heading "SIMPLISH Talks" [level=1] [ref=e133]:
+              - text: SIMPLISH
+              - generic [ref=e134]: Talks
+            - paragraph [ref=e135]: ಕನ್ನಡದಲ್ಲಿ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ.
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: 🎙️
+              - generic [ref=e139]: ಧ್ವನಿ ಅಭ್ಯಾಸ ಸೆಷನ್‌ಗಳು
+            - generic [ref=e140]:
+              - generic [ref=e141]: 💬
+              - generic [ref=e142]: ದ್ವಿಭಾಷಾ AI ತರಬೇತಿ
+            - generic [ref=e143]:
+              - generic [ref=e144]: 📚
+              - generic [ref=e145]: ಕ್ರಮಬದ್ಧ ಕಲಿಕೆ
+          - paragraph [ref=e146]: ಕನ್ನಡಿಗರಿಗಾಗಿ ಇಂಗ್ಲಿಷ್
+        - generic [ref=e148]:
+          - generic [ref=e149]:
+            - button "ಲಾಗಿನ್" [ref=e151] [cursor=pointer]
+            - button "ನೋಂದಣಿ" [ref=e152] [cursor=pointer]
+          - generic [ref=e153]:
+            - heading "ಮರಳಿ ಸ್ವಾಗತ 👋" [level=2] [ref=e154]
+            - paragraph [ref=e155]: ನಿಮ್ಮ ಕಲಿಕೆ ಮುಂದುವರಿಸಿ.
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - generic [ref=e158]: ಫೋನ್ ಸಂಖ್ಯೆ
+              - textbox "98765 43210" [ref=e160]
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - generic [ref=e163]: ಪಾಸ್‌ವರ್ಡ್
+                - generic [ref=e164]:
+                  - textbox "••••••••" [ref=e165]
+                  - button "Show password" [ref=e167] [cursor=pointer]:
+                    - img [ref=e168]
+              - button "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?" [ref=e171] [cursor=pointer]
+            - button "ಸೈನ್ ಇನ್ →" [ref=e172] [cursor=pointer]:
+              - text: ಸೈನ್ ಇನ್
+              - generic [ref=e173]: →
+          - paragraph [ref=e174]:
+            - text: ಖಾತೆ ಇಲ್ಲವೇ?
+            - button "ಈಗಲೇ ನೋಂದಾಯಿಸಿ" [ref=e175] [cursor=pointer]

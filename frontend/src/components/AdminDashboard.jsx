@@ -21,7 +21,7 @@ import {
     Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { reportApi, authApi, settingsApi } from '../utils/api';
+import { reportApi, authApi, settingsApi, assessmentApi } from '../utils/api';
 import { useToast } from './Toast';
 import { useUser } from '../context/UserContext';
 import Reports from './Reports'; // We'll keep the detailed breakdown here
@@ -36,6 +36,8 @@ const AdminDashboard = ({ user: userProp }) => {
     const [settings, setSettings] = useState({ subscription_price: '99', subscription_duration_days: '30' });
     const [loading, setLoading] = useState(true);
     const [savingSettings, setSavingSettings] = useState(false);
+    const [examFeedbacks, setExamFeedbacks] = useState([]);
+    const [loadingFeedback, setLoadingFeedback] = useState(false);
     const showToast = useToast();
 
     const role = user?.role?.toLowerCase()?.replace(/\s+|_/g, '_');
@@ -101,6 +103,25 @@ const AdminDashboard = ({ user: userProp }) => {
             showToast('Failed to load dashboard data', 'error');
         } finally {
             setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'feedback') {
+            fetchFeedback();
+        }
+    }, [activeTab]);
+
+    const fetchFeedback = async () => {
+        setLoadingFeedback(true);
+        try {
+            const response = await assessmentApi.getAllFeedback();
+            setExamFeedbacks(response.data.feedbacks || []);
+        } catch (err) {
+            console.error('Failed to load exam feedback:', err);
+            showToast('Failed to load exam feedback', 'error');
+        } finally {
+            setLoadingFeedback(false);
         }
     };
 
@@ -753,81 +774,186 @@ const AdminDashboard = ({ user: userProp }) => {
                     )}
 
                     {activeTab === 'feedback' && (
-                        <div className="feedback-tab" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                            <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                                        <Users size={24} />
+                        <div className="feedback-tab" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                                <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                                            <Users size={24} />
+                                        </div>
+                                        <h3 style={{ margin: 0, fontWeight: 800 }}>User Feedback</h3>
                                     </div>
-                                    <h3 style={{ margin: 0, fontWeight: 800 }}>User Feedback</h3>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                        Standardized questionnaire for gathering insights from students about lesson quality, platform usability, and learning experience.
+                                    </p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = '/feedback_templates/User_Feedback_Questionnaire.csv';
+                                            link.download = 'User_Feedback_Questionnaire.csv';
+                                            link.click();
+                                        }}
+                                        style={{ 
+                                            marginTop: 'auto',
+                                            padding: '0.8rem', 
+                                            borderRadius: '10px', 
+                                            background: 'rgba(59, 130, 246, 0.1)', 
+                                            color: '#3b82f6', 
+                                            border: '1px solid rgba(59, 130, 246, 0.2)', 
+                                            fontWeight: 700, 
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem'
+                                        }}
+                                    >
+                                        <Download size={18} /> DOWNLOAD TEMPLATE
+                                    </motion.button>
                                 </div>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                                    Standardized questionnaire for gathering insights from students about lesson quality, platform usability, and learning experience.
-                                </p>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = '/feedback_templates/User_Feedback_Questionnaire.csv';
-                                        link.download = 'User_Feedback_Questionnaire.csv';
-                                        link.click();
-                                    }}
-                                    style={{ 
-                                        marginTop: 'auto',
-                                        padding: '0.8rem', 
-                                        borderRadius: '10px', 
-                                        background: 'rgba(59, 130, 246, 0.1)', 
-                                        color: '#3b82f6', 
-                                        border: '1px solid rgba(59, 130, 246, 0.2)', 
-                                        fontWeight: 700, 
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
-                                >
-                                    <Download size={18} /> DOWNLOAD TEMPLATE
-                                </motion.button>
+
+                                <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                                            <ShieldCheck size={24} />
+                                        </div>
+                                        <h3 style={{ margin: 0, fontWeight: 800 }}>Admin Feedback</h3>
+                                    </div>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                                        Questionnaire designed for internal staff and moderators to report on administrative efficiency, reporting accuracy, and feature requests.
+                                    </p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => {
+                                            const link = document.createElement('a');
+                                            link.href = '/feedback_templates/Admin_Feedback_Questionnaire.csv';
+                                            link.download = 'Admin_Feedback_Questionnaire.csv';
+                                            link.click();
+                                        }}
+                                        style={{ 
+                                            marginTop: 'auto',
+                                            padding: '0.8rem', 
+                                            borderRadius: '10px', 
+                                            background: 'rgba(16, 185, 129, 0.1)', 
+                                            color: '#10b981', 
+                                            border: '1px solid rgba(16, 185, 129, 0.2)', 
+                                            fontWeight: 700, 
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem'
+                                        }}
+                                    >
+                                        <Download size={18} /> DOWNLOAD TEMPLATE
+                                    </motion.button>
+                                </div>
                             </div>
 
-                            <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                    <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                                        <ShieldCheck size={24} />
+                            {/* Submitted Exam Feedback List */}
+                            <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%', overflow: 'hidden' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ padding: '0.75rem', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)' }}>
+                                            <ClipboardList size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 style={{ margin: 0, fontWeight: 800 }}>Post-Exam Reviews</h3>
+                                            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.8rem' }}>Submitted by graduating students immediately after completing graduation exams.</p>
+                                        </div>
                                     </div>
-                                    <h3 style={{ margin: 0, fontWeight: 800 }}>Admin Feedback</h3>
+                                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        {examFeedbacks.length > 0 && (
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>AVERAGE RATING</span>
+                                                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fbbf24' }}>
+                                                    ⭐ {(examFeedbacks.reduce((sum, f) => sum + f.rating, 0) / examFeedbacks.length).toFixed(1)} / 5.0
+                                                </div>
+                                            </div>
+                                        )}
+                                        <button 
+                                            type="button"
+                                            onClick={fetchFeedback}
+                                            className="glass-button"
+                                            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                        >
+                                            <RefreshCw size={14} className={loadingFeedback ? 'animate-spin' : ''} />
+                                            Refresh Reviews
+                                        </button>
+                                    </div>
                                 </div>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>
-                                    Questionnaire designed for internal staff and moderators to report on administrative efficiency, reporting accuracy, and feature requests.
-                                </p>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = '/feedback_templates/Admin_Feedback_Questionnaire.csv';
-                                        link.download = 'Admin_Feedback_Questionnaire.csv';
-                                        link.click();
-                                    }}
-                                    style={{ 
-                                        marginTop: 'auto',
-                                        padding: '0.8rem', 
-                                        borderRadius: '10px', 
-                                        background: 'rgba(16, 185, 129, 0.1)', 
-                                        color: '#10b981', 
-                                        border: '1px solid rgba(16, 185, 129, 0.2)', 
-                                        fontWeight: 700, 
-                                        cursor: 'pointer',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.5rem'
-                                    }}
-                                >
-                                    <Download size={18} /> DOWNLOAD TEMPLATE
-                                </motion.button>
+
+                                {loadingFeedback ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+                                        <Loader2 className="animate-spin" size={32} color="var(--primary)" />
+                                    </div>
+                                ) : examFeedbacks.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem 1rem', border: '1px dashed var(--border)', borderRadius: '16px', color: 'var(--text-muted)' }}>
+                                        <MessageSquare size={48} style={{ opacity: 0.3, margin: '0 auto 1rem' }} />
+                                        <h4 style={{ margin: '0 0 0.5rem 0' }}>No Exam Reviews Yet</h4>
+                                        <p style={{ margin: 0, fontSize: '0.85rem' }}>Feedback will populate here once students pass the Graduation Exam.</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 800 }}>
+                                                    <th style={{ padding: '1rem' }}>STUDENT</th>
+                                                    <th style={{ padding: '1rem' }}>EXAM</th>
+                                                    <th style={{ padding: '1rem' }}>RATING</th>
+                                                    <th style={{ padding: '1rem' }}>TAGS / HIGHLIGHTS</th>
+                                                    <th style={{ padding: '1rem' }}>COMMENTS</th>
+                                                    <th style={{ padding: '1rem' }}>DATE</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {examFeedbacks.map((item, idx) => (
+                                                    <tr key={item.id || idx} style={{ borderBottom: '1px solid var(--border)', fontSize: '0.9rem' }}>
+                                                        <td style={{ padding: '1rem', fontWeight: 700 }}>
+                                                            {item.users?.full_name || 'Anonymous User'}
+                                                        </td>
+                                                        <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>
+                                                            {item.assessments?.title || 'Graduation Exam'}
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', gap: '2px', color: '#fbbf24' }}>
+                                                                {Array.from({ length: item.rating }).map((_, i) => (
+                                                                    <span key={i}>★</span>
+                                                                ))}
+                                                                {Array.from({ length: 5 - item.rating }).map((_, i) => (
+                                                                    <span key={i} style={{ color: 'var(--border)' }}>★</span>
+                                                                ))}
+                                                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '4px', alignSelf: 'center' }}>({item.rating})</span>
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem' }}>
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                                                {item.feedback_tags && item.feedback_tags.length > 0 ? (
+                                                                    item.feedback_tags.map(tag => (
+                                                                        <span key={tag} style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '100px', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', color: '#a5b4fc', fontWeight: 600 }}>
+                                                                            {tag}
+                                                                        </span>
+                                                                    ))
+                                                                ) : (
+                                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>None selected</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td style={{ padding: '1rem', maxWidth: '300px', whiteSpace: 'normal', overflowWrap: 'break-word', color: item.comments ? 'var(--text-main)' : 'var(--text-muted)', fontStyle: item.comments ? 'normal' : 'italic' }}>
+                                                            {item.comments || '"No written comments left"'}
+                                                        </td>
+                                                        <td style={{ padding: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                                            {new Date(item.created_at).toLocaleDateString()}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

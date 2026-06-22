@@ -45,3 +45,14 @@ export interface AssessmentResult {
     passed: boolean;
     created_at?: string;
 }
+
+export interface ExamFeedback {
+    id?: string;
+    user_id: string;
+    exam_id: string;
+    rating: number;
+    feedback_tags?: string[];
+    comments?: string;
+    created_at?: string;
+}
+
