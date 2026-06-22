@@ -1,0 +1,25 @@
+# robots.txt for SIMPLISH LMS (https://simplish.in)
+# Enforce guidelines for all web crawlers
+User-agent: *
+
+# Crawl-delay to prevent server stress
+Crawl-delay: 5
+
+# Allow crawling of public learning resource catalogs
+Allow: /$
+Allow: /library
+Allow: /coaching
+
+# Disallow crawling of administrative and authenticated areas
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /payment/
+Disallow: /profile/
+Disallow: /settings/
+
+# Disallow crawling of internal application logic
+Disallow: /api/
+Disallow: /uploads/
+
+# Reference to the main sitemap file
+Sitemap: https://simplish.in/sitemap.xml
