@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User, Mail, Lock, Camera, MapPin, AlignLeft, Save, X, Loader2, Phone, Calendar, Briefcase, Home, Globe } from 'lucide-react';
 import { authApi } from '../utils/api';
@@ -32,10 +32,37 @@ const ProfileSettings = ({ onBack }) => {
         bio: user?.bio || '',
         location: user?.location || '',
         state: user?.state || 'Karnataka',
+        dob: user?.dob ? user.dob.split('T')[0] : '',
+        employmentStatus: user?.employment_status || user?.employmentStatus || '',
+        personalAddress: user?.personal_address || user?.personalAddress || '',
+        place: user?.place || '',
+        pincode: user?.pincode || '',
         password: ''
     });
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || null);
+
+    useEffect(() => {
+        if (user) {
+            setForm(prev => ({
+                ...prev,
+                fullName: user.fullName || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                bio: user.bio || '',
+                location: user.location || '',
+                state: user.state || 'Karnataka',
+                dob: user.dob ? user.dob.split('T')[0] : '',
+                employmentStatus: user.employment_status || user.employmentStatus || '',
+                personalAddress: user.personal_address || user.personalAddress || '',
+                place: user.place || '',
+                pincode: user.pincode || ''
+            }));
+            if (user.avatarUrl) {
+                setAvatarPreview(user.avatarUrl);
+            }
+        }
+    }, [user]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -62,6 +89,11 @@ const ProfileSettings = ({ onBack }) => {
             formData.append('bio', form.bio);
             formData.append('location', form.location);
             formData.append('state', form.state);
+            formData.append('dob', form.dob);
+            formData.append('employmentStatus', form.employmentStatus);
+            formData.append('personalAddress', form.personalAddress);
+            formData.append('place', form.place);
+            formData.append('pincode', form.pincode);
             if (form.password) formData.append('password', form.password);
             if (avatarFile) formData.append('avatar', avatarFile);
 
@@ -488,6 +520,73 @@ const ProfileSettings = ({ onBack }) => {
                                         <option key={s} value={s}>{s}</option>
                                     ))}
                                 </select>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ಹುಟ್ಟಿದ ದಿನಾಂಕ' : 'Date of Birth (DOB)'}</label>
+                                    <Calendar size={18} style={iconStyle} />
+                                    <input
+                                        type="date"
+                                        style={inputStyle(false)}
+                                        max={new Date().toISOString().split('T')[0]}
+                                        value={form.dob}
+                                        onChange={e => setForm({ ...form, dob: e.target.value })}
+                                    />
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ಉದ್ಯೋಗದ ಸ್ಥಿತಿ' : 'Employment Status'}</label>
+                                    <Briefcase size={18} style={iconStyle} />
+                                    <select
+                                        style={inputStyle(false)}
+                                        value={form.employmentStatus}
+                                        onChange={e => setForm({ ...form, employmentStatus: e.target.value })}
+                                    >
+                                        <option value="">{language === 'kn' ? 'ಆಯ್ಕೆ ಮಾಡಿ' : 'Select Status'}</option>
+                                        <option value="Student">{language === 'kn' ? 'ವಿದ್ಯಾರ್ಥಿ (Student)' : 'Student'}</option>
+                                        <option value="Employed">{language === 'kn' ? 'ಉದ್ಯೋಗಿ (Employed)' : 'Employed'}</option>
+                                        <option value="Self-Employed">{language === 'kn' ? 'ಸ್ವಯಂ ಉದ್ಯೋಗಿ (Self-Employed)' : 'Self-Employed'}</option>
+                                        <option value="Unemployed">{language === 'kn' ? 'ನಿರುದ್ಯೋಗಿ (Unemployed)' : 'Unemployed'}</option>
+                                        <option value="Other">{language === 'kn' ? 'ಇತರೆ (Other)' : 'Other'}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div style={{ position: 'relative' }}>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ಊರು / ಸ್ಥಳ' : 'Place'}</label>
+                                    <Globe size={18} style={iconStyle} />
+                                    <input
+                                        type="text"
+                                        placeholder={language === 'kn' ? 'ಉದಾ: ಬೆಂಗಳೂರು' : 'e.g. Bengaluru'}
+                                        style={inputStyle(false)}
+                                        value={form.place}
+                                        onChange={e => setForm({ ...form, place: e.target.value })}
+                                    />
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <label style={labelStyle}>{language === 'kn' ? 'ಪಿನ್‌ಕೋಡ್' : 'Pincode (6 digits)'}</label>
+                                    <MapPin size={18} style={iconStyle} />
+                                    <input
+                                        type="text"
+                                        maxLength={6}
+                                        placeholder="560001"
+                                        style={inputStyle(false)}
+                                        value={form.pincode}
+                                        onChange={e => setForm({ ...form, pincode: e.target.value.replace(/\D/g, '') })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>{language === 'kn' ? 'ವೈಯಕ್ತಿಕ ವಿಳಾಸ (ಐಚ್ಛಿಕ)' : 'Personal Address (Optional)'}</label>
+                                <Home size={18} style={{ ...iconStyle, top: '2.5rem' }} />
+                                <textarea
+                                    placeholder={language === 'kn' ? 'ನಿಮ್ಮ ವಿಳಾಸ ನಮೂದಿಸಿ...' : 'Enter your residential address...'}
+                                    style={{ ...inputStyle(false), height: '80px', resize: 'none', paddingTop: '0.75rem', paddingLeft: '2.8rem' }}
+                                    value={form.personalAddress}
+                                    onChange={e => setForm({ ...form, personalAddress: e.target.value })}
+                                />
                             </div>
 
                             <div style={{ position: 'relative' }}>

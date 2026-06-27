@@ -385,7 +385,15 @@ exports.getProfile = async (req, res) => {
                     subscription_expires_at: profile.subscription_expires_at,
                     wallet_balance: profile.wallet_balance || 0,
                     state: profile.state || 'Karnataka',
-                    onboarding_completed: profile.onboarding_completed || false
+                    onboarding_completed: profile.onboarding_completed || false,
+                    avatarUrl: profile.avatar_url,
+                    bio: profile.bio,
+                    location: profile.location,
+                    dob: profile.dob,
+                    employment_status: profile.employment_status,
+                    personal_address: profile.personal_address,
+                    place: profile.place,
+                    pincode: profile.pincode
                 }
             });
         }
