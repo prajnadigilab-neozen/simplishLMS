@@ -34,9 +34,9 @@ const smsService = {
                 const templateId = process.env.SMS_GATEWAY_TEMPLATE_ID;
                 const appName = process.env.SMS_GATEWAY_APP_NAME || 'SIMPLISH';
                 
-                // Formulate text using the approved template:
-                // "To complete your new user registration for {#alphanumeric#}, use OTP {#numeric#}. Do not share this with anyone. - PRAJNA"
-                const text = encodeURIComponent(`To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. - PRAJNA`);
+                // Formulate text using the approved template in SMSGatewayHub:
+                // "To complete your new user registration for {#alphanumeric#}, use OTP {#numeric#}. Do not share this with anyone. – PRAJNA DIGILAB"
+                const text = encodeURIComponent(`To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. – PRAJNA DIGILAB`);
                 
                 // Construct SMSGatewayHub API request URL
                 let url = `https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${apiKey}&senderid=${senderId}&channel=2&DCS=0&flashsms=0&number=${phone}&text=${text}&route=${route}`;
@@ -56,7 +56,7 @@ const smsService = {
                     },
                     body: JSON.stringify({
                         to: phone,
-                        message: `To complete your new user registration for ${process.env.SMS_GATEWAY_APP_NAME || 'SIMPLISH'}, use OTP ${otp}. Do not share this with anyone. - PRAJNA`
+                        message: `To complete your new user registration for ${process.env.SMS_GATEWAY_APP_NAME || 'SIMPLISH'}, use OTP ${otp}. Do not share this with anyone. – PRAJNA DIGILAB`
                     })
                 });
             }
