@@ -246,7 +246,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                     required
                                     disabled={otpSent}
                                     style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)', opacity: otpSent ? 0.6 : 1 }}
-                                    placeholder="+919483105965"
+                                    placeholder=""
                                     value={formData.identifier}
                                     onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                                     autoComplete="username"
@@ -268,7 +268,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
                                 type="text"
                                 required
                                 style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: '0.5rem', border: '1px solid var(--border)', background: 'var(--bg-dark)', color: 'var(--text-main)' }}
-                                placeholder="+919483105965"
+                                placeholder=""
                                 value={formData.identifier}
                                 onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
                                 autoComplete="username"
