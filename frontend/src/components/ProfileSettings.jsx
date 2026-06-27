@@ -497,31 +497,6 @@ const ProfileSettings = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>{language === 'kn' ? 'ಸ್ಥಳ' : 'Location'}</label>
-                                <MapPin size={18} style={iconStyle} />
-                                <input
-                                    style={inputStyle(false)}
-                                    value={form.location}
-                                    onChange={e => setForm({ ...form, location: e.target.value })}
-                                    placeholder={language === 'kn' ? 'ಉದಾ: ಬೆಂಗಳೂರು, ಭಾರತ' : "e.g. Bengaluru, India"}
-                                />
-                            </div>
-
-                            <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>{language === 'kn' ? 'ರಾಜ್ಯ' : 'State'}</label>
-                                <MapPin size={18} style={iconStyle} />
-                                <select
-                                    style={inputStyle(false)}
-                                    value={form.state}
-                                    onChange={e => setForm({ ...form, state: e.target.value })}
-                                >
-                                    {['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry'].map(s => (
-                                        <option key={s} value={s}>{s}</option>
-                                    ))}
-                                </select>
-                            </div>
-
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ position: 'relative' }}>
                                     <label style={labelStyle}>{language === 'kn' ? 'ಹುಟ್ಟಿದ ದಿನಾಂಕ' : 'Date of Birth (DOB)'}</label>
@@ -561,7 +536,7 @@ const ProfileSettings = ({ onBack }) => {
                                         placeholder={language === 'kn' ? 'ಉದಾ: ಬೆಂಗಳೂರು' : 'e.g. Bengaluru'}
                                         style={inputStyle(false)}
                                         value={form.place}
-                                        onChange={e => setForm({ ...form, place: e.target.value })}
+                                        onChange={e => setForm({ ...form, place: e.target.value, location: e.target.value })}
                                     />
                                 </div>
                                 <div style={{ position: 'relative' }}>
@@ -576,6 +551,20 @@ const ProfileSettings = ({ onBack }) => {
                                         onChange={e => setForm({ ...form, pincode: e.target.value.replace(/\D/g, '') })}
                                     />
                                 </div>
+                            </div>
+
+                            <div style={{ position: 'relative' }}>
+                                <label style={labelStyle}>{language === 'kn' ? 'ರಾಜ್ಯ' : 'State'}</label>
+                                <MapPin size={18} style={iconStyle} />
+                                <select
+                                    style={inputStyle(false)}
+                                    value={form.state}
+                                    onChange={e => setForm({ ...form, state: e.target.value })}
+                                >
+                                    {['Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Puducherry'].map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div style={{ position: 'relative' }}>
