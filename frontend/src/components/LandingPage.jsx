@@ -7,13 +7,17 @@ import simplishLogo from '../assets/simplish_logo.png';
 import simplishTalksLogo from '../assets/logo_final.png';
 
 const LandingPage = ({ onAuthSuccess }) => {
-    const [lang, setLang] = useState('en'); // 'en' or 'kn'
+    const [lang, setLang] = useState(() => safeGetItem('simplish_language') || 'kn');
     const [theme, setTheme] = useState(safeGetItem('theme') || 'light');
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         safeSetItem('theme', theme);
     }, [theme]);
+
+    useEffect(() => {
+        safeSetItem('simplish_language', lang);
+    }, [lang]);
 
     const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
