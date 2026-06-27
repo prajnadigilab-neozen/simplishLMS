@@ -237,7 +237,7 @@ const AuthForm = ({ onLoginSuccess, language }) => {
 
                         <div>
                             <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', fontWeight: 600 }}>
-                                {language === 'kn' ? 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ (E.164)' : 'Phone Number (E.164)'}
+                                {language === 'kn' ? 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ' : 'Phone Number'}
                             </label>
                             <div style={{ position: 'relative' }}>
                                 <Smartphone size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />

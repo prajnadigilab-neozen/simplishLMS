@@ -477,7 +477,7 @@ const ProfileSettings = ({ onBack }) => {
                             </div>
 
                             <div style={{ position: 'relative' }}>
-                                <label style={labelStyle}>{language === 'kn' ? 'ರಾಜ್ಯ (ತೆರಿಗೆಗಾಗಿ)' : 'State (For Tax/GST)'}</label>
+                                <label style={labelStyle}>{language === 'kn' ? 'ರಾಜ್ಯ' : 'State'}</label>
                                 <MapPin size={18} style={iconStyle} />
                                 <select
                                     style={inputStyle(false)}
