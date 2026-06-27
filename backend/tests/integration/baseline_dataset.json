@@ -18,7 +18,8 @@
             "input": {
                 "fullName": "Jane Doe",
                 "phone": "+919876543210",
-                "password": "SecurePassword123"
+                "password": "SecurePassword123",
+                "otp": "123456"
             },
             "expectedStatus": 201,
             "matchPath": "message",

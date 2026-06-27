@@ -12,6 +12,12 @@ export interface User {
     xp: number;
     streak_count: number;
     is_paid: boolean;
+    onboarding_completed?: boolean;
+    dob?: string;
+    employment_status?: string;
+    personal_address?: string;
+    place?: string;
+    pincode?: string;
     created_at?: string;
     updated_at?: string;
 }

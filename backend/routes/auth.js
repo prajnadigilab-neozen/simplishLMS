@@ -10,6 +10,8 @@ const validateFile = require('../middleware/validateFile');
 const { authLimiter } = require('../middleware/rateLimit');
 
 // Public — both /register and /signup work so old clients don't break
+router.post('/send-otp', authLimiter, authController.sendOtp);
+router.post('/verify-otp', authLimiter, authController.verifyOtp);
 router.post('/register', authLimiter, authController.register);
 router.post('/signup', authLimiter, authController.register);  // alias
 router.post('/login', authLimiter, authController.login);

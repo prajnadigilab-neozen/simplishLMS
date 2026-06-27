@@ -5,6 +5,7 @@ import { UserProvider, useUser } from './context/UserContext';
 import { CurriculumProvider } from './context/CurriculumContext';
 import { useCurriculum } from './hooks/useCurriculum';
 import { ToastProvider, useToast } from './components/Toast';
+import { authApi } from './utils/api';
 
 // ── Components ──────────────────────────────────────────────────────────
 import Navbar from './components/Navbar';
@@ -48,6 +49,36 @@ function AppShell() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Verify and sync Supabase onboarding_complete flag on every page load (navigation)
+  React.useEffect(() => {
+    const checkOnboardingStatus = async () => {
+      if (user) {
+        try {
+          const storedToken = safeGetItem('simplish_token');
+          if (storedToken) {
+            const profileRes = await authApi.getProfile(storedToken);
+            if (profileRes.data?.user) {
+              const remoteOnboarded = profileRes.data.user.onboarding_completed || profileRes.data.user.onboarding_complete;
+              const localOnboarded = user.onboarding_completed || user.onboarding_complete;
+              if (remoteOnboarded !== localOnboarded) {
+                const updatedUser = {
+                  ...user,
+                  onboarding_completed: remoteOnboarded,
+                  onboarding_complete: remoteOnboarded
+                };
+                safeSetItem('simplish_user', updatedUser);
+                setUser(updatedUser);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Error verifying onboarding flag:', err);
+        }
+      }
+    };
+    checkOnboardingStatus();
+  }, [location.pathname]);
+
   const handleNavigate = (view) => {
     if ((view === 'admin' || view === 'edit_lesson') && !isPrivileged) {
       showToast('Access Denied: Admin access required', 'error');
@@ -78,13 +109,43 @@ function AppShell() {
     );
   }
 
-  if (!user) {
+  const isAuthenticated = !!user;
+  const verifiedToken = safeGetItem('simplish_token');
+  const isOnboarded = user && (user.onboarding_completed || user.onboarding_complete);
+
+  // RouteGuard: Any attempt to access /profile or /placement without a verified auth_token and onboarding_complete: false must redirect to /auth
+  if (['/profile', '/placement'].includes(location.pathname)) {
+    if (!isAuthenticated || !verifiedToken) {
+      return <Navigate to="/auth" replace />;
+    }
+    if (isOnboarded) {
+      // Exception: allow taking the placement test if they haven't finished it yet
+      const isFirstTimePlacement = location.pathname === '/placement' && !user.current_level;
+      // Exception: allow fully onboarded users to update their profile settings normally
+      const isNormalProfile = location.pathname === '/profile';
+      
+      if (!isFirstTimePlacement && !isNormalProfile) {
+        return <Navigate to="/auth" replace />;
+      }
+    }
+  }
+
+  // Force redirection if logged in but not onboarded
+  if (isAuthenticated && !isOnboarded && !isPrivileged && !['/profile', '/payment'].includes(location.pathname)) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  // Handle unauthorized navigation
+  if (!isAuthenticated) {
+    if (location.pathname !== '/auth') {
+      return <Navigate to="/auth" replace />;
+    }
     return <LandingPage onAuthSuccess={handleAuthSuccess} />;
   }
 
-  // Onboarding Guard: If logged in but not onboarded, FORCE to placement page (unless paying or already there)
-  if (!user.onboarding_completed && !isPrivileged && !['/placement', '/payment'].includes(location.pathname)) {
-    return <Navigate to="/placement" replace />;
+  // Prevent accessing /auth when logged in
+  if (location.pathname === '/auth') {
+    return <Navigate to={isOnboarded ? "/" : "/profile"} replace />;
   }
 
   const currentView = location.pathname.replace('/', '') || 'dashboard';
@@ -103,13 +164,20 @@ function AppShell() {
           minHeight: 'calc(100vh - 70px)'
         }}>
           <Routes>
+            <Route path="/auth" element={
+              user
+                ? <Navigate to={user.onboarding_completed ? "/" : "/profile"} replace />
+                : <LandingPage onAuthSuccess={handleAuthSuccess} />
+            } />
+
             <Route path="/placement" element={
-              (isPrivileged || user.onboarding_completed)
+              (isPrivileged || (user.onboarding_completed && user.current_level))
                 ? <Navigate to="/" replace />
                 : <PlacementTest onComplete={(result) => {
                   const updatedUser = {
                     ...user,
                     onboarding_completed: true,
+                    onboarding_complete: true,
                     current_level: result?.assignedLevel || user.current_level,
                     scorePercentage: result?.scorePercentage // For immediate UI update if needed
                   };

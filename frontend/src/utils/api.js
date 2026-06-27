@@ -69,6 +69,8 @@ export const assessmentApi = {
 
 export const authApi = {
     login: (credentials) => api.post('/auth/login', credentials),
+    sendOtp: (data) => api.post('/auth/send-otp', data),
+    verifyOtp: (data) => api.post('/auth/verify-otp', data),
     register: (userData) => api.post('/auth/register', userData),
     getProfile: (token) => api.get('/auth/profile', { headers: { Authorization: `Bearer ${token}` } }),
     updateProfile: (formData, token) => api.put('/auth/profile', formData, {

@@ -35,8 +35,28 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { fullName, email, phone, bio, location, state } = req.body;
+    const { 
+        fullName, email, phone, bio, location, state,
+        dob, employmentStatus, personalAddress, place, pincode,
+        onboardingComplete, onboardingCompleted
+    } = req.body;
     let avatarUrl = req.file ? mediaService.getUrl(req.file.filename) : undefined;
+
+    // Validate progressive onboarding inputs if supplied
+    if (dob) {
+        const dobDate = new Date(dob);
+        if (isNaN(dobDate.getTime()) || dobDate >= new Date()) {
+            return res.status(400).json({ message: 'Invalid Date of Birth. It must be in the past.' });
+        }
+    }
+    if (place !== undefined && place === '') {
+        return res.status(400).json({ message: 'Place is required.' });
+    }
+    if (pincode) {
+        if (!/^\d{6}$/.test(String(pincode))) {
+            return res.status(400).json({ message: 'Invalid Pincode. It must be exactly 6 digits.' });
+        }
+    }
 
     try {
         const userRes = await supabase.auth.admin.getUserById(userId);
@@ -60,6 +80,13 @@ exports.updateProfile = async (req, res) => {
             metaChanged = true;
         }
 
+        // Keep onboarding_completed synced to user_metadata
+        const finalOnboardCompleted = onboardingComplete !== undefined ? onboardingComplete : onboardingCompleted;
+        if (finalOnboardCompleted !== undefined && finalOnboardCompleted !== user_metadata.onboarding_completed) {
+            user_metadata.onboarding_completed = finalOnboardCompleted;
+            metaChanged = true;
+        }
+
         if (metaChanged) authUpdates.user_metadata = user_metadata;
 
         if (Object.keys(authUpdates).length > 0) {
@@ -73,7 +100,13 @@ exports.updateProfile = async (req, res) => {
             phone: phone ? normalizePhone(phone) : undefined,
             bio: bio !== undefined ? (bio ? bio.substring(0, 500) : null) : undefined,
             location: location,
-            state: state
+            state: state,
+            dob: dob,
+            employment_status: employmentStatus,
+            personal_address: personalAddress,
+            place: place,
+            pincode: pincode,
+            onboarding_completed: finalOnboardCompleted
         });
         
         if (avatarUrl) {
@@ -95,7 +128,13 @@ exports.updateProfile = async (req, res) => {
                     avatarUrl: updatedProfile.avatar_url,
                     bio: updatedProfile.bio,
                     location: updatedProfile.location,
-                    state: updatedProfile.state
+                    state: updatedProfile.state,
+                    onboarding_completed: updatedProfile.onboarding_completed,
+                    dob: updatedProfile.dob,
+                    employment_status: updatedProfile.employment_status,
+                    personal_address: updatedProfile.personal_address,
+                    place: updatedProfile.place,
+                    pincode: updatedProfile.pincode
                 }
             });
         }
@@ -197,10 +236,7 @@ exports.updateRole = async (req, res) => {
 exports.deleteUser = async (req, res) => {
     const { id } = req.params;
     try {
-        await supabase.from('user_progress').delete().eq('user_id', id);
-        const { error: profileError } = await supabase.from('users').delete().eq('id', id);
-        if (profileError) throw profileError;
-
+        // Deleting the auth user will cascade and delete the public user record and all related progress/payment tables.
         const { error: authError } = await supabase.auth.admin.deleteUser(id);
         if (authError) throw authError;
 
