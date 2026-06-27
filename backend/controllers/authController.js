@@ -312,13 +312,55 @@ exports.login = async (req, res) => {
     const { email, phone, password } = req.body;
     
     try {
-        const loginOptions = { password };
-        if (phone) loginOptions.phone = normalizePhone(phone);
-        else loginOptions.email = email;
+        let authData = null;
+        let authError = null;
         
-        const { data, error } = await supabaseAuth.auth.signInWithPassword(loginOptions);
-        if (error) return res.status(401).json({ message: error.message });
+        if (phone) {
+            const rawPhone = phone.toString().trim();
+            const digits = rawPhone.replace(/\D/g, '');
+            const e164Phone = rawPhone.startsWith('+') 
+                ? rawPhone 
+                : (digits.length === 10 ? `+91${digits}` : `+${digits}`);
+            
+            // Try standard E.164 format
+            const resE164 = await supabaseAuth.auth.signInWithPassword({
+                phone: e164Phone,
+                password
+            });
+            
+            if (!resE164.error) {
+                authData = resE164.data;
+            } else {
+                // Fallback to 10-digit normalized format
+                const fallbackPhone = normalizePhone(phone);
+                const resFallback = await supabaseAuth.auth.signInWithPassword({
+                    phone: fallbackPhone,
+                    password
+                });
+                
+                if (!resFallback.error) {
+                    authData = resFallback.data;
+                } else {
+                    authError = resFallback.error;
+                }
+            }
+        } else {
+            const resEmail = await supabaseAuth.auth.signInWithPassword({
+                email,
+                password
+            });
+            if (!resEmail.error) {
+                authData = resEmail.data;
+            } else {
+                authError = resEmail.error;
+            }
+        }
+        
+        if (authError || !authData) {
+            return res.status(401).json({ message: authError?.message || 'Invalid login credentials' });
+        }
 
+        const data = authData;
         const profile = await userService.getUserById(data.user.id);
         if (profile?.status === 'inactive') return res.status(403).json({ message: 'Account restricted.' });
 
