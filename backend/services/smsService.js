@@ -31,7 +31,7 @@ const smsService = {
                 const senderId = process.env.SMS_GATEWAY_SENDER_ID || 'SMPLSH';
                 const route = process.env.SMS_GATEWAY_ROUTE || '1';
                 // SMSGatewayHub expects URL-encoded text
-                const text = encodeURIComponent(`Your SIMPLISH verification OTP is ${otp}. Valid for 5 minutes.`);
+                const text = encodeURIComponent(`Your SIMPLISH-LMS verification OTP is ${otp}. Valid for 5 minutes.`);
                 
                 // Construct SMSGatewayHub API request URL
                 const url = `https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${apiKey}&senderid=${senderId}&channel=2&DCS=0&flashsms=0&number=${phone}&text=${text}&route=${route}`;
@@ -48,7 +48,7 @@ const smsService = {
                     },
                     body: JSON.stringify({
                         to: phone,
-                        message: `Your SIMPLISH verification OTP is ${otp}. Valid for 5 minutes.`
+                        message: `Your SIMPLISH-LMS verification OTP is ${otp}. Valid for 5 minutes.`
                     })
                 });
             }
