@@ -29,7 +29,8 @@ const LandingPage = ({ onAuthSuccess }) => {
             heroDesc: "Turn your fear into freedom. Join Karnataka’s most welcoming English speaking course for Kannada speakers. We use your mother tongue to guide you from \"Zero to Confident\"—no shame, no pressure.",
             feature1: "Learn through your mother tongue (Kannada)",
             feature2: "Bilingual training to remove fear of judgment",
-            feature3: "Friendly AI speaking coaches & private practice",
+            feature3: "Learn at your own speed with a step-by-step guide.",
+            feature4: "Master the material through a structured curriculum.",
             footerCopyright: "© 2026 SIMPLISH"
         },
         kn: {
@@ -39,7 +40,8 @@ const LandingPage = ({ onAuthSuccess }) => {
             heroDesc: "ನಿಮ್ಮ ಭಯವನ್ನು ಆತ್ಮವಿಶ್ವಾಸವಾಗಿ ಬದಲಾಯಿಸಿ. ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸುಲಭವಾದ ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡುವ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿ. ನಾವು ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕ ನಿಮ್ಮನ್ನು \"ತಳ ಹಂತದಿಂದ ಉನ್ನತ ಮಟ್ಟದವರೆಗೆ\" ಮುನ್ನಡೆಸುತ್ತೇವೆ - ಯಾವುದೇ ಮುಜುಗರವಿಲ್ಲ, ಯಾವುದೇ ಒತ್ತಡವಿಲ್ಲ.",
             feature1: "ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ (ಕನ್ನಡ) ಮೂಲಕ ಕಲಿಯಿರಿ",
             feature2: "ಭಯವನ್ನು ಹೋಗಲಾಡಿಸುವ ದ್ವಿಭಾಷಾ ತರಬೇತಿ",
-            feature3: "ಸ್ನೇಹಿ AI ಮಾತನಾಡುವ ಕೋಚ್‌ಗಳು ಮತ್ತು ಖಾಸಗಿ ಅಭ್ಯಾಸ",
+            feature3: "ಹಂತ-ಹಂತದ ಮಾರ್ಗದರ್ಶಿಯೊಂದಿಗೆ ನಿಮ್ಮದೇ ವೇಗದಲ್ಲಿ ಕಲಿಯಿರಿ.",
+            feature4: "ವ್ಯವಸ್ಥಿತ ಪಠ್ಯಕ್ರಮದೊಂದಿಗೆ ವಿಷಯವನ್ನು ಸಂಪೂರ್ಣವಾಗಿ ಕರಗತ ಮಾಡಿಕೊಳ್ಳಿ.",
             footerCopyright: "© 2026 SIMPLISH"
         }
     };
@@ -205,6 +207,10 @@ const LandingPage = ({ onAuthSuccess }) => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
                                 <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
                                 <span>{t.feature3}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}>
+                                <span style={{ color: '#10b981', fontWeight: 'bold', fontSize: '1.2rem' }}>✓</span>
+                                <span>{t.feature4}</span>
                             </div>
                         </div>
                     </motion.div>
