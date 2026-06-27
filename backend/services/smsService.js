@@ -30,11 +30,19 @@ const smsService = {
             if (provider === 'smsgatewayhub') {
                 const senderId = process.env.SMS_GATEWAY_SENDER_ID || 'SMPLSH';
                 const route = process.env.SMS_GATEWAY_ROUTE || '1';
-                // SMSGatewayHub expects URL-encoded text
-                const text = encodeURIComponent(`Your SIMPLISH-LMS verification OTP is ${otp}. Valid for 5 minutes.`);
+                const peid = process.env.SMS_GATEWAY_PEID;
+                const templateId = process.env.SMS_GATEWAY_TEMPLATE_ID;
+                const appName = process.env.SMS_GATEWAY_APP_NAME || 'SIMPLISH';
+                
+                // Formulate text using the approved template:
+                // "To complete your new user registration for {#alphanumeric#}, use OTP {#numeric#}. Do not share this with anyone. - PRAJNA DIGILAB"
+                const text = encodeURIComponent(`To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. - PRAJNA DIGILAB`);
                 
                 // Construct SMSGatewayHub API request URL
-                const url = `https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${apiKey}&senderid=${senderId}&channel=2&DCS=0&flashsms=0&number=${phone}&text=${text}&route=${route}`;
+                let url = `https://www.smsgatewayhub.com/api/mt/SendSMS?APIKey=${apiKey}&senderid=${senderId}&channel=2&DCS=0&flashsms=0&number=${phone}&text=${text}&route=${route}`;
+                
+                if (peid) url += `&EntityId=${peid}`;
+                if (templateId) url += `&dlttemplateid=${templateId}`;
                 
                 response = await fetch(url, { method: 'GET' });
             } else {
@@ -48,7 +56,7 @@ const smsService = {
                     },
                     body: JSON.stringify({
                         to: phone,
-                        message: `Your SIMPLISH-LMS verification OTP is ${otp}. Valid for 5 minutes.`
+                        message: `To complete your new user registration for ${process.env.SMS_GATEWAY_APP_NAME || 'SIMPLISH'}, use OTP ${otp}. Do not share this with anyone. - PRAJNA DIGILAB`
                     })
                 });
             }
