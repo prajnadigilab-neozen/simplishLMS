@@ -122,9 +122,11 @@ const smsService = {
 
     // ─────────────────────────────────────────────────────────────────────
     // 1. OTP — New User Registration
-    // Template uses {#var#} (loose) so "Simplish-LMS" is accepted.
+    // Template uses {#var#} (loose).
+    // DLT-approved app name is "Simplish LMS" (confirmed via delivered SMS).
+    // HARDCODED to prevent production env misconfiguration (SIMPLISH ≠ Simplish LMS → 7003).
     // Validated exact text:
-    //   "To complete your new user registration for Simplish-LMS, use OTP 9999.
+    //   "To complete your new user registration for Simplish LMS, use OTP 9999.
     //    Do not share this with anyone. – PRAJNA DIGILAB"
     // ─────────────────────────────────────────────────────────────────────
     sendOTP: async (phone, otp) => {
@@ -139,12 +141,17 @@ const smsService = {
         try {
             logger.info({ phone }, `[SMS] Sending OTP to ${phone}`);
 
-            const appName    = process.env.SMS_GATEWAY_APP_NAME || 'Simplish-LMS';
+            // HARDCODED: exact DLT-approved app name that was delivered successfully.
+            // Do NOT use SMS_GATEWAY_APP_NAME env var here — production had it set to
+            // 'SIMPLISH' which caused error 7003 (DLT template mismatch).
+            const appName    = 'Simplish LMS';
             const templateId = process.env.SMS_GATEWAY_TEMPLATE_ID;
 
-            // en-dash (U+2013) matches registered template; appName uses {#var#} so hyphen is fine
+            // en-dash (U+2013) matches registered template
             const message = `To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. \u2013 PRAJNA DIGILAB`;
             const text    = encodeURIComponent(message);
+
+            logger.info({ phone, messagePreview: message.substring(0, 80) }, '[SMS] OTP message built');
 
             const result = await _dispatchSMSGatewayHub(phone, text, templateId, 2);
             logger.info({ phone, jobId: result.JobId }, '[SMS] OTP dispatched');
@@ -185,8 +192,8 @@ const smsService = {
         try {
             logger.info({ phone }, `[SMS] Sending expiry reminder to ${phone}`);
 
-            const rawAppName = process.env.SMS_GATEWAY_APP_NAME || 'Simplish-LMS';
-            const appName    = toAlphanumeric(rawAppName);   // strips hyphens → "Simplish LMS"
+            // HARDCODED: exact DLT-approved app name (see sendOTP comment for rationale)
+            const appName    = 'Simplish LMS';
             const dateStr    = formatExpiryDate(expiryDate); // "31 Jul 2026"
             const templateId = process.env.SMS_GATEWAY_EXPIRY_TEMPLATE_ID;
 
@@ -202,6 +209,8 @@ const smsService = {
             //    your plan to continue learning. - PRAJNA DIGILAB"  (JobId: 375945774, 375946408)
             const message = `Your ${appName} subscription ends on ${dateStr}. Please TOP UP your plan to continue learning. - PRAJNA DIGILAB`;
             const text    = encodeURIComponent(message);
+
+            logger.info({ phone, messagePreview: message.substring(0, 80) }, '[SMS] Expiry message built');
 
             const result = await _dispatchSMSGatewayHub(phone, text, templateId, 2);
             logger.info({ phone, jobId: result.JobId }, '[SMS] Expiry reminder dispatched');
@@ -238,8 +247,8 @@ const smsService = {
         try {
             logger.info({ phone }, `[SMS] Sending password reset OTP to ${phone}`);
 
-            const rawAppName = process.env.SMS_GATEWAY_APP_NAME || 'Simplish-LMS';
-            const appName    = toAlphanumeric(rawAppName);   // strips hyphens → "Simplish LMS"
+            // HARDCODED: exact DLT-approved app name (see sendOTP comment for rationale)
+            const appName    = 'Simplish LMS';
             const templateId = process.env.SMS_GATEWAY_RESET_TEMPLATE_ID;
 
             // TODO (Portal action required): In SMSGatewayHub > Resources > Manage Template,
@@ -254,9 +263,11 @@ const smsService = {
             const message = `To reset your ${appName} account password, use the code: ${otp}. - PRAJNA DIGILAB`;
             const text    = encodeURIComponent(message);
 
+            logger.info({ phone, messagePreview: message.substring(0, 80) }, '[SMS] Reset message built');
+
             const result = await _dispatchSMSGatewayHub(phone, text, templateId, 2);
             logger.info({ phone, jobId: result.JobId }, '[SMS] Password reset OTP dispatched');
-            return { success: true, mock: false, jobId: result.jobId };
+            return { success: true, mock: false, jobId: result.JobId };
 
         } catch (error) {
             logger.error({ error, phone }, '[SMS] Failed to send password reset OTP');

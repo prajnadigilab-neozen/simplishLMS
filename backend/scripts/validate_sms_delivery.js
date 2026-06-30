@@ -35,7 +35,7 @@ async function runTest(label, fn) {
     try {
         const result = await fn();
         if (result.success && !result.mock) {
-            console.log(`✅  PASS  (JobId: ${result.jobId})`);
+            console.log(`✅  PASS  (JobId: ${result.jobId || result.JobId})`);
         } else {
             console.log(`⚠️   MOCK  (SMS_GATEWAY_MOCK active)`);
         }

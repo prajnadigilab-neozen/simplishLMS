@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Lock, Camera, MapPin, AlignLeft, Save, X, Loader2, Phone, Calendar, Briefcase, Home, Globe } from 'lucide-react';
+import { User, Mail, Lock, Camera, MapPin, AlignLeft, Save, X, Loader2, Phone, Calendar, Briefcase, Home, Globe, Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../utils/api';
 import { useToast } from './Toast';
 import { useUser } from '../context/UserContext';
@@ -41,6 +41,7 @@ const ProfileSettings = ({ onBack }) => {
     });
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || null);
+    const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -589,17 +590,41 @@ const ProfileSettings = ({ onBack }) => {
                                 />
                             </div>
 
-                            <div style={{ position: 'relative' }}>
+                            <div>
                                 <label style={labelStyle}>{language === 'kn' ? 'ಹೊಸ ಪಾಸ್ವರ್ಡ್ (ಅಗತ್ಯವಿದ್ದರೆ ಮಾತ್ರ)' : 'New Password (Optional)'}</label>
-                                <Lock size={18} style={iconStyle} />
-                                <input
-                                    type="password"
-                                    style={inputStyle(false)}
-                                    value={form.password}
-                                    onChange={e => setForm({ ...form, password: e.target.value })}
-                                    placeholder={language === 'kn' ? 'ಖಾಲಿ ಬಿಟ್ಟರೆ ಹಳೆಯ ಪಾಸ್ವರ್ಡ್ ಇರುತ್ತದೆ' : "Leave blank to keep current password"}
-                                    autoComplete="new-password"
-                                />
+                                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                    <Lock size={18} style={{ ...iconStyle, top: '50%', transform: 'translateY(-50%)', zIndex: 2 }} />
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        style={{ ...inputStyle(false), paddingRight: '2.8rem' }}
+                                        value={form.password}
+                                        onChange={e => setForm({ ...form, password: e.target.value })}
+                                        placeholder={language === 'kn' ? 'ಖಾಲಿ ಬಿಟ್ಟರೆ ಹಳೆಯ ಪಾಸ್ವರ್ಡ್ ಇರುತ್ತದೆ' : "Leave blank to keep current password"}
+                                        autoComplete="new-password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '1rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            padding: 0,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            height: '24px',
+                                            width: '24px',
+                                            zIndex: 2
+                                        }}
+                                    >
+                                        {showPassword ? <EyeOff size={18} style={{ color: 'var(--text-muted)' }} /> : <Eye size={18} style={{ color: 'var(--text-muted)' }} />}
+                                    </button>
+                                </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

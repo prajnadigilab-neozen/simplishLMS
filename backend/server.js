@@ -137,8 +137,8 @@ const billingRoutes = require('./routes/billing');
 const settingsRoutes = require('./routes/settings');
 const examRoutes = require('./routes/exams').default;
 
-// 🛡️ Security Fix: Apply Brute-Force Shield to Auth routes
-app.use('/api/v1/auth', authLimiter, authRoutes);
+// 🛡️ Security Fix: Apply Brute-Force Shield to Auth routes (via route definitions)
+app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/lessons', lessonRoutes);
 app.use('/api/v1/assessments', assessmentRoutes);
 app.use('/api/v1/ai', aiRoutes);
