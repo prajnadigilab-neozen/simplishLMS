@@ -12,11 +12,11 @@ const apiLimiter = rateLimit({
 
 // 🛡️ Security Hardening: Strict Auth Limiter (Brute-Force Shield)
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // Strict limit for auth attempts
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Max 5 login/auth attempts per minute
     standardHeaders: true,
     legacyHeaders: false,
-    message: { message: 'Too many login attempts. Please try again in 15 minutes.' },
+    message: { message: 'Too many login attempts. Please try again in 1 minute.' },
     skip: (req) => process.env.NODE_ENV !== 'production'
 });
 

@@ -357,6 +357,15 @@ exports.login = async (req, res) => {
         }
         
         if (authError || !authData) {
+            const clientIp = req.headers['x-forwarded-for'] 
+                ? req.headers['x-forwarded-for'].split(',')[0].trim() 
+                : (req.ip || req.socket.remoteAddress);
+            logger.warn({
+                ip: clientIp,
+                email: email || undefined,
+                phone: phone || undefined,
+                error: authError?.message
+            }, `[Security] Failed login attempt for user`);
             return res.status(401).json({ message: authError?.message || 'Invalid login credentials' });
         }
 

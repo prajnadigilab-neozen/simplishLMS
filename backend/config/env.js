@@ -52,6 +52,9 @@ const envSchema = z.object({
             z.boolean().default(false)
         )
     ),
+
+    // Security Blocklist
+    BLOCKED_IPS: emptyToUndefined(z.string().optional()),
 });
 
 const result = envSchema.safeParse(process.env);

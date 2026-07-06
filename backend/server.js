@@ -49,6 +49,11 @@ if (env.SENTRY_DSN) {
 const app = express();
 app.disable('x-powered-by'); 
 app.set('trust proxy', 1); // Rule 15: Trust proxy for rate limiting (needed behind Vite/Load Balancers)
+
+// 🛡️ Security Shield: Auto-drop malicious probes and blocklisted IPs immediately
+const securityShield = require('./middleware/securityShield');
+app.use(securityShield);
+
 app.use((req, res, next) => {
     res.setHeader('X-Simplish-Shield', 'active');
     next();
