@@ -24,8 +24,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'vite.svg'],
       manifest: {
-        name: 'SIMPLISH - Learn English Simply',
-        short_name: 'SIMPLISH',
+        name: 'Simplish LMS',
+        short_name: 'Simplish LMS',
         description: 'Bilingual English coaching for rural students',
         theme_color: '#6366f1',
         icons: [
@@ -48,6 +48,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         inlineWorkboxRuntime: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [

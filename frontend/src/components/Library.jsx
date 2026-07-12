@@ -392,7 +392,7 @@ const Library = ({ onSelectLesson, onEditLesson, onAddLesson, onAddExam }) => {
                                                                 {/* Bottom Section */}
                                                                 <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                                                     {/* Info row */}
-                                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', width: '100%' }}>
+                                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', width: '100%', justifyContent: 'space-between' }}>
                                                                         {!lesson.content?.isFinal && (
                                                                             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                                                                                 <span style={{ fontSize: '0.9rem', color: '#0f172a' }}>LEVEL</span>

@@ -27,6 +27,13 @@ const Navbar = ({ onNavigate }) => {
     const { theme, toggleTheme } = useTheme();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const toggleLanguage = () => {
         const newLang = language === 'kn' ? 'en' : 'kn';
@@ -154,9 +161,9 @@ const Navbar = ({ onNavigate }) => {
             </nav>
 
             {/* ── Right Section: Status Pills & Profile ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.25rem' }}>
                 {/* Wallet Balance Pill */}
-                {user && (
+                {user && !isMobile && (
                     <motion.div
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -185,7 +192,7 @@ const Navbar = ({ onNavigate }) => {
                                         ₹{(Number(displayBalance) / 100).toFixed(2)}
                                     </span>
                                 );
-                            })()}
+                             })()}
                         </div>
 
                         {(() => {
@@ -207,46 +214,50 @@ const Navbar = ({ onNavigate }) => {
                     </motion.div>
                 )}
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {/* Language Toggle */}
-                    <button
-                        onClick={toggleLanguage}
-                        style={{
-                            background: 'rgba(var(--primary-rgb), 0.1)',
-                            border: '1px solid var(--primary)',
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            color: 'var(--primary)',
-                            fontSize: '0.75rem',
-                            fontWeight: 800,
-                            letterSpacing: '0.05em',
-                            transition: 'all 0.2s ease'
-                        }}
-                    >
-                        <span style={{ opacity: language === 'kn' ? 1 : 0.4 }}>KN</span>
-                        <div style={{ width: '1px', height: '12px', background: 'var(--primary)', opacity: 0.3 }} />
-                        <span style={{ opacity: language === 'en' ? 1 : 0.4 }}>EN</span>
-                    </button>
+                    {!isMobile && (
+                        <button
+                            onClick={toggleLanguage}
+                            style={{
+                                background: 'rgba(var(--primary-rgb), 0.1)',
+                                border: '1px solid var(--primary)',
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                color: 'var(--primary)',
+                                fontSize: '0.75rem',
+                                fontWeight: 800,
+                                letterSpacing: '0.05em',
+                                transition: 'all 0.2s ease'
+                            }}
+                        >
+                            <span style={{ opacity: language === 'kn' ? 1 : 0.4 }}>KN</span>
+                            <div style={{ width: '1px', height: '12px', background: 'var(--primary)', opacity: 0.3 }} />
+                            <span style={{ opacity: language === 'en' ? 1 : 0.4 }}>EN</span>
+                        </button>
+                    )}
 
                     {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        style={{
-                            background: 'rgba(255,255,255,0.03)',
-                            border: '1px solid var(--border)',
-                            color: 'var(--text-main)',
-                            padding: '0.6rem',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            display: 'flex'
-                        }}
-                    >
-                        {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-                    </button>
+                    {!isMobile && (
+                        <button
+                            onClick={toggleTheme}
+                            style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid var(--border)',
+                                color: 'var(--text-main)',
+                                padding: '0.6rem',
+                                borderRadius: '12px',
+                                cursor: 'pointer',
+                                display: 'flex'
+                            }}
+                        >
+                            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                        </button>
+                    )}
 
                     {/* Profile Dropdown Trigger */}
                     <div style={{ position: 'relative' }}>
@@ -311,6 +322,82 @@ const Navbar = ({ onNavigate }) => {
                                         <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '0.2rem' }}>
                                             {user?.role?.replace('_', ' ')}
                                         </p>
+                                        {isMobile && user && (
+                                            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {/* Wallet Balance Info */}
+                                                <div 
+                                                    onClick={() => { navigate('/payment'); setIsProfileOpen(false); }}
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        padding: '0.5rem 0.75rem',
+                                                        background: 'rgba(var(--primary-rgb), 0.05)',
+                                                        border: '1px solid var(--border)',
+                                                        borderRadius: '8px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <Wallet size={14} color="var(--primary)" />
+                                                        <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Balance</span>
+                                                     </div>
+                                                     {(() => {
+                                                         const expiry = user.subscription_expires_at ? new Date(user.subscription_expires_at) : null;
+                                                         const isActive = expiry && new Date(expiry) > new Date();
+                                                         const basePlanValue = isActive ? 9900 : 0;
+                                                         const displayBalance = basePlanValue + Number(user.wallet_balance || 0);
+                                                         return (
+                                                             <span style={{ fontSize: '0.85rem', fontWeight: 800 }}>
+                                                                 ₹{(Number(displayBalance) / 100).toFixed(2)}
+                                                             </span>
+                                                         );
+                                                     })()}
+                                                 </div>
+                                                 {/* Language and Theme Switcher Row on mobile */}
+                                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                     <button
+                                                         onClick={toggleLanguage}
+                                                         style={{
+                                                             flex: 1,
+                                                             background: 'rgba(var(--primary-rgb), 0.05)',
+                                                             border: '1px solid var(--primary)',
+                                                             padding: '0.4rem',
+                                                             borderRadius: '8px',
+                                                             cursor: 'pointer',
+                                                             color: 'var(--primary)',
+                                                             fontSize: '0.75rem',
+                                                             fontWeight: 800,
+                                                             display: 'flex',
+                                                             justifyContent: 'center',
+                                                             gap: '0.25rem'
+                                                         }}
+                                                     >
+                                                         <span style={{ opacity: language === 'kn' ? 1 : 0.4 }}>KN</span>
+                                                         <span>/</span>
+                                                         <span style={{ opacity: language === 'en' ? 1 : 0.4 }}>EN</span>
+                                                     </button>
+                                                     <button
+                                                         onClick={toggleTheme}
+                                                         style={{
+                                                             flex: 1,
+                                                             background: 'rgba(255,255,255,0.03)',
+                                                             border: '1px solid var(--border)',
+                                                             color: 'var(--text-main)',
+                                                             padding: '0.4rem',
+                                                             borderRadius: '8px',
+                                                             cursor: 'pointer',
+                                                             display: 'flex',
+                                                             justifyContent: 'center',
+                                                             alignItems: 'center'
+                                                         }}
+                                                     >
+                                                         {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                                                         <span style={{ marginLeft: '4px', fontSize: '0.75rem', fontWeight: 600 }}>Mode</span>
+                                                     </button>
+                                                 </div>
+                                             </div>
+                                         )}
                                     </div>
 
                                     {/* Menu List */}

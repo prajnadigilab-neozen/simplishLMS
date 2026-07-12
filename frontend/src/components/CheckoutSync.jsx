@@ -32,6 +32,13 @@ const CheckoutSync = () => {
     const [settings, setSettings] = useState({ subscription_price: '99', subscription_duration_days: '30' });
     const [loadingSettings, setLoadingSettings] = useState(true);
     const showToast = useToast();
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Refund flow states
     const [selectedPayment, setSelectedPayment] = useState(null);
@@ -213,21 +220,21 @@ const CheckoutSync = () => {
     const isSubscribed = user?.subscription_expires_at && new Date(user.subscription_expires_at) > new Date();
 
     return (
-        <div id="billing-root" style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
+        <div id="billing-root" style={{ padding: isMobile ? '1rem' : '2rem', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
             
-            <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <header style={{ textAlign: 'center', marginBottom: isMobile ? '1.5rem' : '3rem' }}>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#eef2ff', color: '#4338ca', padding: '0.5rem 1.25rem', borderRadius: '100px', fontSize: '0.85rem', fontWeight: 800, marginBottom: '1.5rem', boxShadow: '0 4px 12px rgba(67, 56, 202, 0.1)' }}>
                     <ShieldCheck size={16} /> SECURE BILLING ENGINE
                 </div>
-                <h1 style={{ fontSize: '2.75rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
+                <h1 style={{ fontSize: isMobile ? '2rem' : '2.75rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '0.75rem' }}>
                     Premium <span style={{ color: '#2563eb' }}>Access</span>
                 </h1>
                 <p style={{ color: '#64748b', fontSize: '1.15rem' }}>
                     Extend your journey with flexible premium levels.
                 </p>
             </header>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) 1.5fr', gap: '2.5rem', alignItems: 'start' }}>
+ 
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(350px, 1fr) 1.5fr', gap: isMobile ? '1.5rem' : '2.5rem', alignItems: 'start' }}>
                 
                 {/* ── Status View ── */}
                 <section>

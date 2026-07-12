@@ -50,6 +50,13 @@ const LandingPage = ({ onAuthSuccess }) => {
     const [lang, setLang] = useState(() => safeGetItem('simplish_language') || 'kn');
     const [theme, setTheme] = useState(safeGetItem('theme') || 'light');
     const [deferredPrompt, setDeferredPrompt] = useState(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const handleBeforeInstallPrompt = (e) => {
@@ -76,7 +83,7 @@ const LandingPage = ({ onAuthSuccess }) => {
             const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (isiOS) {
                 e.preventDefault();
-                alert(lang === 'en' 
+                alert(lang === 'en'
                     ? "To install: Tap the Share button in Safari, then select 'Add to Home Screen'."
                     : "ಸ್ಥಾಪಿಸಲು: Safari ಯಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ (Share) ಬಟನ್ ಟ್ಯಾಪ್ ಮಾಡಿ, ನಂತರ 'ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಸೇರಿಸಿ' (Add to Home Screen) ಆಯ್ಕೆಮಾಡಿ."
                 );
@@ -100,10 +107,10 @@ const LandingPage = ({ onAuthSuccess }) => {
     }, [lang]);
 
     useEffect(() => {
-        document.title = lang === 'kn' 
-            ? "SIMPLISH LMS - ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ | Spoken English Course Kannada" 
+        document.title = lang === 'kn'
+            ? "SIMPLISH LMS - ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ | Spoken English Course Kannada"
             : "SIMPLISH LMS - Learn English through Kannada | Best English Speaking Course in Karnataka";
-        
+
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
             metaDesc = document.createElement('meta');
@@ -199,7 +206,7 @@ const LandingPage = ({ onAuthSuccess }) => {
         "@context": "https://schema.org",
         "@type": "Course",
         "name": lang === 'kn' ? "SIMPLISH LMS - ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ" : "SIMPLISH LMS - Learn English through Kannada",
-        "description": lang === 'kn' 
+        "description": lang === 'kn'
             ? "ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸ್ನೇಹಪರ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿರಿ. ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕವೇ ಇಂಗ್ಲಿಷ್ ಕರಗತ ಮಾಡಿಕೊಳ್ಳಿ."
             : "Join Karnataka's best bilingual English speaking course for Kannada speakers. Learn English through Kannada step-by-step from zero to confident.",
         "provider": {
@@ -314,58 +321,79 @@ const LandingPage = ({ onAuthSuccess }) => {
                     </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '0.2rem', borderRadius: '0.4rem', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '0.75rem' }}>
+                    {isMobile ? (
                         <button
-                            onClick={() => setLang('en')}
-                            aria-label="Switch interface to English"
+                            onClick={() => setLang(lang === 'en' ? 'kn' : 'en')}
                             style={{
-                                padding: '0.4rem 0.6rem',
-                                border: 'none',
-                                borderRadius: '0.3rem',
+                                padding: '0.4rem 0.8rem',
+                                border: '1px solid var(--border)',
+                                borderRadius: '0.4rem',
                                 fontSize: '0.75rem',
                                 fontWeight: 800,
                                 cursor: 'pointer',
-                                background: lang === 'en' ? 'var(--primary)' : 'transparent',
-                                color: lang === 'en' ? 'white' : 'var(--text-muted)'
+                                background: 'var(--bg-dark)',
+                                color: 'var(--text-main)',
+                                minHeight: '36px'
                             }}
-                        >EN</button>
-                        <button
-                            onClick={() => setLang('kn')}
-                            aria-label="ಕನ್ನಡ ಭಾಷೆಗೆ ಬದಲಾಯಿಸಿ (Switch to Kannada)"
-                            style={{
-                                padding: '0.4rem 0.6rem',
-                                border: 'none',
-                                borderRadius: '0.3rem',
-                                fontSize: '0.75rem',
-                                fontWeight: 800,
-                                cursor: 'pointer',
-                                background: lang === 'kn' ? 'var(--primary)' : 'transparent',
-                                color: lang === 'kn' ? 'white' : 'var(--text-muted)'
-                            }}
-                        >ಕನ್ನಡ</button>
-                    </div>
+                        >
+                            {lang === 'en' ? 'ಕನ್ನಡ' : 'EN'}
+                        </button>
+                    ) : (
+                        <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '0.2rem', borderRadius: '0.4rem', border: '1px solid var(--border)' }}>
+                            <button
+                                onClick={() => setLang('en')}
+                                aria-label="Switch interface to English"
+                                style={{
+                                    padding: '0.4rem 0.6rem',
+                                    border: 'none',
+                                    borderRadius: '0.3rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    background: lang === 'en' ? 'var(--primary)' : 'transparent',
+                                    color: lang === 'en' ? 'white' : 'var(--text-muted)'
+                                }}
+                            >EN</button>
+                            <button
+                                onClick={() => setLang('kn')}
+                                aria-label="ಕನ್ನಡ ಭಾಷೆಗೆ ಬದಲಾಯಿಸಿ (Switch to Kannada)"
+                                style={{
+                                    padding: '0.4rem 0.6rem',
+                                    border: 'none',
+                                    borderRadius: '0.3rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    background: lang === 'kn' ? 'var(--primary)' : 'transparent',
+                                    color: lang === 'kn' ? 'white' : 'var(--text-muted)'
+                                }}
+                            >ಕನ್ನಡ</button>
+                        </div>
+                    )}
 
-                    {/* Theme Toggle */}
-                    <button
-                        onClick={toggleTheme}
-                        aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                        style={{
-                            padding: '0.4rem',
-                            border: '1px solid var(--border)',
-                            borderRadius: '0.4rem',
-                            background: 'var(--bg-dark)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'var(--text-main)',
-                            transition: 'all 0.2s ease'
-                        }}
-                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                    >
-                        {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                    </button>
+                    {/* Theme Toggle (Hidden on mobile) */}
+                    {!isMobile && (
+                        <button
+                            onClick={toggleTheme}
+                            aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                            style={{
+                                padding: '0.4rem',
+                                border: '1px solid var(--border)',
+                                borderRadius: '0.4rem',
+                                background: 'var(--bg-dark)',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'var(--text-main)',
+                                transition: 'all 0.2s ease'
+                            }}
+                            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                        >
+                            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                        </button>
+                    )}
 
                     {/* Download App Button (Mobile friendly) */}
                     <a
@@ -375,8 +403,9 @@ const LandingPage = ({ onAuthSuccess }) => {
                         style={{
                             display: 'flex',
                             alignItems: 'center',
+                            justifyContent: 'center',
                             gap: '0.4rem',
-                            padding: '0.4rem 0.8rem',
+                            padding: isMobile ? '0.4rem' : '0.4rem 0.8rem',
                             fontSize: '0.85rem',
                             fontWeight: 800,
                             color: 'white',
@@ -384,7 +413,9 @@ const LandingPage = ({ onAuthSuccess }) => {
                             borderRadius: '0.375rem',
                             textDecoration: 'none',
                             boxShadow: '0 2px 4px rgba(0, 127, 255, 0.2)',
-                            transition: 'transform 0.2s, background-color 0.2s'
+                            transition: 'transform 0.2s, background-color 0.2s',
+                            minHeight: isMobile ? '36px' : '48px',
+                            minWidth: isMobile ? '36px' : '48px'
                         }}
                         onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'scale(1.03)';
@@ -400,13 +431,13 @@ const LandingPage = ({ onAuthSuccess }) => {
                             alt="App Icon"
                             style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }}
                         />
-                        {lang === 'en' ? 'App' : 'ಆಪ್'}
+                        {!isMobile && (lang === 'en' ? 'App' : 'ಆಪ್')}
                     </a>
 
                     <button
                         className="btn btn-primary"
                         onClick={() => setShowAuth(true)}
-                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', background: 'var(--text-main)', color: 'var(--bg-dark)' }}
+                        style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', background: 'var(--text-main)', color: 'var(--bg-dark)', minHeight: isMobile ? '36px' : '48px' }}
                     >
                         {t.signIn}
                     </button>

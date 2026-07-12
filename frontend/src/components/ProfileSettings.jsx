@@ -12,6 +12,13 @@ const ProfileSettings = ({ onBack }) => {
     const showToast = useToast();
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef(null);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Zustand cache store for Onboarding Funnel state
     const dob = useOnboardingStore((state) => state.dob);
@@ -370,7 +377,7 @@ const ProfileSettings = ({ onBack }) => {
             animate={{ opacity: 1, y: 0 }}
             style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}
         >
-            <div className="glass-card" style={{ padding: '2.5rem', overflow: 'hidden' }}>
+            <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2.5rem', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                     <div>
                         <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
@@ -386,7 +393,7 @@ const ProfileSettings = ({ onBack }) => {
                 </div>
 
                 <form onSubmit={handleSubmitStandard}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 250px) 1fr', gap: '3rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(200px, 250px) 1fr', gap: isMobile ? '1.5rem' : '3rem' }}>
                         {/* Left: Avatar Column */}
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -469,7 +476,7 @@ const ProfileSettings = ({ onBack }) => {
                                 />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ position: 'relative' }}>
                                     <label style={labelStyle}>{language === 'kn' ? 'ಇಮೇಲ್ (ಐಚ್ಛಿಕ)' : 'Email (Optional)'}</label>
                                     <Mail size={18} style={iconStyle} />
@@ -498,7 +505,7 @@ const ProfileSettings = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ position: 'relative' }}>
                                     <label style={labelStyle}>{language === 'kn' ? 'ಹುಟ್ಟಿದ ದಿನಾಂಕ' : 'Date of Birth (DOB)'}</label>
                                     <Calendar size={18} style={iconStyle} />
@@ -528,7 +535,7 @@ const ProfileSettings = ({ onBack }) => {
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                                 <div style={{ position: 'relative' }}>
                                     <label style={labelStyle}>{language === 'kn' ? 'ಊರು / ಸ್ಥಳ' : 'Place'}</label>
                                     <Globe size={18} style={iconStyle} />

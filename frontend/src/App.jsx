@@ -151,7 +151,7 @@ function AppShell() {
   const currentView = location.pathname.replace('/', '') || 'dashboard';
 
   return (
-    <div className="app-container" style={{ paddingBottom: isMobile ? 'calc(var(--bottom-nav-height) + 1.5rem)' : 0 }}>
+    <div className="app-container" style={{ paddingBottom: isMobile ? 'calc(var(--bottom-nav-height) + 1.5rem)' : 0, overflowX: 'hidden', width: '100%', position: 'relative' }}>
       {/* ── Unified Top Navigation ── */}
       <Navbar onNavigate={handleNavigate} />
 
