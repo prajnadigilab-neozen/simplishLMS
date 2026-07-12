@@ -131,7 +131,14 @@ const Dashboard = ({ onStartLesson }) => {
     return (
         <div className="dashboard-container">
             {/* Header omitted for brevity */}
-            <header style={{ marginBottom: '3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <header style={{ 
+                marginBottom: '3rem', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem'
+            }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <div style={{
                         width: '48px',
@@ -178,6 +185,44 @@ const Dashboard = ({ onStartLesson }) => {
                         </p>
                     </div>
                 </div>
+
+                {/* Download App Button */}
+                <a
+                    href="/simplish.apk"
+                    download
+                    title="Download Android App"
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '12px',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        textDecoration: 'none',
+                        color: 'var(--text-main)',
+                        fontWeight: 'bold',
+                        fontSize: '0.9rem',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                        transition: 'all 0.2s ease-in-out',
+                        cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.borderColor = 'var(--primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                    }}
+                >
+                    <img 
+                        src="/logo_app.jpg" 
+                        alt="App Icon" 
+                        style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'cover' }} 
+                    />
+                    <span>{language === 'kn' ? 'ಆ್ಯಪ್ ಡೌನ್‌ಲೋಡ್' : 'Download App'}</span>
+                </a>
             </header>
 
             {error && (

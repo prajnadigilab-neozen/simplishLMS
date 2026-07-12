@@ -213,6 +213,18 @@ const AuthForm = ({ onLoginSuccess, language }) => {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 
+                {/* Hidden username input for accessibility/password managers when the visible field is not rendered */}
+                {((isRegister && otpVerified) || isReset) && (
+                    <input
+                        type="text"
+                        name="username"
+                        autoComplete="username"
+                        style={{ display: 'none' }}
+                        value={formData.identifier}
+                        readOnly
+                    />
+                )}
+
                 {/* Sign Up / Phase 1: Name & Phone */}
                 {isRegister && !otpVerified && (
                     <>

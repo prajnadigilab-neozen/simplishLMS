@@ -91,6 +91,48 @@ const LandingPage = ({ onAuthSuccess }) => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {/* Download App Button */}
+                    <a
+                        href="/simplish.apk"
+                        download
+                        title="Download Android App"
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.4rem 0.8rem',
+                            border: '1px solid var(--border)',
+                            borderRadius: '0.4rem',
+                            background: 'var(--bg-card)',
+                            cursor: 'pointer',
+                            textDecoration: 'none',
+                            color: 'var(--text-main)',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--primary)';
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.borderColor = 'var(--border)';
+                            e.currentTarget.style.transform = 'none';
+                        }}
+                    >
+                        <img
+                            src="/logo_app.jpg"
+                            alt="App Icon"
+                            style={{
+                                width: '18px',
+                                height: '18px',
+                                borderRadius: '4px',
+                                objectFit: 'cover'
+                            }}
+                        />
+                        <span className="desktop-only">{lang === 'kn' ? 'ಆ್ಯಪ್ ಡೌನ್‌ಲೋಡ್' : 'Download App'}</span>
+                    </a>
+
                     {/* Language Switcher */}
                     <div style={{ display: 'flex', background: 'var(--bg-dark)', padding: '0.2rem', borderRadius: '0.4rem', border: '1px solid var(--border)' }}>
                         <button

@@ -1,0 +1,194 @@
+- generic [active] [ref=e1]:
+  - generic:
+    - img "SIMPLISH Talks Hero"
+  - generic [ref=e3]:
+    - banner [ref=e98]:
+      - generic [ref=e101] [cursor=pointer]:
+        - generic [ref=e102]: SIMPLISH
+        - generic [ref=e103]: Talks
+      - generic [ref=e104]:
+        - navigation [ref=e105]:
+          - button "ಮುಖಪುಟ" [ref=e106] [cursor=pointer]
+          - button "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್" [ref=e107] [cursor=pointer]
+          - button "ಪಠ್ಯಕ್ರಮ" [ref=e108] [cursor=pointer]
+          - button "ಅನ್ವೇಷಿಸಿ" [ref=e109] [cursor=pointer]
+          - button "ಪ್ರೀಮಿಯಂ ಪಡೆಯಿರಿ" [ref=e110] [cursor=pointer]
+          - button "ಸೆಟ್ಟಿಂಗ್ಸ್" [ref=e111] [cursor=pointer]
+        - generic [ref=e112]:
+          - button "🌙" [ref=e113] [cursor=pointer]
+          - button "En" [ref=e114] [cursor=pointer]
+          - button "🔔 7" [ref=e473] [cursor=pointer]:
+            - text: 🔔
+            - generic [ref=e117]: "7"
+        - button "ನಿರ್ಗಮಿಸು" [ref=e119] [cursor=pointer]
+    - main [ref=e120]:
+      - generic [ref=e656]:
+        - generic [ref=e657]:
+          - generic [ref=e658]:
+            - generic [ref=e659]: 🎓
+            - generic [ref=e661]:
+              - heading "ನಮ್ಮ ಸಿಂಪ್ಲಿಷ್" [level=2] [ref=e662]
+              - paragraph [ref=e663]: Ranger
+          - generic [ref=e664]:
+            - button "ಧ್ವನಿ ಅಭ್ಯಾಸ 🎙️" [ref=e665] [cursor=pointer]:
+              - generic [ref=e666]: ಧ್ವನಿ ಅಭ್ಯಾಸ
+              - generic [ref=e667]: 🎙️
+            - generic [ref=e668]:
+              - generic [ref=e669]: 🔥 ಸರಣಿ
+              - generic [ref=e670]: 1 ದಿನಗಳು
+            - button "⚙️" [ref=e671] [cursor=pointer]
+        - generic [ref=e672]:
+          - heading "ನಿಮ್ಮ ಸೂಪರ್ ಹಬ್ 📚" [level=1] [ref=e673]
+          - generic [ref=e674]:
+            - generic [ref=e676]:
+              - generic [ref=e677]:
+                - generic [ref=e678]: 📚
+                - generic [ref=e679]:
+                  - heading "SIMPLISH - TALKS" [level=4] [ref=e680]
+                  - paragraph [ref=e681]: ಪ್ರಸ್ತುತ ಸಕ್ರಿಯ ಪ್ಯಾಕೇಜ್
+                - generic [ref=e682]: ✓
+              - generic [ref=e683]:
+                - generic [ref=e684]:
+                  - generic [ref=e685]: 💰
+                  - generic [ref=e686]: ₹497
+                - generic [ref=e687]:
+                  - generic [ref=e688]: 📅
+                  - generic [ref=e689]: 371 ದಿನ
+              - button "ಸಿಂಪ್ಲಿಷ್ ಟಾಕ್ಸ್ ಮುಂದುವರಿಸಿ" [ref=e691] [cursor=pointer]
+            - generic [ref=e693]:
+              - generic [ref=e694]:
+                - generic [ref=e695]: 🎙️
+                - generic [ref=e696]:
+                  - heading "SIMPLISH SNEHI" [level=4] [ref=e697]
+                  - paragraph [ref=e698]: ಪ್ರಸ್ತುತ ಸಕ್ರಿಯ ಪ್ಯಾಕೇಜ್
+                - generic [ref=e699]: ✓
+              - generic [ref=e700]:
+                - generic [ref=e701]:
+                  - generic [ref=e702]: 💰
+                  - generic [ref=e703]: ₹697
+                - generic [ref=e704]:
+                  - generic [ref=e705]: 📅
+                  - generic [ref=e706]: 371 ದಿನ
+                - generic [ref=e707]:
+                  - generic [ref=e708]: ⏱️
+                  - generic [ref=e709]: 279 ನಿಮಿ
+              - button "ಸ್ನೇಹಿಗೆ ಹೋಗಿ" [ref=e711] [cursor=pointer]
+          - generic [ref=e712]:
+            - generic [ref=e713]:
+              - generic [ref=e714]: 🔥
+              - generic [ref=e715]: "1"
+              - generic [ref=e716]: ದೈನಂದಿನ ಸರಣಿ
+            - generic [ref=e717]:
+              - generic [ref=e718]: 💬
+              - generic [ref=e719]: "1"
+              - generic [ref=e720]: ಸಂದೇಶಗಳು
+            - generic [ref=e721]:
+              - generic [ref=e722]: 📈
+              - generic [ref=e723]: 100%
+              - generic [ref=e724]: ಪ್ರಗತಿ
+        - generic [ref=e725]:
+          - generic [ref=e728]:
+            - generic [ref=e729]:
+              - heading "ಸಕ್ರಿಯ ಸದಸ್ಯತ್ವ" [level=3] [ref=e730]
+              - heading "ಸಿಂಪ್ಲಿಷ್ - ಟಾಕ್ಸ್ ಮತ್ತು ಸ್ನೇಹಿ" [level=2] [ref=e731]
+              - generic [ref=e732]:
+                - generic [ref=e733]:
+                  - generic [ref=e734]: "ಪ್ರಾರಂಭ:"
+                  - generic [ref=e735]: 6/18/2026
+                - generic [ref=e736]:
+                  - generic [ref=e737]: "ಮುಕ್ತಾಯ:"
+                  - generic [ref=e738]: 7/13/2027
+            - generic [ref=e739]:
+              - generic [ref=e740]:
+                - generic [ref=e741]: ಸಂದೇಶಗಳು
+                - generic [ref=e742]: "1"
+              - generic [ref=e743]:
+                - generic [ref=e744]: 0ನಿ
+                - generic [ref=e745]: ಮಾತನಾಡುವ ಸಮಯ
+          - generic [ref=e746]:
+            - generic [ref=e747]:
+              - heading "ಒಟ್ಟು ಕಲಿಕೆ" [level=3] [ref=e748]
+              - generic [ref=e749]: 100%
+              - generic [ref=e750]: ಪಾಠಗಳು ಪೂರ್ಣಗೊಂಡಿವೆ
+            - generic [ref=e754]:
+              - generic [ref=e755]: SNEHI Progress
+              - generic [ref=e756]: 0%
+        - generic [ref=e758]:
+          - generic [ref=e759]:
+            - generic [ref=e760]:
+              - heading "ಪಾಠಗಳು" [level=3] [ref=e761]
+              - generic [ref=e762]: BASIC
+            - generic [ref=e763]:
+              - generic [ref=e764]:
+                - generic [ref=e765]: ✓
+                - generic [ref=e766]:
+                  - generic [ref=e767]: Self-Introduction
+                  - generic [ref=e768]: ನನ್ನ ಪರಿಚಯ
+              - generic [ref=e769]:
+                - generic [ref=e770]: ✓
+                - generic [ref=e771]:
+                  - generic [ref=e772]: "The Marketplace: Buying Vegetables & Groceries"
+                  - generic [ref=e773]: "ಮಾರುಕಟ್ಟೆ: ತರಕಾರಿ ಮತ್ತು ದಿನಸಿ ಖರೀದಿ"
+              - generic [ref=e774]:
+                - generic [ref=e775]: ✓
+                - generic [ref=e776]:
+                  - generic [ref=e777]: "Asking for Help: Finding Places"
+                  - generic [ref=e778]: "ಸಹಾಯ ಕೇಳುವುದು: ಸ್ಥಳಗಳನ್ನು ಹುಡುಕುವುದು"
+              - generic [ref=e779]:
+                - generic [ref=e780]: ✓
+                - generic [ref=e781]:
+                  - generic [ref=e782]: "Time & Date: Appointments & Schedules"
+                  - generic [ref=e783]: "ಸಮಯ ಮತ್ತು ದಿನಾಂಕ: ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಮತ್ತು ವೇಳಾಪಟ್ಟಿ"
+              - generic [ref=e784]:
+                - generic [ref=e785]: ✓
+                - generic [ref=e786]:
+                  - generic [ref=e787]: "At the Bank: Forms & Cash"
+                  - generic [ref=e788]: "ಬ್ಯಾಂಕ್‌ನಲ್ಲಿ: ಫಾರ್ಮ್‌ಗಳು ಮತ್ತು ನಗದು ಚಲಾವಣೆ"
+          - generic [ref=e789]:
+            - generic [ref=e790]:
+              - heading "ಧ್ವನಿ ಅಭ್ಯಾಸ" [level=3] [ref=e791]
+              - generic [ref=e792]: ಸ್ನೇಹಿ
+            - generic [ref=e793]:
+              - generic [ref=e794]:
+                - generic [ref=e795]: "1"
+                - generic [ref=e796]:
+                  - generic [ref=e797]: The Warm Welcome
+                  - generic [ref=e798]: Retail & Sales
+              - generic [ref=e799]:
+                - generic [ref=e800]: "2"
+                - generic [ref=e801]:
+                  - generic [ref=e802]: Ordering Food or Coffee
+                  - generic [ref=e803]: Daily Life
+              - generic [ref=e804]:
+                - generic [ref=e805]: "3"
+                - generic [ref=e806]:
+                  - generic [ref=e807]: Greetings & Passing Small Talk
+                  - generic [ref=e808]: Daily Life
+              - generic [ref=e809]:
+                - generic [ref=e810]: "4"
+                - generic [ref=e811]:
+                  - generic [ref=e812]: Small Talk with Neighbors
+                  - generic [ref=e813]: Daily Life
+              - generic [ref=e814]:
+                - generic [ref=e815]: "5"
+                - generic [ref=e816]:
+                  - generic [ref=e817]: Compliments & Responding
+                  - generic [ref=e818]: Social & Workplace
+              - button "ಅಭ್ಯಾಸ ಪ್ರಾರಂಭಿಸಿ →" [ref=e819] [cursor=pointer]
+          - generic [ref=e820]:
+            - generic [ref=e821]:
+              - heading "AI ಸ್ಕೋರ್‌ಕಾರ್ಡ್" [level=3] [ref=e822]
+              - button "🔄" [ref=e823] [cursor=pointer]
+            - generic [ref=e825]:
+              - generic [ref=e826]:
+                - generic [ref=e827]:
+                  - generic [ref=e828]: BASIC
+                  - generic [ref=e829]: 0%
+                - paragraph [ref=e830]: "\"User skipped the placement test. Assigned to default Basic level.\""
+              - generic [ref=e831]:
+                - heading "ಹಿಂದಿನ ಪ್ರಯತ್ನಗಳು" [level=4] [ref=e832]
+                - generic [ref=e833]:
+                  - generic [ref=e834]:
+                    - generic [ref=e835]: 0%
+                    - generic [ref=e836]: BASIC
+                  - generic [ref=e837]: Jun 18

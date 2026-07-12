@@ -1,0 +1,6 @@
+- generic [active] [ref=f1e1]:
+  - generic:
+    - img "SIMPLISH Talks Hero"
+  - generic [ref=f1e3]:
+    - banner [ref=f1e4]
+    - main [ref=f1e9]
