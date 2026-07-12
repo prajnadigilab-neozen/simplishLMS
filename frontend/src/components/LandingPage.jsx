@@ -70,15 +70,31 @@ const LandingPage = ({ onAuthSuccess }) => {
     }, []);
 
     const handleDownloadApp = (e) => {
-        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isiOS) {
+        if (deferredPrompt) {
             e.preventDefault();
-            alert(lang === 'en'
-                ? "To install: Tap the Share button in Safari, then select 'Add to Home Screen'."
-                : "ಸ್ಥಾಪಿಸಲು: Safari ಯಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ (Share) ಬಟನ್ ಟ್ಯಾಪ್ ಮಾಡಿ, ನಂತರ 'ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಸೇರಿಸಿ' (Add to Home Screen) ಆಯ್ಕೆಮಾಡಿ."
-            );
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the PWA install prompt');
+                }
+                setDeferredPrompt(null);
+            });
+        } else {
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isiOS) {
+                e.preventDefault();
+                alert(lang === 'en'
+                    ? "To install: Tap the Share button in Safari, then select 'Add to Home Screen'."
+                    : "ಸ್ಥಾಪಿಸಲು: Safari ಯಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ (Share) ಬಟನ್ ಟ್ಯಾಪ್ ಮಾಡಿ, ನಂತರ 'ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಸೇರಿಸಿ' (Add to Home Screen) ಆಯ್ಕೆಮಾಡಿ."
+                );
+            } else {
+                e.preventDefault();
+                alert(lang === 'en'
+                    ? "Install prompt is ready. Look for the 'Install App' option in your browser menu or address bar."
+                    : "ಸ್ಥಾಪಿಸಲು ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಬ್ರೌಸರ್ ಮೆನು ಅಥವಾ ಅಡ್ರೆಸ್ ಬಾರ್‌ನಲ್ಲಿ 'ಸ್ಥಾಪಿಸಿ' (Install) ಆಯ್ಕೆಯನ್ನು ನೋಡಿ."
+                );
+            }
         }
-        // For Android and other devices, do NOT prevent default; let it download /simplish.apk directly.
     };
 
     useEffect(() => {

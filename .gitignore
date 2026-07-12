@@ -42,5 +42,9 @@ Thumbs.db
 # Developer Log
 developer_log.md
 
-# Android portable JDK
+# Android local folders and JDK
 android-app/jdk/
+android-app/.gradle/
+android-app/.kotlin/
+android-app/build/
+android-app/local.properties
