@@ -41,3 +41,6 @@ tmp/
 Thumbs.db
 # Developer Log
 developer_log.md
+
+# Android portable JDK
+android-app/jdk/
