@@ -49,6 +49,46 @@ const LandingPage = ({ onAuthSuccess }) => {
     const [showAuth, setShowAuth] = useState(false);
     const [lang, setLang] = useState(() => safeGetItem('simplish_language') || 'kn');
     const [theme, setTheme] = useState(safeGetItem('theme') || 'light');
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleDownloadApp = (e) => {
+        if (deferredPrompt) {
+            e.preventDefault();
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the PWA install prompt');
+                }
+                setDeferredPrompt(null);
+            });
+        } else {
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isiOS) {
+                e.preventDefault();
+                alert(lang === 'en' 
+                    ? "To install: Tap the Share button in Safari, then select 'Add to Home Screen'."
+                    : "ಸ್ಥಾಪಿಸಲು: Safari ಯಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ (Share) ಬಟನ್ ಟ್ಯಾಪ್ ಮಾಡಿ, ನಂತರ 'ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಸೇರಿಸಿ' (Add to Home Screen) ಆಯ್ಕೆಮಾಡಿ."
+                );
+            } else {
+                e.preventDefault();
+                alert(lang === 'en'
+                    ? "Install prompt is ready. Look for the 'Install App' option in your browser menu or address bar."
+                    : "ಸ್ಥಾಪಿಸಲು ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಬ್ರೌಸರ್ ಮೆನು ಅಥವಾ ಅಡ್ರೆಸ್ ಬಾರ್‌ನಲ್ಲಿ 'ಸ್ಥಾಪಿಸಿ' (Install) ಆಯ್ಕೆಯನ್ನು ನೋಡಿ."
+                );
+            }
+        }
+    };
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -189,6 +229,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                 <a
                     href="/simplish.apk"
                     download
+                    onClick={handleDownloadApp}
                     style={{
                         position: 'fixed',
                         top: '2rem',
@@ -326,6 +367,42 @@ const LandingPage = ({ onAuthSuccess }) => {
                         {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                     </button>
 
+                    {/* Download App Button (Mobile friendly) */}
+                    <a
+                        href="/simplish.apk"
+                        download
+                        onClick={handleDownloadApp}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            padding: '0.4rem 0.8rem',
+                            fontSize: '0.85rem',
+                            fontWeight: 800,
+                            color: 'white',
+                            background: '#007FFF',
+                            borderRadius: '0.375rem',
+                            textDecoration: 'none',
+                            boxShadow: '0 2px 4px rgba(0, 127, 255, 0.2)',
+                            transition: 'transform 0.2s, background-color 0.2s'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'scale(1.03)';
+                            e.currentTarget.style.backgroundColor = '#0066cc';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'scale(1)';
+                            e.currentTarget.style.backgroundColor = '#007FFF';
+                        }}
+                    >
+                        <img
+                            src={logoApp}
+                            alt="App Icon"
+                            style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }}
+                        />
+                        {lang === 'en' ? 'App' : 'ಆಪ್'}
+                    </a>
+
                     <button
                         className="btn btn-primary"
                         onClick={() => setShowAuth(true)}
@@ -376,6 +453,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                         <a
                             href="/simplish.apk"
                             download
+                            onClick={handleDownloadApp}
                             style={{
                                 width: '100%',
                                 padding: '1.25rem',

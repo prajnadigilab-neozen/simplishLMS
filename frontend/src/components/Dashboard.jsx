@@ -26,6 +26,46 @@ const Dashboard = ({ onStartLesson }) => {
     const [expandedLevel, setExpandedLevel] = useState(null);
 
     const isAdmin = ['super_admin', 'admin', 'moderator'].includes(user?.role?.toLowerCase());
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleDownloadApp = (e) => {
+        if (deferredPrompt) {
+            e.preventDefault();
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the PWA install prompt');
+                }
+                setDeferredPrompt(null);
+            });
+        } else {
+            const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isiOS) {
+                e.preventDefault();
+                alert(language === 'kn' 
+                    ? "ಸ್ಥಾಪಿಸಲು: Safari ಯಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ (Share) ಬಟನ್ ಟ್ಯಾಪ್ ಮಾಡಿ, ನಂತರ 'ಹೋಮ್ ಸ್ಕ್ರೀನ್‌ಗೆ ಸೇರಿಸಿ' (Add to Home Screen) ಆಯ್ಕೆಮಾಡಿ."
+                    : "To install: Tap the Share button in Safari, then select 'Add to Home Screen'."
+                );
+            } else {
+                e.preventDefault();
+                alert(language === 'kn'
+                    ? "ಸ್ಥಾಪಿಸಲು ಸಿದ್ಧವಾಗಿದೆ. ನಿಮ್ಮ ಬ್ರೌಸರ್ ಮೆನು ಅಥವಾ ಅಡ್ರೆಸ್ ಬಾರ್‌ನಲ್ಲಿ 'ಸ್ಥಾಪಿಸಿ' (Install) ಆಯ್ಕೆಯನ್ನು ನೋಡಿ."
+                    : "Install prompt is ready. Look for the 'Install App' option in your browser menu or address bar."
+                );
+            }
+        }
+    };
 
     useEffect(() => {
         const fetchDashboardData = async () => {
@@ -191,6 +231,7 @@ const Dashboard = ({ onStartLesson }) => {
                     href="/simplish.apk"
                     download
                     title="Download Android App"
+                    onClick={handleDownloadApp}
                     style={{
                         display: 'flex',
                         alignItems: 'center',
