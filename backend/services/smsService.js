@@ -147,8 +147,8 @@ const smsService = {
             const appName    = 'Simplish LMS';
             const templateId = process.env.SMS_GATEWAY_TEMPLATE_ID;
 
-            // en-dash (U+2013) matches registered template
-            const message = `To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. \u2013 PRAJNA DIGILAB`;
+            // normal hyphen (-) to replace U+2013 which rendered as '?' on phones
+            const message = `To complete your new user registration for ${appName}, use OTP ${otp}. Do not share this with anyone. - PRAJNA DIGILAB`;
             const text    = encodeURIComponent(message);
 
             logger.info({ phone, messagePreview: message.substring(0, 80) }, '[SMS] OTP message built');
