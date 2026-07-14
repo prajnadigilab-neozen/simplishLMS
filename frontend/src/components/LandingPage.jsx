@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { safeGetItem, safeSetItem } from '../utils/storageUtils';
 import AuthForm from './AuthForm';
+import { attributionApi } from '../utils/api';
 import simplishTalksLogo from '../assets/logo_final.jpg';
 import logoApp from '../assets/logo_app.jpg';
 
@@ -106,6 +107,16 @@ const LandingPage = ({ onAuthSuccess }) => {
 
     const handleDownloadApp = (e) => {
         e.preventDefault();
+
+        // Log click attribution
+        const urlParams = new URLSearchParams(window.location.search);
+        attributionApi.logClick({
+            utm_source: urlParams.get('utm_source') || 'direct',
+            utm_medium: urlParams.get('utm_medium') || 'direct-download',
+            utm_campaign: urlParams.get('utm_campaign') || 'landing_page_pwa',
+            screen_resolution: `${window.screen.width}x${window.screen.height}`
+        }).catch(err => console.error('Failed to log click attribution', err));
+
         const promptEvent = window.deferredPrompt || deferredPrompt;
         if (promptEvent) {
             promptEvent.prompt();

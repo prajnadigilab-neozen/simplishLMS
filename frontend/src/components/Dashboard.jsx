@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Play, Loader2, CheckCircle2, Lock, Trophy, RefreshCw } from 'lucide-react';
-import { lessonApi, placementApi, reportApi } from '../utils/api';
+import { lessonApi, placementApi, reportApi, attributionApi } from '../utils/api';
 import { useUser } from '../context/UserContext';
 
 const Dashboard = ({ onStartLesson }) => {
@@ -41,6 +41,16 @@ const Dashboard = ({ onStartLesson }) => {
 
     const handleDownloadApp = (e) => {
         e.preventDefault();
+
+        // Log click attribution
+        const urlParams = new URLSearchParams(window.location.search);
+        attributionApi.logClick({
+            utm_source: urlParams.get('utm_source') || 'direct',
+            utm_medium: urlParams.get('utm_medium') || 'direct-download',
+            utm_campaign: urlParams.get('utm_campaign') || 'dashboard_pwa',
+            screen_resolution: `${window.screen.width}x${window.screen.height}`
+        }).catch(err => console.error('Failed to log click attribution', err));
+
         const promptEvent = window.deferredPrompt || deferredPrompt;
         if (promptEvent) {
             promptEvent.prompt();

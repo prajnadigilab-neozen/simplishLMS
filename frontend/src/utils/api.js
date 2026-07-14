@@ -121,4 +121,9 @@ export const aiApi = {
     generateLessonContent: (data) => api.post('/ai/generate-lesson', data),
 };
 
+export const attributionApi = {
+    logClick: (data) => api.post('/attribution/click-log', data),
+    getLogs: () => api.get('/attribution/logs')
+};
+
 export default api;

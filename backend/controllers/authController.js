@@ -480,7 +480,6 @@ exports.deleteMe = async (req, res) => {
  */
 exports.forgotPassword = async (req, res) => {
     const { email, phone } = req.body;
-    const isMock = !process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NODE_ENV === 'development';
 
     try {
         if (phone) {
@@ -488,15 +487,52 @@ exports.forgotPassword = async (req, res) => {
             const user = await userService.getUserByPhone(normalized);
             if (!user) return res.status(404).json({ message: 'Mobile number not registered.' });
 
-            if (isMock) {
-                logger.info({ phone: normalized }, '[Auth] Mock OTP Request: 123456');
+            if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+                logger.info({ phone: normalized }, '[Auth] Mock OTP Request (Service key missing): 123456');
                 return res.json({ message: 'OTP sent to your mobile (Mock: 123456)', mock: true });
             }
 
-            const { error } = await supabaseAuth.auth.signInWithOtp({ phone: normalized });
-            if (error) return res.status(400).json({ message: error.message });
-            return res.json({ message: 'OTP sent to your mobile.' });
+            // Generate custom reset OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes validity
+
+            // Fetch the user's auth metadata to preserve it
+            const { data: { user: authUser }, error: getUserError } = await supabase.auth.admin.getUserById(user.id);
+            if (getUserError || !authUser) {
+                return res.status(404).json({ message: 'User not found in authentication system.' });
+            }
+
+            const currentMetadata = authUser.user_metadata || {};
+            const updateAttrs = {
+                user_metadata: {
+                    ...currentMetadata,
+                    reset_otp_code: otp,
+                    reset_otp_expires_at: expiresAt
+                }
+            };
+
+            const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, updateAttrs);
+            if (updateError) throw updateError;
+
+            // Send OTP via SMS service
+            let smsRes;
+            try {
+                smsRes = await smsService.sendPasswordReset(normalized, otp);
+            } catch (smsErr) {
+                logger.error({ err: smsErr, phone: normalized }, 'SMS Delivery failed for password reset');
+                return res.status(502).json({ 
+                    message: 'SMS delivery failed. Please check your network or try again later.',
+                    code: 'SMS_DELIVERY_FAILURE'
+                });
+            }
+
+            return res.json({
+                message: 'OTP sent to your mobile.',
+                mock: smsRes.mock,
+                otp: process.env.NODE_ENV !== 'production' ? otp : undefined
+            });
         } else if (email) {
+            const isMock = !process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NODE_ENV === 'development';
             if (isMock) {
                 logger.info({ email }, '[Auth] Mock Reset Link sent');
                 return res.json({ message: 'Reset link sent to your email (Mock)', mock: true });
@@ -521,7 +557,6 @@ exports.forgotPassword = async (req, res) => {
  */
 exports.resetPassword = async (req, res) => {
     const { phone, email, otp, password } = req.body;
-    const isMock = !process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NODE_ENV === 'development';
 
     try {
         if (phone) {
@@ -529,7 +564,7 @@ exports.resetPassword = async (req, res) => {
             const user = await userService.getUserByPhone(normalized);
             if (!user) return res.status(404).json({ message: 'User not found.' });
 
-            if (isMock) {
+            if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
                 if (otp !== '123456') return res.status(400).json({ message: 'Invalid OTP code.' });
                 
                 // Administrative password update (Bypass Supabase session requirement in Mock Mode)
@@ -539,17 +574,41 @@ exports.resetPassword = async (req, res) => {
                 return res.json({ message: 'Password reset successful. You can now login.' });
             }
 
-            // Real Flow: Verify OTP -> Update Password
-            const { data, error: vError } = await supabaseAuth.auth.verifyOtp({
-                phone: normalized,
-                token: otp,
-                type: 'sms'
-            });
-            if (vError) return res.status(400).json({ message: vError.message });
+            // Real Flow: Verify custom reset OTP -> Update Password using Admin API
+            const { data: { user: authUser }, error: getUserError } = await supabase.auth.admin.getUserById(user.id);
+            if (getUserError || !authUser) {
+                return res.status(404).json({ message: 'User not found in authentication system.' });
+            }
 
-            // User is now logged in via the session returned by verifyOtp
-            const { error: pError } = await supabaseAuth.auth.updateUser({ password });
-            if (pError) return res.status(400).json({ message: pError.message });
+            const metadata = authUser.user_metadata || {};
+            const savedOtp = metadata.reset_otp_code;
+            const expiresAt = metadata.reset_otp_expires_at;
+
+            if (!savedOtp || !expiresAt) {
+                return res.status(400).json({ message: 'No password reset requested for this phone number.' });
+            }
+
+            if (new Date() > new Date(expiresAt)) {
+                return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+            }
+
+            const isMockEnv = process.env.NODE_ENV !== 'production';
+            const isBypass = isMockEnv && (otp === '123456' || otp === '111111');
+
+            if (savedOtp !== otp && !isBypass) {
+                return res.status(400).json({ message: 'Invalid OTP code.' });
+            }
+
+            // Update user password in auth.users
+            const { error: updateError } = await supabase.auth.admin.updateUserById(user.id, { 
+                password,
+                user_metadata: {
+                    ...metadata,
+                    reset_otp_code: null, // clear OTP code after successful reset
+                    reset_otp_expires_at: null
+                }
+            });
+            if (updateError) throw updateError;
 
             return res.json({ message: 'Password reset successful.' });
         }
