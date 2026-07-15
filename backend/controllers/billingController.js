@@ -6,8 +6,112 @@ const logger = require('../utils/logger');
 const env = require('../config/env');
 const supabase = require('../config/supabase');
 const { maskId } = require('../utils/pii');
+const discountService = require('../services/discountService');
 
 // [SYSTEM INSTRUCTION]: Do not disturb 'REVENUE' and 'PAYMENT' flow.
+
+/**
+ * Helper to record coupon application on successful payment.
+ * Returns extra subscription days to add if it's a FREE_MONTHS coupon.
+ */
+const applyCouponOnPaymentSuccess = async (record, transactionId, settings) => {
+    if (!record.coupon_code) return 0;
+
+    try {
+        const { data: coupon, error } = await supabase
+            .from('discount_master')
+            .select('*')
+            .ilike('coupon_code', record.coupon_code.trim())
+            .maybeSingle();
+
+        if (error || !coupon) {
+            logger.warn({ couponCode: record.coupon_code, error }, '[Coupon Success] Coupon not found in master');
+            return 0;
+        }
+
+        // Avoid duplicate usage entries
+        const { data: existing } = await supabase
+            .from('user_discount_usage')
+            .select('id')
+            .eq('transaction_id', transactionId)
+            .limit(1);
+
+        if (existing && existing.length > 0) {
+            logger.info({ transactionId }, '[Coupon Success] Usage already recorded');
+            return 0;
+        }
+
+        // Increment coupon usage count
+        await discountService.incrementUsage(coupon.id);
+
+        const finalAmount = Number(record.amount_paise) / 100;
+        let amountBeforeDiscount = finalAmount;
+        let discountAmount = 0;
+        let discountApplied = '';
+
+        if (coupon.discount_type === 'PERCENTAGE') {
+            discountApplied = `${coupon.discount_value}%`;
+            amountBeforeDiscount = Number((finalAmount / (1 - coupon.discount_value / 100)).toFixed(2));
+            discountAmount = Number((amountBeforeDiscount - finalAmount).toFixed(2));
+        } else if (coupon.discount_type === 'FREE_MONTHS') {
+            discountApplied = 'Free Months';
+            amountBeforeDiscount = finalAmount;
+            discountAmount = 0;
+        } else if (coupon.discount_type === 'FREE_ACCESS') {
+            discountApplied = '100% Free';
+            amountBeforeDiscount = finalAmount || 99; // fallback
+            discountAmount = amountBeforeDiscount;
+        }
+
+        const userProfile = await userService.getUserById(record.user_id);
+        const isPremium = userProfile?.is_paid && userProfile?.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date();
+        const purchaseType = record.payment_type === 'TOPUP' ? 'TOPUP' : (isPremium ? 'RENEWAL' : 'NEW');
+
+        // Record usage
+        await discountService.recordUsage({
+            user_id: record.user_id,
+            coupon_id: coupon.id,
+            customer_type: coupon.customer_type,
+            coupon_code: coupon.coupon_code,
+            discount_applied: discountApplied,
+            purchase_type: purchaseType,
+            amount_before_discount: amountBeforeDiscount,
+            discount_amount: discountAmount,
+            final_amount: finalAmount,
+            transaction_id: transactionId
+        });
+
+        // Audit Logging
+        await supabase.from('system_logs').insert([{
+            admin_id: record.user_id,
+            event_type: 'COUPON_APPLY',
+            severity: 'INFO',
+            message: `Coupon ${coupon.coupon_code} applied on completed transaction.`,
+            metadata: {
+                user_id: record.user_id,
+                coupon_id: coupon.id,
+                coupon_code: coupon.coupon_code,
+                transaction_id: transactionId,
+                purchase_type: purchaseType,
+                amount_before_discount: amountBeforeDiscount,
+                discount_amount: discountAmount,
+                final_amount: finalAmount
+            }
+        }]);
+
+        if (coupon.discount_type === 'FREE_MONTHS') {
+            const baseDurationDays = parseInt(record.payment_type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+            // Monthly/Quarterly Plan: +30 days (1 Month)
+            // Annual Plan: +60 days (2 Months)
+            if (baseDurationDays <= 31) return 30;
+            if (baseDurationDays <= 93) return 30;
+            return 60;
+        }
+    } catch (err) {
+        logger.error({ err: err.message }, 'applyCouponOnPaymentSuccess helper error');
+    }
+    return 0;
+};
 
 /**
  * Initiates a new billing transaction.
@@ -16,19 +120,18 @@ exports.initiate = async (req, res) => {
     const rawType = (req.body.type || 'MEMBERSHIP').toUpperCase();
     // Normalize: DB only allows 'MEMBERSHIP' or 'TOPUP'
     const type = rawType === 'TOPUP' ? 'TOPUP' : 'MEMBERSHIP';
-    const { amount, currency = 'INR' } = req.body;
+    const { amount, currency = 'INR', coupon_code } = req.body;
     const userId = req.user.id;
 
     try {
         const settings = await billingService.getSettings();
+        const userProfile = await userService.getUserById(userId);
+        const isPremium = userProfile?.is_paid && userProfile?.subscription_expires_at && new Date(userProfile.subscription_expires_at) > new Date();
         
         if (type === 'TOPUP') {
             if (!amount || amount <= 0) {
                 return res.status(400).json({ message: 'Invalid amount' });
             }
-            const profile = await userService.getUserById(userId);
-            const isPremium = profile?.is_paid && profile?.subscription_expires_at && new Date(profile.subscription_expires_at) > new Date();
-            
             if (!isPremium) {
                 return res.status(403).json({ 
                     message: 'Membership required to top up your wallet. Please renew your access first.' 
@@ -40,17 +143,32 @@ exports.initiate = async (req, res) => {
         const gstRate = parseFloat(settings.gst_rate || 18);
         const baseState = settings.base_state || 'Karnataka';
         const invoiceEnabled = settings.invoice_enabled === 'true';
-        
-        // 2. Fetch User Profile for State Detection
-        const userProfile = await userService.getUserById(userId);
         const userState = userProfile?.state || 'Unknown'; // Fallback triggers IGST
         
         // Use provided amount for TOPUP, otherwise default to subscription_price from settings
         let priceRupees = (type === 'TOPUP') ? Number(amount) : Number(amount || settings.subscription_price || 99);
         if (isNaN(priceRupees) || priceRupees <= 0) priceRupees = 99;
+
+        // Calculate purchase type
+        const purchaseType = type === 'TOPUP' ? 'TOPUP' : (isPremium ? 'RENEWAL' : 'NEW');
+
+        // Apply Coupon Validation if coupon_code is provided
+        let discountAmountRupees = 0;
+        let payableAmountRupees = priceRupees;
+        let couponRecord = null;
+
+        if (coupon_code) {
+            const validation = await discountService.validateCoupon(coupon_code, userId, purchaseType, priceRupees);
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            couponRecord = validation.coupon;
+            discountAmountRupees = validation.calculation.discount_amount;
+            payableAmountRupees = validation.calculation.payable_amount;
+        }
         
         // 3. SECURE INTEGER MATH: Convert to Paise immediately
-        const totalAmountPaise = Math.round(priceRupees * 100);
+        const totalAmountPaise = Math.round(payableAmountRupees * 100);
         
         // 4. TAX CALCULATION (Paise-based Integer Math)
         // Taxable = (Total * 100) / (100 + GST_Rate) -> rounded to nearest Paise
@@ -66,6 +184,99 @@ exports.initiate = async (req, res) => {
         } else {
             // Inter-state or Unknown: IGST
             igstPaise = totalGstPaise;
+        }
+
+        // --- 100% FREE ACCESS BYPASS ---
+        if (couponRecord && couponRecord.discount_type === 'FREE_ACCESS' && payableAmountRupees === 0) {
+            const mockToken = `free_access_${Math.random().toString(36).substring(7)}`;
+            
+            // 1. Ensure user exists
+            if (!userProfile) {
+                await userService.upsertUser({
+                    id: userId,
+                    phone: req.user.phone || '0000000000',
+                    full_name: req.user.fullName || 'Sync User',
+                    status: 'active',
+                    role: 'student'
+                });
+            }
+
+            // 2. Create Completed Payment record
+            await billingService.createPayment({
+                user_id: userId,
+                amount_paise: 0,
+                taxable_amount_paise: 0,
+                cgst_paise: 0,
+                sgst_paise: 0,
+                igst_paise: 0,
+                gst_rate: gstRate,
+                state: userState,
+                currency: 'INR',
+                status: 'completed',
+                transaction_id: mockToken,
+                provider: 'free_coupon',
+                payment_type: type,
+                coupon_code: couponRecord.coupon_code
+            });
+
+            // 3. Record coupon usage
+            await discountService.recordUsage({
+                user_id: userId,
+                coupon_id: couponRecord.id,
+                customer_type: couponRecord.customer_type,
+                coupon_code: couponRecord.coupon_code,
+                discount_applied: '100% Free',
+                purchase_type: purchaseType,
+                amount_before_discount: priceRupees,
+                discount_amount: priceRupees,
+                final_amount: 0,
+                transaction_id: mockToken
+            });
+
+            // 4. Increment coupon usage
+            await discountService.incrementUsage(couponRecord.id);
+
+            // 5. Grant packages
+            const updates = {};
+            const durationDays = parseInt(type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+            
+            if (durationDays > 0) {
+                const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
+                const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+                const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                updates.subscription_expires_at = newExpiry.toISOString();
+                updates.is_paid = true;
+            }
+
+            if (type === 'TOPUP') {
+                const creditsPaise = Math.round(priceRupees * 100);
+                await userService.incrementWallet(userId, BigInt(creditsPaise));
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await userService.updateUser(userId, updates);
+            }
+
+            // Audit log
+            await supabase.from('system_logs').insert([{
+                admin_id: userId,
+                event_type: 'COUPON_APPLY',
+                severity: 'INFO',
+                message: `Free access coupon ${couponRecord.coupon_code} applied. Transaction completed instantly.`,
+                metadata: {
+                    user_id: userId,
+                    coupon_code: couponRecord.coupon_code,
+                    transaction_id: mockToken,
+                    purchase_type: purchaseType
+                }
+            }]);
+
+            return res.status(201).json({
+                message: "Free access granted successfully",
+                token: "free_access",
+                entry: { id: mockToken, amount: 0, currency: 'INR' },
+                zeroPay: true
+            });
         }
 
         // --- MOCK MODE CHECK ---
@@ -102,7 +313,8 @@ exports.initiate = async (req, res) => {
                 transaction_id: mockToken,
                 provider: 'mock',
                 payment_type: type,
-                credits_awarded: 0
+                credits_awarded: 0,
+                coupon_code: couponRecord ? couponRecord.coupon_code : null
             });
 
             return res.status(201).json({
@@ -120,7 +332,8 @@ exports.initiate = async (req, res) => {
             notes: {
                 userId: userId,
                 syncType: type,
-                env: env.NODE_ENV || 'development'
+                env: env.NODE_ENV || 'development',
+                couponCode: couponRecord ? couponRecord.coupon_code : null
             }
         };
 
@@ -140,7 +353,8 @@ exports.initiate = async (req, res) => {
             status: 'pending',
             transaction_id: transactionRecord.id,
             provider: 'secure_provider',
-            payment_type: type
+            payment_type: type,
+            coupon_code: couponRecord ? couponRecord.coupon_code : null
         });
 
         res.status(201).json({
@@ -206,6 +420,9 @@ exports.confirm = async (req, res) => {
                 await billingService.updateSettings({ key: 'next_invoice_number', value: (nextNum + 1).toString() });
             }
 
+            // Apply coupon usage (if any) and get extra subscription days
+            const extraDays = await applyCouponOnPaymentSuccess(record, razorpay_payment_id, settings);
+
             // Update Payment Status & Tax Record
             await billingService.updatePayment(razorpay_order_id, { 
                 status: 'completed', 
@@ -221,12 +438,13 @@ exports.confirm = async (req, res) => {
             
             const updates = {};
             const durationDays = parseInt(record.payment_type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+            const totalDurationDays = durationDays + extraDays;
             
-            if (durationDays > 0) {
+            if (totalDurationDays > 0) {
                 const userProfile = await userService.getUserById(userId);
                 const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
                 const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
-                const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                const newExpiry = new Date(baseDate.getTime() + totalDurationDays * 24 * 60 * 60 * 1000);
                 updates.subscription_expires_at = newExpiry.toISOString();
                 updates.is_paid = true;
             }
@@ -272,6 +490,10 @@ exports.processInternal = async (req, res) => {
 
             if (record && record.status === 'pending') {
                 const settings = await billingService.getSettings();
+                
+                // Apply coupon usage (if any) and get extra subscription days
+                const extraDays = await applyCouponOnPaymentSuccess(record, syncId, settings);
+
                 await billingService.updatePayment(entryId, { status: 'completed', transaction_id: syncId });
 
                 if (record.payment_type === 'TOPUP') {
@@ -279,12 +501,13 @@ exports.processInternal = async (req, res) => {
                 }
                 
                 const durationDays = parseInt(record.payment_type === 'TOPUP' ? (settings.topup_duration_days || 0) : (settings.subscription_duration_days || 30));
+                const totalDurationDays = durationDays + extraDays;
                 
-                if (durationDays > 0) {
+                if (totalDurationDays > 0) {
                     const userProfile = await userService.getUserById(userId);
                     const currentExpiry = userProfile?.subscription_expires_at ? new Date(userProfile.subscription_expires_at) : new Date();
                     const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
-                    const newExpiry = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                    const newExpiry = new Date(baseDate.getTime() + totalDurationDays * 24 * 60 * 60 * 1000);
 
                     await userService.updateUser(userId, { 
                         is_paid: true, 

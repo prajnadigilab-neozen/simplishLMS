@@ -142,6 +142,7 @@ const billingRoutes = require('./routes/billing');
 const settingsRoutes = require('./routes/settings');
 const examRoutes = require('./routes/exams').default;
 const attributionRoutes = require('./routes/attribution');
+const discountRoutes = require('./routes/discounts');
 
 // 🛡️ Security Fix: Apply Brute-Force Shield to Auth routes (via route definitions)
 app.use('/api/v1/auth', authRoutes);
@@ -154,6 +155,8 @@ app.use('/api/v1/billing', billingRoutes);
 app.use('/api/v1/settings', settingsRoutes);
 app.use('/api/v1/exams', examRoutes);
 app.use('/api/v1/attribution', attributionRoutes);
+app.use('/api/v1/discounts', discountRoutes);
+
 
 
 // Legacy aliases so old bookmarks/clients still work

@@ -117,6 +117,20 @@ export const settingsApi = {
     update: (settings) => api.put('/settings', { settings }),
 };
 
+export const discountApi = {
+    validate: (data) => api.post('/discounts/validate', data),
+    getAll: (params) => api.get('/discounts', { params }),
+    create: (data) => api.post('/discounts', data),
+    update: (id, data) => api.put(`/discounts/${id}`, data),
+    delete: (id) => api.delete(`/discounts/${id}`),
+    toggle: (id) => api.post(`/discounts/${id}/toggle`),
+    clone: (id) => api.post(`/discounts/${id}/clone`),
+    generateBulk: (data) => api.post('/discounts/generate', data),
+    getAnalytics: () => api.get('/discounts/analytics'),
+    getHistory: () => api.get('/discounts/history')
+};
+
+
 export const aiApi = {
     generateLessonContent: (data) => api.post('/ai/generate-lesson', data),
 };

@@ -18,7 +18,8 @@ import {
     CheckCircle2,
     MessageSquare,
     ClipboardList,
-    Download
+    Download,
+    Percent
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { reportApi, authApi, settingsApi, assessmentApi, attributionApi } from '../utils/api';
@@ -26,6 +27,7 @@ import { useToast } from './Toast';
 import { useUser } from '../context/UserContext';
 import Reports from './Reports'; // We'll keep the detailed breakdown here
 import UserManagement from './UserManagement'; // We'll reuse parts of this
+import DiscountManagementAdmin from './DiscountManagementAdmin';
 
 const AdminDashboard = ({ user: userProp }) => {
     const { user: contextUser } = useUser();
@@ -476,6 +478,7 @@ const AdminDashboard = ({ user: userProp }) => {
                     { id: 'attribution', label: 'Tracking Strategy', icon: TrendingUp },
                     { id: 'users', label: 'Users', icon: Users },
                     { id: 'moderators', label: 'Moderators', icon: ShieldCheck },
+                    { id: 'discounts', label: 'Discount Management', icon: Percent },
                     { id: 'feedback', label: 'Feedback', icon: MessageSquare },
                     ...(isSuperAdmin ? [{ id: 'settings', label: 'Global Settings', icon: Settings }] : [])
                 ].map(tab => (
@@ -949,6 +952,10 @@ const AdminDashboard = ({ user: userProp }) => {
                                 </div>
                             </div>
                         </div>
+                    )}
+
+                    {activeTab === 'discounts' && (
+                        <DiscountManagementAdmin user={user} />
                     )}
 
                     {activeTab === 'feedback' && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { billingApi, settingsApi } from '../utils/api';
+import { billingApi, settingsApi, discountApi } from '../utils/api';
 import { useToast } from './Toast';
 import { 
     ShieldCheck, 
@@ -11,7 +11,8 @@ import {
     Clock,
     RefreshCw,
     AlertTriangle,
-    X
+    X,
+    Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '../context/UserContext';
@@ -39,6 +40,70 @@ const CheckoutSync = () => {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // Coupon system states
+    const [couponInput, setCouponInput] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [validationError, setValidationError] = useState('');
+    const [validationLoading, setValidationLoading] = useState(false);
+    const [couponTarget, setCouponTarget] = useState('MEMBERSHIP');
+
+    // Auto-set target based on subscription status on load
+    useEffect(() => {
+        if (user) {
+            const active = user.subscription_expires_at && new Date(user.subscription_expires_at) > new Date();
+            setCouponTarget(active ? 'TOPUP' : 'MEMBERSHIP');
+        }
+    }, [user]);
+
+    const handleApplyCoupon = async () => {
+        if (!couponInput.trim()) {
+            showToast('Please enter a coupon code.', 'error');
+            return;
+        }
+        setValidationLoading(true);
+        setValidationError('');
+        setAppliedCoupon(null);
+
+        const price = couponTarget === 'MEMBERSHIP' 
+            ? Number(settings.subscription_price || 99)
+            : Number(settings.topup_price || 100);
+
+        const active = user.subscription_expires_at && new Date(user.subscription_expires_at) > new Date();
+        const pType = couponTarget === 'MEMBERSHIP'
+            ? (active ? 'RENEWAL' : 'NEW')
+            : 'TOPUP';
+
+        try {
+            const res = await discountApi.validate({
+                coupon_code: couponInput.trim().toUpperCase(),
+                purchase_type: pType,
+                original_price: price
+            });
+
+            if (res.data && res.data.valid) {
+                setAppliedCoupon(res.data);
+                showToast('Coupon Applied successfully!', 'success');
+            } else {
+                setValidationError(res.data?.message || 'Invalid coupon code');
+                showToast(res.data?.message || 'Invalid coupon code', 'error');
+            }
+        } catch (err) {
+            console.error('Validation error:', err);
+            const errMsg = err.response?.data?.message || 'Invalid Coupon Code';
+            setValidationError(errMsg);
+            showToast(errMsg, 'error');
+        } finally {
+            setValidationLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponInput('');
+        setValidationError('');
+        showToast('Coupon removed.', 'info');
+    };
 
     // Refund flow states
     const [selectedPayment, setSelectedPayment] = useState(null);
@@ -128,13 +193,31 @@ const CheckoutSync = () => {
             const amount = customAmount || settings.subscription_price || '99';
             
             // 1. Initiate Sync with Backend
-            const syncRes = await billingApi.initiate({
+            const reqPayload = {
                 amount: amount,
                 currency: 'INR',
                 type: type
-            });
+            };
 
-            const { entry, token, mock } = syncRes.data;
+            if (appliedCoupon && couponTarget === type) {
+                reqPayload.coupon_code = appliedCoupon.coupon.coupon_code;
+            }
+
+            const syncRes = await billingApi.initiate(reqPayload);
+
+            const { entry, token, mock, zeroPay } = syncRes.data;
+
+            // --- ZERO PAY (FREE ACCESS) BYPASS ---
+            if (zeroPay) {
+                showToast('Success! Free access granted instantly.', 'success');
+                await refreshUserContext();
+                setAppliedCoupon(null);
+                setCouponInput('');
+                setValidationError('');
+                setLoading(false);
+                navigate('/');
+                return;
+            }
 
             // --- MOCK MODE UI BYPASS ---
             if (mock) {
@@ -351,6 +434,93 @@ const CheckoutSync = () => {
                 {/* ── Action Root ── */}
                 <section style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     
+                    {/* COUPON SECTION */}
+                    <div style={{ background: 'white', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Tag size={18} color="#2563eb" /> HAVE A COUPON CODE?
+                            </div>
+                            {isSubscribed && (
+                                <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.2rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                                    <button 
+                                        onClick={() => { setCouponTarget('MEMBERSHIP'); setAppliedCoupon(null); }}
+                                        style={{ border: 'none', background: couponTarget === 'MEMBERSHIP' ? 'white' : 'none', color: couponTarget === 'MEMBERSHIP' ? '#2563eb' : '#64748b', padding: '0.3rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                                    >
+                                        Membership
+                                    </button>
+                                    <button 
+                                        onClick={() => { setCouponTarget('TOPUP'); setAppliedCoupon(null); }}
+                                        style={{ border: 'none', background: couponTarget === 'TOPUP' ? 'white' : 'none', color: couponTarget === 'TOPUP' ? '#2563eb' : '#64748b', padding: '0.3rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontWeight: 700 }}
+                                    >
+                                        Top-Up
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {!appliedCoupon ? (
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Coupon Code"
+                                    value={couponInput}
+                                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                                    style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', outline: 'none', background: 'white', color: '#1e293b' }}
+                                />
+                                <button
+                                    onClick={handleApplyCoupon}
+                                    disabled={validationLoading}
+                                    style={{ padding: '0.75rem 1.25rem', borderRadius: '10px', background: '#2563eb', color: 'white', fontWeight: 800, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    {validationLoading ? <Loader2 className="animate-spin" size={16} /> : 'Apply'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: '#15803d', fontWeight: 800, fontSize: '0.85rem' }}>Coupon Applied</span>
+                                    <button 
+                                        onClick={handleRemoveCoupon}
+                                        style={{ border: 'none', background: 'none', color: '#b91c1c', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.85rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b' }}>Customer Type:</span>
+                                        <span style={{ fontWeight: 700, color: '#1e293b' }}>{appliedCoupon.coupon.customer_type}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b' }}>Discount:</span>
+                                        <span style={{ fontWeight: 700, color: '#1e293b' }}>
+                                            {appliedCoupon.coupon.discount_type === 'PERCENTAGE' && `${appliedCoupon.coupon.discount_value}%`}
+                                            {appliedCoupon.coupon.discount_type === 'FREE_ACCESS' && '100%'}
+                                            {appliedCoupon.coupon.discount_type === 'FREE_MONTHS' && 'Free Months Extension'}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b' }}>Original Price:</span>
+                                        <span style={{ fontWeight: 700, color: '#1e293b' }}>₹{appliedCoupon.calculation.original_price}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748b' }}>Discount:</span>
+                                        <span style={{ fontWeight: 700, color: '#ef4444' }}>₹{appliedCoupon.calculation.discount_amount}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
+                                        <span style={{ color: '#1e293b', fontWeight: 800 }}>Payable Amount:</span>
+                                        <span style={{ fontWeight: 900, color: '#10b981', fontSize: '1.05rem' }}>₹{appliedCoupon.calculation.payable_amount}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {validationError && (
+                            <span style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: 700 }}>
+                                {validationError}
+                            </span>
+                        )}
+                    </div>
+
                     {/* OPTION 1: MEMBERSHIP */}
                     <motion.div 
                         whileHover={!isSubscribed ? { y: -5 } : {}}
@@ -399,7 +569,26 @@ const CheckoutSync = () => {
                         </div>
                         <div style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
-                                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>₹{settings.subscription_price}</div>
+                                {appliedCoupon && couponTarget === 'MEMBERSHIP' ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '1.2rem', textDecoration: 'line-through', color: '#94a3b8' }}>₹{settings.subscription_price}</span>
+                                            <span style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981' }}>₹{appliedCoupon.calculation.payable_amount}</span>
+                                            <span 
+                                                onClick={handleRemoveCoupon}
+                                                style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', padding: '0.2rem 0.4rem', borderRadius: '4px', background: '#fee2e2', color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, border: '1px solid #fca5a5' }}
+                                                title="Remove coupon"
+                                            >
+                                                {appliedCoupon.coupon.coupon_code} ✕
+                                            </span>
+                                        </div>
+                                        {appliedCoupon.coupon.discount_type === 'FREE_MONTHS' && (
+                                            <span style={{ fontSize: '0.8rem', color: '#3b82f6', fontWeight: 700 }}>+ {appliedCoupon.coupon.discount_value} Month(s) Free Ext.</span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>₹{settings.subscription_price}</div>
+                                )}
                                 <div style={{ color: '#64748b', fontWeight: 600 }}>for {settings.subscription_duration_days} Days</div>
                             </div>
                             <button
@@ -463,7 +652,21 @@ const CheckoutSync = () => {
                         </div>
                         <div style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '1rem' }}>
-                                <div style={{ fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>₹{settings.topup_price || '100'}</div>
+                                {appliedCoupon && couponTarget === 'TOPUP' ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        <span style={{ fontSize: '1.2rem', textDecoration: 'line-through', color: '#94a3b8' }}>₹{settings.topup_price || '100'}</span>
+                                        <span style={{ fontSize: '2rem', fontWeight: 900, color: '#10b981' }}>₹{appliedCoupon.calculation.payable_amount}</span>
+                                        <span 
+                                            onClick={handleRemoveCoupon}
+                                            style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', padding: '0.2rem 0.4rem', borderRadius: '4px', background: '#fee2e2', color: '#ef4444', fontSize: '0.7rem', fontWeight: 800, border: '1px solid #fca5a5' }}
+                                            title="Remove coupon"
+                                        >
+                                            {appliedCoupon.coupon.coupon_code} ✕
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: '2rem', fontWeight: 900, color: '#1e293b' }}>₹{settings.topup_price || '100'}</div>
+                                )}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                     <div style={{ color: '#64748b', fontWeight: 700 }}>₹{settings.topup_amount || '100'} Credit</div>
                                     {settings.topup_duration_days > 0 && (
