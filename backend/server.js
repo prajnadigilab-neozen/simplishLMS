@@ -193,6 +193,23 @@ app.use('/uploads', (req, res, next) => {
     lastModified: true
 }));
 
+// SEO & Crawler Endpoints: Serve sitemap.xml and robots.txt
+app.get('/sitemap.xml', (req, res) => {
+    const sitemapPath = fs.existsSync(path.join(__dirname, '../dist/sitemap.xml'))
+        ? path.join(__dirname, '../dist/sitemap.xml')
+        : path.join(__dirname, '../frontend/public/sitemap.xml');
+    res.header('Content-Type', 'application/xml');
+    res.sendFile(sitemapPath);
+});
+
+app.get('/robots.txt', (req, res) => {
+    const robotsPath = fs.existsSync(path.join(__dirname, '../dist/robots.txt'))
+        ? path.join(__dirname, '../dist/robots.txt')
+        : path.join(__dirname, '../frontend/public/robots.txt');
+    res.header('Content-Type', 'text/plain');
+    res.sendFile(robotsPath);
+});
+
 // Serve Frontend Static Assets in Production
 if (env.NODE_ENV === 'production') {
     const frontendDistPath = path.join(__dirname, '../dist');

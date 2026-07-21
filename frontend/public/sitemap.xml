@@ -2,25 +2,33 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- Main Landing Page -->
   <url>
-    <loc>https://simplish.in/</loc>
-    <lastmod>2026-06-22</lastmod>
+    <loc>https://lms.simplish.in/</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   
   <!-- Curriculum Library -->
   <url>
-    <loc>https://simplish.in/library</loc>
-    <lastmod>2026-06-22</lastmod>
+    <loc>https://lms.simplish.in/library</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   
   <!-- 1-on-1 Coaching Section -->
   <url>
-    <loc>https://simplish.in/coaching</loc>
-    <lastmod>2026-06-22</lastmod>
+    <loc>https://lms.simplish.in/coaching</loc>
+    <lastmod>2026-07-21</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Placement Test -->
+  <url>
+    <loc>https://lms.simplish.in/placement</loc>
+    <lastmod>2026-07-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>
