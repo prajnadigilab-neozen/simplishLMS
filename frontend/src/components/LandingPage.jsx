@@ -153,9 +153,7 @@ const LandingPage = ({ onAuthSuccess }) => {
     }, [lang]);
 
     useEffect(() => {
-        document.title = lang === 'kn'
-            ? "SIMPLISH LMS - ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ | Spoken English Course Kannada"
-            : "SIMPLISH LMS - Learn English through Kannada | Best English Speaking Course in Karnataka";
+        document.title = "SIMPLISH | Learn English Through Kannada | AI Spoken English Course";
 
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
@@ -163,10 +161,51 @@ const LandingPage = ({ onAuthSuccess }) => {
             metaDesc.setAttribute('name', 'description');
             document.head.appendChild(metaDesc);
         }
-        metaDesc.setAttribute('content', lang === 'kn'
-            ? "ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸ್ನೇಹಪರ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿರಿ. ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕವೇ ಅತ್ಯುತ್ತಮ ಎಐ ಮತ್ತು ದ್ವಿಭಾಷಾ ತರಬೇತಿಯೊಂದಿಗೆ ಇಂಗ್ಲಿಷ್ ಕರಗತ ಮಾಡಿಕೊಳ್ಳಿ."
-            : "Join Karnataka's best bilingual English speaking course for Kannada speakers. Learn English through Kannada step-by-step from zero to confident."
+        metaDesc.setAttribute('content',
+            "Learn English through Kannada with SIMPLISH. Improve spoken English, grammar, vocabulary and interview confidence using AI-powered bilingual coaching designed for Karnataka learners."
         );
+
+        // Inject FAQ Schema to head
+        let faqScript = document.querySelector('script[id="faq-jsonld"]');
+        if (!faqScript) {
+            faqScript = document.createElement('script');
+            faqScript.setAttribute('type', 'application/ld+json');
+            faqScript.setAttribute('id', 'faq-jsonld');
+            document.head.appendChild(faqScript);
+        }
+        const faqData = lang === 'en' ? content.en : { ...content.en, ...content.kn };
+        const faqSchema = {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": [
+                {
+                    "@type": "Question",
+                    "name": faqData.faq1Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq1A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq2Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq2A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq3Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq3A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq4Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq4A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq5Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq5A }
+                }
+            ]
+        };
+        faqScript.textContent = JSON.stringify(faqSchema);
     }, [lang]);
 
     const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
@@ -179,10 +218,10 @@ const LandingPage = ({ onAuthSuccess }) => {
             preHeader: "📚 SIMPLISH LMS",
             preHeaderSub: "The Foundation of Confident English Communication",
             headline: "Learn English Through Kannada",
-            subHeadline: "Understand how English sentences are built, explained step-by-step in your mother tongue.",
+            subHeadline: "AI English tutor & bilingual English coaching to build confident Spoken English for Karnataka learners.",
             stopMemorizing: "Stop memorizing grammar rules.",
-            learnStructureText: "Learn the structure, meaning, and logic behind English sentences using simple Kannada explanations designed for complete beginners.",
-            lmsAudienceText: "Whether you're preparing for interviews, workplace communication, exams, or everyday conversations, SIMPLISH LMS gives you the foundation you need.",
+            learnStructureText: "Learn the structure, meaning, and logic behind English sentences with English grammar through Kannada, simplified step-by-step for complete beginners.",
+            lmsAudienceText: "Whether you're preparing for English for job interviews, workplace communication, exams, or daily English speaking practice, SIMPLISH LMS gives you the foundation you need.",
             ctaStartFree: "Start Learning Free",
             ctaViewPath: "View Learning Path",
             // Trust indicators
@@ -1621,6 +1660,7 @@ const LandingPage = ({ onAuthSuccess }) => {
                             <img
                                 src={simplishTalksLogo}
                                 alt="SIMPLISH"
+                                loading="lazy"
                                 style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '2px' }}
                             />
                         </div>

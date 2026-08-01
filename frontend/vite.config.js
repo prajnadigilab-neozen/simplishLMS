@@ -24,9 +24,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['logo.png', 'vite.svg'],
       manifest: {
-        name: 'Simplish LMS',
-        short_name: 'Simplish LMS',
-        description: 'Bilingual English coaching for rural students',
+        name: 'SIMPLISH | Learn English Through Kannada | AI Spoken English Course',
+        short_name: 'SIMPLISH LMS',
+        description: 'Learn English through Kannada with SIMPLISH. Improve spoken English, grammar, vocabulary and interview confidence using AI-powered bilingual coaching.',
+        lang: 'en-IN',
         theme_color: '#6366f1',
         icons: [
           {
