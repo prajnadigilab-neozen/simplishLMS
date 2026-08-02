@@ -195,19 +195,101 @@ app.use('/uploads', (req, res, next) => {
 
 // SEO & Crawler Endpoints: Serve sitemap.xml and robots.txt
 app.get('/sitemap.xml', (req, res) => {
-    const sitemapPath = fs.existsSync(path.join(__dirname, '../dist/sitemap.xml'))
-        ? path.join(__dirname, '../dist/sitemap.xml')
-        : path.join(__dirname, '../frontend/public/sitemap.xml');
+    const possiblePaths = [
+        path.join(__dirname, '../dist/sitemap.xml'),
+        path.join(__dirname, '../frontend/dist/sitemap.xml'),
+        path.join(__dirname, '../frontend/public/sitemap.xml'),
+        path.join(__dirname, '../public/sitemap.xml'),
+        path.join(process.cwd(), 'dist/sitemap.xml'),
+        path.join(process.cwd(), 'public/sitemap.xml'),
+        path.join(process.cwd(), 'frontend/public/sitemap.xml')
+    ];
+
+    const foundPath = possiblePaths.find(p => fs.existsSync(p));
+
     res.header('Content-Type', 'application/xml');
-    res.sendFile(sitemapPath);
+    if (foundPath) {
+        return res.sendFile(foundPath);
+    }
+
+    // Fallback: Generate XML dynamically if static file is not located on server disk
+    const defaultSitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://lms.simplish.in/</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://lms.simplish.in/home</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://lms.simplish.in/library</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lms.simplish.in/coaching</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://lms.simplish.in/placement</loc>
+    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+</urlset>`;
+
+    res.status(200).send(defaultSitemap);
 });
 
 app.get('/robots.txt', (req, res) => {
-    const robotsPath = fs.existsSync(path.join(__dirname, '../dist/robots.txt'))
-        ? path.join(__dirname, '../dist/robots.txt')
-        : path.join(__dirname, '../frontend/public/robots.txt');
+    const possiblePaths = [
+        path.join(__dirname, '../dist/robots.txt'),
+        path.join(__dirname, '../frontend/dist/robots.txt'),
+        path.join(__dirname, '../frontend/public/robots.txt'),
+        path.join(__dirname, '../public/robots.txt'),
+        path.join(process.cwd(), 'dist/robots.txt'),
+        path.join(process.cwd(), 'public/robots.txt'),
+        path.join(process.cwd(), 'frontend/public/robots.txt')
+    ];
+
+    const foundPath = possiblePaths.find(p => fs.existsSync(p));
+
     res.header('Content-Type', 'text/plain');
-    res.sendFile(robotsPath);
+    if (foundPath) {
+        return res.sendFile(foundPath);
+    }
+
+    const defaultRobots = `# robots.txt for SIMPLISH LMS (https://lms.simplish.in)
+User-agent: *
+Crawl-delay: 5
+
+Allow: /$
+Allow: /home
+Allow: /library
+Allow: /coaching
+Allow: /placement
+
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /payment/
+Disallow: /profile/
+Disallow: /settings/
+Disallow: /api/
+Disallow: /uploads/
+
+Sitemap: https://lms.simplish.in/sitemap.xml
+`;
+
+    res.status(200).send(defaultRobots);
 });
 
 // Serve Frontend Static Assets in Production

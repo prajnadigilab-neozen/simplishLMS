@@ -109,6 +109,17 @@ function AppShell() {
     );
   }
 
+  // Bypass SPA routing for server static assets (/sitemap.xml, /robots.txt)
+  React.useEffect(() => {
+    if (['/sitemap.xml', '/robots.txt'].includes(location.pathname)) {
+      window.location.replace(location.pathname);
+    }
+  }, [location.pathname]);
+
+  if (['/sitemap.xml', '/robots.txt'].includes(location.pathname)) {
+    return null;
+  }
+
   const isAuthenticated = !!user;
   const verifiedToken = safeGetItem('simplish_token');
   const isOnboarded = user && (user.onboarding_completed || user.onboarding_complete);
