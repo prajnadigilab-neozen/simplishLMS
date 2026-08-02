@@ -1,4 +1,4 @@
-# robots.txt for SIMPLISH LMS (https://lms.simplish.in)
+# robots.txt for SIMPLISH LMS (https://simplish.in)
 # Enforce guidelines for all web crawlers
 User-agent: *
 
@@ -7,6 +7,7 @@ Crawl-delay: 5
 
 # Allow crawling of public learning resource catalogs
 Allow: /$
+Allow: /home
 Allow: /library
 Allow: /coaching
 Allow: /placement
@@ -23,4 +24,4 @@ Disallow: /api/
 Disallow: /uploads/
 
 # Reference to the main sitemap file
-Sitemap: https://lms.simplish.in/sitemap.xml
+Sitemap: https://simplish.in/sitemap.xml

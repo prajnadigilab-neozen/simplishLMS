@@ -26,7 +26,7 @@ export default defineConfig({
       manifest: {
         name: 'SIMPLISH | Learn English Through Kannada | AI Spoken English Course',
         short_name: 'SIMPLISH LMS',
-        description: 'Learn English through Kannada with SIMPLISH. Improve spoken English, grammar, vocabulary and interview confidence using AI-powered bilingual coaching.',
+        description: 'Best English learning app for Kannada speakers. AI English tutor for spoken English practice, English grammar in Kannada, vocabulary building & job interview preparation. Spoken English course for Karnataka students and beginners.',
         lang: 'en-IN',
         theme_color: '#6366f1',
         icons: [

@@ -153,7 +153,7 @@ const LandingPage = ({ onAuthSuccess }) => {
     }, [lang]);
 
     useEffect(() => {
-        document.title = "SIMPLISH | Learn English Through Kannada | AI Spoken English Course";
+        document.title = "SIMPLISH | Learn English Through Kannada | AI Spoken English Course | English Coaching Karnataka";
 
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
@@ -162,7 +162,7 @@ const LandingPage = ({ onAuthSuccess }) => {
             document.head.appendChild(metaDesc);
         }
         metaDesc.setAttribute('content',
-            "Learn English through Kannada with SIMPLISH. Improve spoken English, grammar, vocabulary and interview confidence using AI-powered bilingual coaching designed for Karnataka learners."
+            "Learn English through Kannada with SIMPLISH — AI English tutor for spoken English practice, English grammar in Kannada, vocabulary building & interview preparation. Best English learning app for Karnataka beginners."
         );
 
         // Inject FAQ Schema to head
@@ -202,6 +202,21 @@ const LandingPage = ({ onAuthSuccess }) => {
                     "@type": "Question",
                     "name": faqData.faq5Q,
                     "acceptedAnswer": { "@type": "Answer", "text": faqData.faq5A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq6Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq6A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq7Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq7A }
+                },
+                {
+                    "@type": "Question",
+                    "name": faqData.faq8Q,
+                    "acceptedAnswer": { "@type": "Answer", "text": faqData.faq8A }
                 }
             ]
         };
@@ -218,10 +233,10 @@ const LandingPage = ({ onAuthSuccess }) => {
             preHeader: "📚 SIMPLISH LMS",
             preHeaderSub: "The Foundation of Confident English Communication",
             headline: "Learn English Through Kannada",
-            subHeadline: "AI English tutor & bilingual English coaching to build confident Spoken English for Karnataka learners.",
+            subHeadline: "AI English tutor & bilingual English coaching app to build confident spoken English for Karnataka learners. Practice English speaking, improve vocabulary & ace interviews.",
             stopMemorizing: "Stop memorizing grammar rules.",
-            learnStructureText: "Learn the structure, meaning, and logic behind English sentences with English grammar through Kannada, simplified step-by-step for complete beginners.",
-            lmsAudienceText: "Whether you're preparing for English for job interviews, workplace communication, exams, or daily English speaking practice, SIMPLISH LMS gives you the foundation you need.",
+            learnStructureText: "Learn the structure, meaning, and logic behind English sentences with English grammar through Kannada — covering sentence formation, parts of speech, and basic English grammar simplified step-by-step for complete beginners.",
+            lmsAudienceText: "Whether you're preparing for job interview English, workplace communication, HR interviews, exams, or daily English conversation practice, SIMPLISH LMS gives you the foundation you need to speak English fluently.",
             ctaStartFree: "Start Learning Free",
             ctaViewPath: "View Learning Path",
             // Trust indicators
@@ -260,22 +275,22 @@ const LandingPage = ({ onAuthSuccess }) => {
 
             // SECTION 4
             learnTitle: "What You Will Learn",
-            learnCard1Title: "Foundations",
+            learnCard1Title: "Vocabulary Foundations",
             learnCard1Item1: "Alphabet & Sounds",
-            learnCard1Item2: "Basic Words",
-            learnCard1Item3: "Everyday Vocabulary",
+            learnCard1Item2: "Learn English Words & Meanings",
+            learnCard1Item3: "Everyday Vocabulary Builder",
             learnCard2Title: "Sentence Building",
             learnCard2Item1: "Subject, Verb, Object",
-            learnCard2Item2: "Sentence Patterns",
+            learnCard2Item2: "Sentence Formation Patterns",
             learnCard2Item3: "Constructing Statements",
-            learnCard3Title: "Grammar Made Simple",
-            learnCard3Item1: "Tenses & Time Frames",
-            learnCard3Item2: "Articles & Prepositions",
+            learnCard3Title: "English Grammar Made Simple",
+            learnCard3Item1: "English Tenses & Time Frames",
+            learnCard3Item2: "Articles, Prepositions & Parts of Speech",
             learnCard3Item3: "Question Formation",
-            learnCard4Title: "Real Communication",
-            learnCard4Item1: "Daily Conversations",
-            learnCard4Item2: "Workplace English",
-            learnCard4Item3: "Interview Preparation",
+            learnCard4Title: "Real Communication & Interview English",
+            learnCard4Item1: "Daily English Conversations",
+            learnCard4Item2: "Workplace & Professional English",
+            learnCard4Item3: "Job Interview Preparation",
 
             // SECTION 5
             journeyTitle: "Your Learning Journey",
@@ -329,9 +344,15 @@ const LandingPage = ({ onAuthSuccess }) => {
             faq3Q: "How much time should I spend daily?",
             faq3A: "15–20 minutes consistently is enough to make progress.",
             faq4Q: "Is this suitable for job seekers?",
-            faq4A: "Yes. The course builds the foundation needed for interviews and workplace communication.",
+            faq4A: "Yes. The course builds the foundation needed for HR interviews, workplace communication, and professional English.",
             faq5Q: "Can I learn on my mobile phone?",
-            faq5A: "Yes. SIMPLISH LMS is designed for mobile-first learning.",
+            faq5A: "Yes. SIMPLISH is a mobile-friendly English learning app designed for smartphone-first learning.",
+            faq6Q: "How does the AI English tutor work?",
+            faq6A: "Our AI English tutor provides personalized spoken English practice, corrects grammar in real-time, and adapts to your level — like having an AI conversation partner available 24/7.",
+            faq7Q: "Can this help me prepare for job interviews?",
+            faq7A: "Yes. SIMPLISH includes dedicated modules for interview English, workplace communication, professional English, and customer service English.",
+            faq8Q: "Is SIMPLISH available as a mobile app?",
+            faq8A: "Yes. SIMPLISH is a mobile-friendly English learning app that works on any smartphone. You can download it directly or install as a Progressive Web App for offline access.",
 
             // SECTION 9
             nextTitle: "What Happens After LMS?",
@@ -345,7 +366,7 @@ const LandingPage = ({ onAuthSuccess }) => {
 
             // FINAL CTA
             finalCtaTitle: "Start Building Your English Foundation Today",
-            finalCtaText: "You don't need perfect English. You don't need confidence. You don't need prior experience. You only need a starting point. SIMPLISH LMS will guide you from understanding English to using it with confidence.",
+            finalCtaText: "You don't need perfect English. You don't need confidence. You don't need prior experience. You only need a starting point. Whether you want to learn English from zero using Kannada or improve spoken English with AI, SIMPLISH LMS will guide you from understanding English to using it with confidence — the best English learning app for rural and urban Karnataka.",
             footerMotto: "Empowering Kannada speakers with simple, accessible English.",
             footerCopyright: "© 2026 SIMPLISH - A Simple Movement for Excellence"
         },
@@ -356,10 +377,10 @@ const LandingPage = ({ onAuthSuccess }) => {
             preHeader: "📚 SIMPLISH LMS",
             preHeaderSub: "ಇಂಗ್ಲಿಷ್ ಆತ್ಮವಿಶ್ವಾಸದ ಸಂವಹನಕ್ಕೆ ಭದ್ರ ಬುನಾದಿ",
             headline: "ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ",
-            subHeadline: "ಇಂಗ್ಲಿಷ್ ವಾಕ್ಯಗಳನ್ನು ಹೇಗೆ ರಚಿಸಲಾಗುತ್ತದೆ ಎಂಬುದನ್ನು ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯಲ್ಲಿ ಹಂತ-ಹಂತವಾಗಿ ಅರ್ಥಮಾಡಿಕೊಳ್ಳಿ.",
+            subHeadline: "AI ಇಂಗ್ಲಿಷ್ ಟ್ಯೂಟರ್ ಮತ್ತು ದ್ವಿಭಾಷಾ ಕೋಚಿಂಗ್ ಆಪ್ — ಕರ್ನಾಟಕದ ಕಲಿಕಾರ್ಥಿಗಳಿಗೆ ಆತ್ಮವಿಶ್ವಾಸದ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್, ಶಬ್ದಕೋಶ ಮತ್ತು ಸಂದರ್ಶನ ತಯಾರಿ.",
             stopMemorizing: "ವ್ಯಾಕರಣದ ನಿಯಮಗಳನ್ನು ಬಾಯಿಪಾಠ ಮಾಡುವುದನ್ನು ನಿಲ್ಲಿಸಿ.",
-            learnStructureText: "ಸಂಪೂರ್ಣ ಆರಂಭಿಕರಿಗಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾದ ಸರಳ ಕನ್ನಡ ವಿವರಣೆಗಳನ್ನು ಬಳಸಿಕೊಂಡು ಇಂಗ್ಲಿಷ್ ವಾಕ್ಯಗಳ ಹಿಂದಿರುವ ರಚನೆ, ಅರ್ಥ ಮತ್ತು ತರ್ಕವನ್ನು ಕಲಿಯಿರಿ.",
-            lmsAudienceText: "ನೀವು ಸಂದರ್ಶನಗಳು, ಕೆಲಸದ ಸ್ಥಳದ ಸಂವಹನ, ಪರೀಕ್ಷೆಗಳು ಅಥವಾ ದೈನಂದಿನ ಸಂಭಾಷಣೆಗಳಿಗೆ ತಯಾರಿ ನಡೆಸುತ್ತಿರಲಿ, SIMPLISH LMS ನಿಮಗೆ ಅಗತ್ಯವಿರುವ ಬುನಾದಿಯನ್ನು ಒದಗಿಸುತ್ತದೆ.",
+            learnStructureText: "ಸಂಪೂರ್ಣ ಆರಂಭಿಕರಿಗಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾದ ಸರಳ ಕನ್ನಡ ವಿವರಣೆಗಳನ್ನು ಬಳಸಿಕೊಂಡು ಇಂಗ್ಲಿಷ್ ವಾಕ್ಯಗಳ ಹಿಂದಿರುವ ರಚನೆ, ಅರ್ಥ ಮತ್ತು ತರ್ಕವನ್ನು ಕಲಿಯಿರಿ — ವಾಕ್ಯ ರಚನೆ, ಭಾಷಾ ಭಾಗಗಳು, ಮತ್ತು ಮೂಲಭೂತ ಇಂಗ್ಲಿಷ್ ವ್ಯಾಕರಣ.",
+            lmsAudienceText: "ನೀವು ಉದ್ಯೋಗ ಸಂದರ್ಶನ, ಕೆಲಸದ ಸ್ಥಳದ ಸಂವಹನ, HR ಸಂದರ್ಶನ, ಪರೀಕ್ಷೆಗಳು ಅಥವಾ ದೈನಂದಿನ ಇಂಗ್ಲಿಷ್ ಸಂಭಾಷಣೆಗೆ ತಯಾರಿ ನಡೆಸುತ್ತಿರಲಿ, SIMPLISH LMS ನಿಮಗೆ ನಿರರ್ಗಳವಾಗಿ ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡಲು ಅಗತ್ಯವಿರುವ ಬುನಾದಿಯನ್ನು ಒದಗಿಸುತ್ತದೆ.",
             ctaStartFree: "ಉಚಿತವಾಗಿ ಕಲಿಯಲು ಪ್ರಾರಂಭಿಸಿ",
             ctaViewPath: "ಕಲಿಕೆಯ ಮಾರ್ಗವನ್ನು ನೋಡಿ",
             // Trust indicators
@@ -398,22 +419,22 @@ const LandingPage = ({ onAuthSuccess }) => {
 
             // SECTION 4
             learnTitle: "ನೀವು ಏನನ್ನು ಕಲಿಯುವಿರಿ",
-            learnCard1Title: "ಮೂಲಭೂತ ವಿಷಯಗಳು",
+            learnCard1Title: "ಶಬ್ದಕೋಶ ಬುನಾದಿ",
             learnCard1Item1: "ಅಕ್ಷರಮಾಲೆ ಮತ್ತು ಧ್ವನಿಗಳು",
-            learnCard1Item2: "ಮೂಲಭೂತ ಪದಗಳು",
-            learnCard1Item3: "ದೈನಂದಿನ ಶಬ್ದಕೋಶ",
+            learnCard1Item2: "ಇಂಗ್ಲಿಷ್ ಪದಗಳು ಮತ್ತು ಅರ್ಥಗಳು",
+            learnCard1Item3: "ದೈನಂದಿನ ಶಬ್ದಕೋಶ ನಿರ್ಮಾಪಕ",
             learnCard2Title: "ವಾಕ್ಯ ರಚನೆ",
             learnCard2Item1: "ಕರ್ತೃ, ಕ್ರಿಯಾಪದ, ಕರ್ಮ",
-            learnCard2Item2: "ವಾಕ್ಯದ ಮಾದರಿಗಳು",
+            learnCard2Item2: "ವಾಕ್ಯ ರಚನೆಯ ಮಾದರಿಗಳು",
             learnCard2Item3: "ವಾಕ್ಯಗಳ ನಿರ್ಮಾಣ",
-            learnCard3Title: "ವ್ಯಾಕರಣ ಸರಳೀಕರಣ",
-            learnCard3Item1: "ಕಾಲಗಳು (Tenses)",
-            learnCard3Item2: "ಆರ್ಟಿಕಲ್ಸ್ ಮತ್ತು ಪ್ರಿಪೊಸಿಷನ್ಸ್",
+            learnCard3Title: "ಇಂಗ್ಲಿಷ್ ವ್ಯಾಕರಣ ಸರಳೀಕರಣ",
+            learnCard3Item1: "ಇಂಗ್ಲಿಷ್ ಕಾಲಗಳು (Tenses)",
+            learnCard3Item2: "ಆರ್ಟಿಕಲ್ಸ್, ಪ್ರಿಪೊಸಿಷನ್ಸ್ ಮತ್ತು ಭಾಷಾ ಭಾಗಗಳು",
             learnCard3Item3: "ಪ್ರಶ್ನೆಗಳ ರಚನೆ",
-            learnCard4Title: "ನೈಜ ಸಂವಹನ",
-            learnCard4Item1: "ದೈನಂದಿನ ಸಂಭಾಷಣೆಗಳು",
-            learnCard4Item2: "ಕೆಲಸದ ಸ್ಥಳದ ಇಂಗ್ಲಿಷ್",
-            learnCard4Item3: "ಸಂದರ್ಶನದ ತಯಾರಿ",
+            learnCard4Title: "ನೈಜ ಸಂವಹನ ಮತ್ತು ಸಂದರ್ಶನ ಇಂಗ್ಲಿಷ್",
+            learnCard4Item1: "ದೈನಂದಿನ ಇಂಗ್ಲಿಷ್ ಸಂಭಾಷಣೆಗಳು",
+            learnCard4Item2: "ಕೆಲಸದ ಸ್ಥಳ ಮತ್ತು ವೃತ್ತಿಪರ ಇಂಗ್ಲಿಷ್",
+            learnCard4Item3: "ಉದ್ಯೋಗ ಸಂದರ್ಶನ ತಯಾರಿ",
 
             // SECTION 5
             journeyTitle: "ನಿಮ್ಮ ಕಲಿಕೆಯ ಪ್ರಯಾಣ",
@@ -467,9 +488,15 @@ const LandingPage = ({ onAuthSuccess }) => {
             faq3Q: "ನಾನು ಪ್ರತಿದಿನ ಎಷ್ಟು ಸಮಯ ಕಳೆಯಬೇಕು?",
             faq3A: "ಪ್ರಗತಿ ಹೊಂದಲು ಪ್ರತಿದಿನ 15-20 ನಿಮಿಷಗಳ ನಿರಂತರ ಅಭ್ಯಾಸ ಸಾಕು.",
             faq4Q: "ಇದು ಉದ್ಯೋಗಾಕಾಂಕ್ಷಿಗಳಿಗೆ ಸೂಕ್ತವೇ?",
-            faq4A: "ಹೌದು. ಈ ಕೋರ್ಸ್ ಸಂದರ್ಶನಗಳು ಮತ್ತು ಕೆಲಸದ ಸ್ಥಳದ ಸಂವಹನಕ್ಕೆ ಅಗತ್ಯವಿರುವ ಬುನಾದಿಯನ್ನು ನಿರ್ಮಿಸುತ್ತದೆ.",
+            faq4A: "ಹೌದು. ಈ ಕೋರ್ಸ್ HR ಸಂದರ್ಶನಗಳು, ಕೆಲಸದ ಸ್ಥಳದ ಸಂವಹನ, ಮತ್ತು ವೃತ್ತಿಪರ ಇಂಗ್ಲಿಷ್‌ಗೆ ಅಗತ್ಯವಿರುವ ಬುನಾದಿಯನ್ನು ನಿರ್ಮಿಸುತ್ತದೆ.",
             faq5Q: "ನಾನು ನನ್ನ ಮೊಬೈಲ್ ಫೋನ್‌ನಲ್ಲಿ ಕಲಿಯಬಹುದೇ?",
-            faq5A: "ಹೌದು. SIMPLISH LMS ಅನ್ನು ಮೊಬೈಲ್ ಸ್ನೇಹಿಯನ್ನಾಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ.",
+            faq5A: "ಹೌದು. SIMPLISH ಒಂದು ಮೊಬೈಲ್ ಸ್ನೇಹಿ ಇಂಗ್ಲಿಷ್ ಕಲಿಕಾ ಆಪ್ ಆಗಿ ವಿನ್ಯಾಸಗೊಳಿಸಲಾಗಿದೆ.",
+            faq6Q: "AI ಇಂಗ್ಲಿಷ್ ಟ್ಯೂಟರ್ ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ?",
+            faq6A: "ನಮ್ಮ AI ಇಂಗ್ಲಿಷ್ ಟ್ಯೂಟರ್ ವೈಯಕ್ತಿಕ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಅಭ್ಯಾಸವನ್ನು ಒದಗಿಸುತ್ತದೆ, ವ್ಯಾಕರಣವನ್ನು ತಕ್ಷಣ ಸರಿಪಡಿಸುತ್ತದೆ, ಮತ್ತು ನಿಮ್ಮ ಮಟ್ಟಕ್ಕೆ ಅನುಗುಣವಾಗಿ ಹೊಂದಿಕೊಳ್ಳುತ್ತದೆ — 24/7 ಲಭ್ಯವಿರುವ AI ಸಂಭಾಷಣಾ ಸಂಗಾತಿ.",
+            faq7Q: "ಇದು ಉದ್ಯೋಗ ಸಂದರ್ಶನಕ್ಕೆ ತಯಾರಿ ಮಾಡಲು ಸಹಾಯ ಮಾಡುತ್ತದೆಯೇ?",
+            faq7A: "ಹೌದು. SIMPLISH ಸಂದರ್ಶನ ಇಂಗ್ಲಿಷ್, ಕೆಲಸದ ಸ್ಥಳದ ಸಂವಹನ, ವೃತ್ತಿಪರ ಇಂಗ್ಲಿಷ್, ಮತ್ತು ಗ್ರಾಹಕ ಸೇವಾ ಇಂಗ್ಲಿಷ್‌ಗೆ ವಿಶೇಷ ಮಾಡ್ಯೂಲ್‌ಗಳನ್ನು ಒಳಗೊಂಡಿದೆ.",
+            faq8Q: "SIMPLISH ಮೊಬೈಲ್ ಆಪ್ ಆಗಿ ಲಭ್ಯವಿದೆಯೇ?",
+            faq8A: "ಹೌದು. SIMPLISH ಯಾವುದೇ ಸ್ಮಾರ್ಟ್‌ಫೋನ್‌ನಲ್ಲಿ ಕಾರ್ಯನಿರ್ವಹಿಸುವ ಮೊಬೈಲ್ ಸ್ನೇಹಿ ಇಂಗ್ಲಿಷ್ ಕಲಿಕಾ ಆಪ್ ಆಗಿದೆ. ನೇರವಾಗಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಆಫ್‌ಲೈನ್ ಬಳಕೆಗಾಗಿ PWA ಆಗಿ ಸ್ಥಾಪಿಸಿ.",
 
             // SECTION 9
             nextTitle: "LMS ನಂತರ ಏನಾಗುತ್ತದೆ?",
@@ -483,7 +510,7 @@ const LandingPage = ({ onAuthSuccess }) => {
 
             // FINAL CTA
             finalCtaTitle: "ಇಂದೇ ನಿಮ್ಮ ಇಂಗ್ಲಿಷ್ ಬುನಾದಿ ನಿರ್ಮಿಸಲು ಪ್ರಾರಂಭಿಸಿ",
-            finalCtaText: "ನಿಮಗೆ ಪರಿಪೂರ್ಣ ಇಂಗ್ಲಿಷ್ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಮೊದಲೇ ಆತ್ಮವಿಶ್ವಾಸದ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಯಾವುದೇ ಪೂರ್ವ ಅನುಭವದ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಕೇವಲ ಒಂದು ಆರಂಭದ ಬಿಂದು ಬೇಕು. ಇಂಗ್ಲಿಷ್ ಅರ್ಥಮಾಡಿಕೊಳ್ಳುವುದರಿಂದ ಹಿಡಿದು ಆತ್ಮವಿಶ್ವಾಸದಿಂದ ಬಳಸುವವರೆಗೆ SIMPLISH LMS ನಿಮಗೆ ಮಾರ್ಗದರ್ಶನ ನೀಡುತ್ತದೆ.",
+            finalCtaText: "ನಿಮಗೆ ಪರಿಪೂರ್ಣ ಇಂಗ್ಲಿಷ್ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಮೊದಲೇ ಆತ್ಮವಿಶ್ವಾಸದ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಯಾವುದೇ ಪೂರ್ವ ಅನುಭವದ ಅಗತ್ಯವಿಲ್ಲ. ನಿಮಗೆ ಕೇವಲ ಒಂದು ಆರಂಭದ ಬಿಂದು ಬೇಕು. ಕನ್ನಡ ಬಳಸಿ ಶೂನ್ಯದಿಂದ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ ಅಥವಾ AI ಮೂಲಕ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಸುಧಾರಿಸಿ — ಗ್ರಾಮೀಣ ಮತ್ತು ನಗರ ಕರ್ನಾಟಕಕ್ಕಾಗಿ ಅತ್ಯುತ್ತಮ ಇಂಗ್ಲಿಷ್ ಕಲಿಕಾ ಆಪ್, SIMPLISH LMS ನಿಮಗೆ ಮಾರ್ಗದರ್ಶನ ನೀಡುತ್ತದೆ.",
             footerMotto: "ಸರಳ ಮತ್ತು ಸುಲಭವಾಗಿ ಲಭ್ಯವಿರುವ ಇಂಗ್ಲಿಷ್‌ನೊಂದಿಗೆ ಕನ್ನಡ ಮಾತನಾಡುವವರನ್ನು ಸಬಲಗೊಳಿಸುವುದು.",
             footerCopyright: "© 2026 SIMPLISH - ಉನ್ನತಿಯೆಡೆಗೆ ಸರಳ ಪಯಣ"
         }
@@ -497,8 +524,8 @@ const LandingPage = ({ onAuthSuccess }) => {
         "@type": "Course",
         "name": lang === 'kn' ? "SIMPLISH LMS - ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ಕಲಿಯಿರಿ" : "SIMPLISH LMS - Learn English through Kannada",
         "description": lang === 'kn'
-            ? "ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸ್ನೇಹಪರ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿರಿ. ನಿಮ್ಮ ಮಾತೃಭಾಷೆಯ ಮೂಲಕವೇ ಇಂಗ್ಲಿಷ್ ಕರಗತ ಮಾಡಿಕೊಳ್ಳಿ."
-            : "Join Karnataka's best bilingual English speaking course for Kannada speakers. Learn English through Kannada step-by-step from zero to confident.",
+            ? "ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗಾಗಿ ಕರ್ನಾಟಕದ ಅತ್ಯಂತ ಸ್ನೇಹಪರ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಕೋರ್ಸ್‌ಗೆ ಸೇರಿರಿ. AI ಇಂಗ್ಲಿಷ್ ಟ್ಯೂಟರ್ — ಕನ್ನಡದಲ್ಲಿ ಇಂಗ್ಲಿಷ್ ವ್ಯಾಕರಣ, ಶಬ್ದಕೋಶ, ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡುವ ಅಭ್ಯಾಸ, ವಾಕ್ಯ ರಚನೆ, ಮತ್ತು ಸಂದರ್ಶನ ತಯಾರಿ."
+            : "Join Karnataka's best bilingual spoken English course for Kannada speakers. Learn English through Kannada online with AI English tutor — covering English grammar in Kannada, vocabulary building, English speaking practice, sentence formation, and interview preparation. Best English learning app for beginners in Karnataka.",
         "provider": {
             "@type": "Organization",
             "name": "Prajna DigiLab",
@@ -506,6 +533,8 @@ const LandingPage = ({ onAuthSuccess }) => {
         },
         "inLanguage": ["kn", "en"],
         "educationalLevel": "Beginner, Intermediate, Advanced",
+        "coursePrerequisites": "No prior English knowledge required",
+        "teaches": ["Spoken English", "English Grammar", "English Vocabulary", "Interview English", "Daily English Conversation"],
         "offers": {
             "@type": "Offer",
             "price": "0",
@@ -1537,6 +1566,9 @@ const LandingPage = ({ onAuthSuccess }) => {
                         <FAQItem question={t.faq3Q} answer={t.faq3A} />
                         <FAQItem question={t.faq4Q} answer={t.faq4A} />
                         <FAQItem question={t.faq5Q} answer={t.faq5A} />
+                        <FAQItem question={t.faq6Q} answer={t.faq6A} />
+                        <FAQItem question={t.faq7Q} answer={t.faq7A} />
+                        <FAQItem question={t.faq8Q} answer={t.faq8A} />
                     </div>
                 </section>
 
@@ -1641,12 +1673,22 @@ const LandingPage = ({ onAuthSuccess }) => {
                     </button>
                 </div>
 
+                {/* SEO Content Footer */}
+                <section style={{ padding: '2rem 0', borderTop: '1px solid var(--border)', marginTop: '3rem' }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: 1.8, maxWidth: '900px', margin: '0 auto', textAlign: 'center', fontWeight: 500 }}>
+                        {lang === 'kn'
+                            ? 'SIMPLISH ಕರ್ನಾಟಕದ ಕನ್ನಡ ಮಾತನಾಡುವವರಿಗೆ ಅತ್ಯುತ್ತಮ ಇಂಗ್ಲಿಷ್ ಕಲಿಕಾ ಆಪ್ ಆಗಿದೆ. ನಮ್ಮ AI ಇಂಗ್ಲಿಷ್ ಟ್ಯೂಟರ್ ಸ್ಪೋಕನ್ ಇಂಗ್ಲಿಷ್ ಸುಧಾರಿಸಲು, ಕನ್ನಡದ ಮೂಲಕ ಇಂಗ್ಲಿಷ್ ವ್ಯಾಕರಣ ಕಲಿಯಲು, ಶಬ್ದಕೋಶ ನಿರ್ಮಿಸಲು ಮತ್ತು ಉದ್ಯೋಗ ಸಂದರ್ಶನಗಳಿಗೆ ತಯಾರಾಗಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ. ಗ್ರಾಮೀಣ ಮತ್ತು ನಗರ ಕರ್ನಾಟಕದ ವಿದ್ಯಾರ್ಥಿಗಳಿಗಾಗಿ AI-ಚಾಲಿತ ಇಂಗ್ಲಿಷ್ ಮಾತನಾಡುವ ಅಭ್ಯಾಸ, ದೈನಂದಿನ ಇಂಗ್ಲಿಷ್ ಸಂಭಾಷಣೆ ಅಭ್ಯಾಸ ಮತ್ತು ವೃತ್ತಿಪರ ಇಂಗ್ಲಿಷ್ ಕೋಚಿಂಗ್.'
+                            : 'SIMPLISH is the best English learning app for Kannada speakers in Karnataka. Our AI English tutor helps you improve spoken English, learn English grammar through Kannada, build vocabulary, and prepare for job interviews. Whether you\'re a beginner looking to learn English from zero using Kannada or want to speak English fluently for workplace communication, SIMPLISH offers AI-powered English speaking practice, daily English conversation drills, and professional English coaching — all designed for rural and urban Karnataka students.'
+                        }
+                    </p>
+                </section>
+
                 {/* Footer */}
                 <footer style={{
-                    padding: '4rem 0 2rem 0',
+                    padding: '2rem 0 2rem 0',
                     textAlign: 'center',
                     borderTop: '1px solid var(--border)',
-                    marginTop: '5rem'
+                    marginTop: '1rem'
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center', marginBottom: '1.5rem' }}>
                         <div style={{
