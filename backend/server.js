@@ -299,7 +299,7 @@ if (env.NODE_ENV === 'production' || fs.existsSync(frontendDistPath)) {
     
     // Redirect all other non-API/non-static requests to React Router (SPA catch-all)
     // IMPORTANT: SPA catch-all MUST come after explicit /sitemap.xml, /robots.txt & express.static
-    app.get('*', (req, res, next) => {
+    app.get('*splat', (req, res, next) => {
         // If request is for API routes, uploads, or crawler files, forward to API/404 handling
         if (
             req.path.startsWith('/api/') || 
