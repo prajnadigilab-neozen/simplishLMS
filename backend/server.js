@@ -292,18 +292,28 @@ Sitemap: https://lms.simplish.in/sitemap.xml
     res.status(200).send(defaultRobots);
 });
 
-// Serve Frontend Static Assets in Production
-if (env.NODE_ENV === 'production') {
-    const frontendDistPath = path.join(__dirname, '../dist');
+// Serve Frontend Static Assets (Production or when build dist directory exists)
+const frontendDistPath = path.join(__dirname, '../dist');
+if (env.NODE_ENV === 'production' || fs.existsSync(frontendDistPath)) {
     app.use(express.static(frontendDistPath));
     
-    // Redirect all other requests to React Router (SPA)
-    app.get('*splat', (req, res, next) => {
-        // If request is for an API route or uploads, forward to API/404 handling
-        if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+    // Redirect all other non-API/non-static requests to React Router (SPA catch-all)
+    // IMPORTANT: SPA catch-all MUST come after explicit /sitemap.xml, /robots.txt & express.static
+    app.get('*', (req, res, next) => {
+        // If request is for API routes, uploads, or crawler files, forward to API/404 handling
+        if (
+            req.path.startsWith('/api/') || 
+            req.path.startsWith('/uploads/') || 
+            req.path === '/sitemap.xml' || 
+            req.path === '/robots.txt'
+        ) {
             return next();
         }
-        res.sendFile(path.join(frontendDistPath, 'index.html'));
+        const indexFile = path.join(frontendDistPath, 'index.html');
+        if (fs.existsSync(indexFile)) {
+            return res.sendFile(indexFile);
+        }
+        next();
     });
 }
 
