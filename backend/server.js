@@ -195,21 +195,27 @@ app.use('/uploads', (req, res, next) => {
 
 // SEO & Crawler Endpoints: Serve sitemap.xml and robots.txt
 app.get('/sitemap.xml', (req, res) => {
-    const possiblePaths = [
-        path.join(__dirname, '../dist/sitemap.xml'),
-        path.join(__dirname, '../frontend/dist/sitemap.xml'),
-        path.join(__dirname, '../frontend/public/sitemap.xml'),
-        path.join(__dirname, '../public/sitemap.xml'),
-        path.join(process.cwd(), 'dist/sitemap.xml'),
-        path.join(process.cwd(), 'public/sitemap.xml'),
-        path.join(process.cwd(), 'frontend/public/sitemap.xml')
-    ];
+    try {
+        const possiblePaths = [
+            path.join(__dirname, '../dist/sitemap.xml'),
+            path.join(__dirname, '../frontend/dist/sitemap.xml'),
+            path.join(__dirname, '../frontend/public/sitemap.xml'),
+            path.join(__dirname, '../public/sitemap.xml'),
+            path.join(process.cwd(), 'dist/sitemap.xml'),
+            path.join(process.cwd(), 'public/sitemap.xml'),
+            path.join(process.cwd(), 'frontend/public/sitemap.xml'),
+            path.join(process.cwd(), 'sitemap.xml')
+        ];
 
-    const foundPath = possiblePaths.find(p => fs.existsSync(p));
+        const foundPath = possiblePaths.find(p => fs.existsSync(p));
 
-    res.header('Content-Type', 'application/xml');
-    if (foundPath) {
-        return res.sendFile(foundPath);
+        if (foundPath) {
+            const content = fs.readFileSync(foundPath, 'utf8');
+            res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+            return res.status(200).send(content);
+        }
+    } catch (err) {
+        logger.error(`[SEO] Error reading sitemap.xml: ${err.message}`);
     }
 
     // Fallback: Generate XML dynamically if static file is not located on server disk
@@ -247,25 +253,32 @@ app.get('/sitemap.xml', (req, res) => {
   </url>
 </urlset>`;
 
-    res.status(200).send(defaultSitemap);
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    return res.status(200).send(defaultSitemap);
 });
 
 app.get('/robots.txt', (req, res) => {
-    const possiblePaths = [
-        path.join(__dirname, '../dist/robots.txt'),
-        path.join(__dirname, '../frontend/dist/robots.txt'),
-        path.join(__dirname, '../frontend/public/robots.txt'),
-        path.join(__dirname, '../public/robots.txt'),
-        path.join(process.cwd(), 'dist/robots.txt'),
-        path.join(process.cwd(), 'public/robots.txt'),
-        path.join(process.cwd(), 'frontend/public/robots.txt')
-    ];
+    try {
+        const possiblePaths = [
+            path.join(__dirname, '../dist/robots.txt'),
+            path.join(__dirname, '../frontend/dist/robots.txt'),
+            path.join(__dirname, '../frontend/public/robots.txt'),
+            path.join(__dirname, '../public/robots.txt'),
+            path.join(process.cwd(), 'dist/robots.txt'),
+            path.join(process.cwd(), 'public/robots.txt'),
+            path.join(process.cwd(), 'frontend/public/robots.txt'),
+            path.join(process.cwd(), 'robots.txt')
+        ];
 
-    const foundPath = possiblePaths.find(p => fs.existsSync(p));
+        const foundPath = possiblePaths.find(p => fs.existsSync(p));
 
-    res.header('Content-Type', 'text/plain');
-    if (foundPath) {
-        return res.sendFile(foundPath);
+        if (foundPath) {
+            const content = fs.readFileSync(foundPath, 'utf8');
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+            return res.status(200).send(content);
+        }
+    } catch (err) {
+        logger.error(`[SEO] Error reading robots.txt: ${err.message}`);
     }
 
     const defaultRobots = `# robots.txt for SIMPLISH LMS (https://lms.simplish.in)
@@ -289,7 +302,8 @@ Disallow: /uploads/
 Sitemap: https://lms.simplish.in/sitemap.xml
 `;
 
-    res.status(200).send(defaultRobots);
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).send(defaultRobots);
 });
 
 // Serve Frontend Static Assets (Production or when build dist directory exists)
