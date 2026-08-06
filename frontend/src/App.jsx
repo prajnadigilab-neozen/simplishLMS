@@ -96,6 +96,13 @@ function AppShell() {
     navigate(`/${view}`);
   };
 
+  // Bypass SPA routing for server static assets (/sitemap.xml, /robots.txt)
+  React.useEffect(() => {
+    if (['/sitemap.xml', '/robots.txt'].includes(location.pathname)) {
+      window.location.replace(location.pathname);
+    }
+  }, [location.pathname]);
+
   if (loading) {
     return (
       <div style={{
@@ -108,13 +115,6 @@ function AppShell() {
       </div>
     );
   }
-
-  // Bypass SPA routing for server static assets (/sitemap.xml, /robots.txt)
-  React.useEffect(() => {
-    if (['/sitemap.xml', '/robots.txt'].includes(location.pathname)) {
-      window.location.replace(location.pathname);
-    }
-  }, [location.pathname]);
 
   if (['/sitemap.xml', '/robots.txt'].includes(location.pathname)) {
     return null;
